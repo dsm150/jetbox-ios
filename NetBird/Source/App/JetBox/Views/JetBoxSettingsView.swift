@@ -24,7 +24,7 @@ struct JetBoxSettingsView: View {
             List {
                 Section(JBText.settingsSectionBox) {
                     if let box {
-                        JBRow(title: JBText.settingsSectionBox, value: box.displayName)
+                        JBRow(title: JBText.settingsBoxName, value: box.displayName)
                         JBRow(title: JBText.settingsServer,
                               value: URL(string: box.managementURL)?.host ?? box.managementURL)
                         JBRow(title: JBText.settingsExit,
@@ -43,13 +43,9 @@ struct JetBoxSettingsView: View {
                     Text(JBText.settingsSectionApp)
                 }
 
-                Section {
-                    Toggle(JBText.settingsAdvanced, isOn: $advancedMode)
-                        .tint(JBColor.accent)
-                } footer: {
-                    Text(JBText.settingsAdvancedFooter)
-                }
+                JetBoxAdvancedModeSection(advancedMode: $advancedMode)
             }
+            .jetBoxListBackground()
             .navigationTitle(JBText.settingsTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -86,6 +82,21 @@ struct JetBoxAboutView: View {
         }
         .navigationTitle(JBText.aboutTitle)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Тумблер простого/расширенного режима для апстримового экрана настроек.
+/// Живёт здесь, а не в чужом файле: во врезку уходит одна строка.
+struct JetBoxAdvancedModeSection: View {
+    @Binding var advancedMode: Bool
+
+    var body: some View {
+        Section {
+            Toggle(JBText.settingsAdvanced, isOn: $advancedMode)
+                .tint(JBColor.accent)
+        } footer: {
+            Text(JBText.settingsAdvancedFooter)
+        }
     }
 }
 

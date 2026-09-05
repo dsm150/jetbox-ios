@@ -834,6 +834,23 @@
         }
       }
     },
+    "jetbox.settings.name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Имя"
+          }
+        }
+      }
+    },
     "jetbox.settings.no_box": {
       "extractionState": "manual",
       "localizations": {

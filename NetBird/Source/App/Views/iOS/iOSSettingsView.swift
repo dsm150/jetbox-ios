@@ -12,9 +12,13 @@ import NetBirdSDK
 
 struct iOSSettingsView: View {
     @EnvironmentObject var viewModel: ViewModel
+    // JetBox: обратный ход в простой режим — иначе из расширенного не выйти.
+    @AppStorage(JetBoxStore.advancedModeKey) private var advancedMode = false
 
     var body: some View {
         List {
+            JetBoxAdvancedModeSection(advancedMode: $advancedMode)
+
             Section {
                 NavigationLink {
                     ProfilesListView()

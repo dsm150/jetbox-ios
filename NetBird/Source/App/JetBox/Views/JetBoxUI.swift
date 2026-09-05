@@ -104,4 +104,17 @@ struct JBProgress: View {
     }
 }
 
+extension View {
+    /// Списку — фон страницы бренда вместо системного серого.
+    /// Модификатор появился в iOS 16, а проект собирается с 15.0.
+    @ViewBuilder
+    func jetBoxListBackground() -> some View {
+        if #available(iOS 16.0, *) {
+            self.scrollContentBackground(.hidden).background(JBColor.background)
+        } else {
+            self
+        }
+    }
+}
+
 #endif
