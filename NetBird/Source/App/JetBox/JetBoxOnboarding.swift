@@ -101,6 +101,10 @@ final class JetBoxOnboarding: ObservableObject {
     /// висит continuation колбэка Go-SDK.
     private var registration: ServerViewModel?
     private var flowTask: Task<Void, Never>?
+    /// Ссылка, по которой идёт (или шёл) сценарий. Нужна отдельно от `step`:
+    /// в `.failed` шаг полезной нагрузки уже не несёт, а «Попробовать снова»
+    /// обязано повторить именно её.
+    private var lastPayload: JetBoxLinkPayload?
 
     /// Сколько ждём туннель после успешной регистрации. За это время
     /// укладывается и запрос разрешения на VPN-профиль, и холодный старт ядра.
@@ -135,6 +139,7 @@ final class JetBoxOnboarding: ObservableObject {
             AppLogger.shared.log("JetBox: ссылка принята, коробка \(payload.displayName), ключ \(payload.maskedKey)")
             JetBoxStore.skipUpstreamOnboarding()
             flowTask?.cancel()
+            lastPayload = payload
 
             if let box = JetBoxStore.currentBox, box.identity != payload.boxIdentity {
                 step = .confirmSwitch(payload, current: box.displayName)
@@ -158,7 +163,7 @@ final class JetBoxOnboarding: ObservableObject {
     }
 
     func retry(viewModel: ViewModel) {
-        guard let payload = activePayload else {
+        guard let payload = lastPayload else {
             dismiss()
             return
         }
@@ -183,6 +188,7 @@ final class JetBoxOnboarding: ObservableObject {
         flowTask?.cancel()
         flowTask = nil
         registration = nil
+        lastPayload = nil
         step = .idle
     }
 

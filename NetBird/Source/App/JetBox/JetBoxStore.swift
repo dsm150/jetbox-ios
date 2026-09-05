@@ -14,7 +14,13 @@ import Foundation
 /// Коробка, к которой этот телефон уже привязан.
 struct JetBoxBox: Codable, Equatable {
     var managementURL: String
+    /// Выход, который был в ссылке. Часть удостоверения коробки — по нему
+    /// отличается «моя ссылка» от «ссылка на другую коробку».
     var exitNodeName: String?
+    /// Выход, который сейчас выбран. Пользователь мог сменить его руками —
+    /// на удостоверение коробки это влиять не должно, иначе своя же ссылка
+    /// начнёт спрашивать «переключить на другую коробку?».
+    var selectedExitNode: String?
     var boxName: String?
     var registeredAt: Date
 
@@ -23,6 +29,9 @@ struct JetBoxBox: Codable, Equatable {
         if let exitNodeName, !exitNodeName.isEmpty { return exitNodeName }
         return URL(string: managementURL)?.host ?? managementURL
     }
+
+    /// Что показывать как текущий выход, пока туннель не поднят.
+    var effectiveExitNode: String? { selectedExitNode ?? exitNodeName }
 
     var identity: String {
         let host = URL(string: managementURL)?.host?.lowercased() ?? managementURL.lowercased()
@@ -69,15 +78,17 @@ enum JetBoxStore {
         currentBox = JetBoxBox(
             managementURL: payload.managementURL,
             exitNodeName: payload.exitNodeName,
+            selectedExitNode: payload.exitNodeName,
             boxName: payload.boxName,
             registeredAt: Date()
         )
     }
 
-    /// Выход, который клиент выбрал руками, важнее того, что был в ссылке.
+    /// Выход, который клиент выбрал руками, важнее того, что был в ссылке —
+    /// но удостоверение коробки не трогает.
     static func rememberExitNode(_ name: String?) {
         guard var box = currentBox else { return }
-        box.exitNodeName = name
+        box.selectedExitNode = name
         currentBox = box
     }
 }

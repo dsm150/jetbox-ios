@@ -167,7 +167,7 @@ struct JetBoxHomeView: View {
 
     private var currentExitName: String? {
         if let selected = routes.selectedExitNode?.name { return selected }
-        return box?.exitNodeName
+        return box?.effectiveExitNode
     }
 
     private var statusText: String {

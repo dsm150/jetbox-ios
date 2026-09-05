@@ -28,7 +28,7 @@ struct JetBoxSettingsView: View {
                         JBRow(title: JBText.settingsServer,
                               value: URL(string: box.managementURL)?.host ?? box.managementURL)
                         JBRow(title: JBText.settingsExit,
-                              value: box.exitNodeName ?? JBText.homeExitNone)
+                              value: box.effectiveExitNode ?? JBText.homeExitNone)
                     } else {
                         Text(JBText.settingsNoBox)
                             .font(.subheadline)
