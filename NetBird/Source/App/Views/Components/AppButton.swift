@@ -57,7 +57,7 @@ struct AppButton: View {
                     .fill(Color.accentColor)
                     .overlay(
                         Capsule()
-                            .stroke(Color.orange.opacity(0.8), lineWidth: 2)
+                            .stroke(Color("JetBoxAccent").opacity(0.8), lineWidth: 2)
                     )
             case .secondary:
                 Capsule()

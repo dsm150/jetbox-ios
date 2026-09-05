@@ -1,23 +1,56 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "icon-netbird-button.png",
-      "idiom" : "universal",
-      "scale" : "1x"
+      "filename": "icon-netbird-button-light@1x.png",
+      "idiom": "universal",
+      "scale": "1x"
     },
     {
-      "filename" : "icon-netbird-button@2x.png",
-      "idiom" : "universal",
-      "scale" : "2x"
+      "filename": "icon-netbird-button-dark@1x.png",
+      "idiom": "universal",
+      "scale": "1x",
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ]
     },
     {
-      "filename" : "icon-netbird-button@3x.png",
-      "idiom" : "universal",
-      "scale" : "3x"
+      "filename": "icon-netbird-button-light@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "icon-netbird-button-dark@2x.png",
+      "idiom": "universal",
+      "scale": "2x",
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ]
+    },
+    {
+      "filename": "icon-netbird-button-light@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    },
+    {
+      "filename": "icon-netbird-button-dark@3x.png",
+      "idiom": "universal",
+      "scale": "3x",
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ]
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }

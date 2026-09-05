@@ -75,7 +75,7 @@ struct VPNToggleView: View {
     var body: some View {
         ZStack {
             Capsule()
-                .fill(isOn ? Color.orange : Color(uiColor: .systemGray4))
+                .fill(isOn ? Color("JetBoxAccent") : Color(uiColor: .systemGray4))
                 .opacity(pulseOpacity)
                 .frame(width: trackWidth, height: trackHeight)
                 .animation(.easeInOut(duration: 0.3), value: isOn)

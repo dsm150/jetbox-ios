@@ -1,7 +1,7 @@
 import Foundation
 
 enum WidgetConstants {
-    static let appGroupSuite = "group.io.netbird.app"
+    static let appGroupSuite = "group.net.jet-net.jetbox"
     static let deepLinkConnect = URL(string: "netbird://connect")
     static let deepLinkDisconnect = URL(string: "netbird://disconnect")
     static let deepLinkLogin = URL(string: "netbird://login")

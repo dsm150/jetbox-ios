@@ -48,7 +48,7 @@ struct FirstLaunchView: View {
             result.foregroundColor = Color("TextPrimary")
 
             if let range = result.range(of: "Change server") {
-                result[range].foregroundColor = .orange
+                result[range].foregroundColor = Color("JetBoxAccent")
                 result[range].font = .system(size: 17, weight: .semibold)
                 result[range].link = URL(string: "netbird://changeserver")
             }

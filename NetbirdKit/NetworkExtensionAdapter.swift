@@ -89,11 +89,11 @@ public class NetworkExtensionAdapter: ObservableObject {
     var vpnManager: NETunnelProviderManager?
 
     #if os(tvOS)
-    var extensionID = "io.netbird.app.tv.extension"
+    var extensionID = "net.jet-net.jetbox.tv.extension"
     var extensionName = "NetBird"
     private let loginRetryState = LoginRetryState()
     #else
-    var extensionID = "io.netbird.app.NetbirdNetworkExtension"
+    var extensionID = "net.jet-net.jetbox.NetworkExtension"
     var extensionName = "NetBird Network Extension"
     #endif
 

@@ -566,7 +566,7 @@ class ViewModel: ObservableObject {
         userDefaults?.set(fqdn, forKey: GlobalConstants.keyWidgetFQDN)
         WidgetCenter.shared.reloadAllTimelines()
         if #available(iOS 18.0, *) {
-            ControlCenter.shared.reloadControls(ofKind: "io.netbird.vpn.control")
+            ControlCenter.shared.reloadControls(ofKind: "net.jet-net.jetbox.vpn.control")
         }
     }
     #endif

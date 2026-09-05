@@ -127,6 +127,11 @@ struct NetBirdApp: App {
                     .onOpenURL { url in
                         handleIncomingURL(url, viewModel: viewModel)
                     }
+                    .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                        if let url = activity.webpageURL {
+                            handleIncomingURL(url, viewModel: viewModel)
+                        }
+                    }
                     .onAppear {
                         if let url = pendingURL {
                             handleIncomingURL(url, viewModel: viewModel)
@@ -165,6 +170,9 @@ struct NetBirdApp: App {
                     #if os(iOS)
                     .onOpenURL { url in
                         pendingURL = url
+                    }
+                    .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+                        pendingURL = activity.webpageURL
                     }
                     #endif
             }
@@ -241,10 +249,10 @@ struct NetBirdApp: App {
         ZStack {
             Color("BgPrimary")
                 .ignoresSafeArea()
-            Image("netbird-logo-menu")
+            Image("jetbox-mark")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 200)
+                .frame(width: 180)
         }
     }
 
@@ -294,120 +302,3 @@ class ViewModelLoader: ObservableObject {
         }
     }
 }
-
-// MARK: - JetBox one-button provisioning
-//
-//  Добавлено форком JetBox. Апстрим не трогаем — вся логика режима «одной
-//  кнопки» живёт здесь, чтобы ребейз на upstream/main оставался дешёвым.
-
-#if os(iOS)
-
-/// Разбор диплинка `jetbox://connect#k=<setup-key>[&m=<management-url>]`.
-///
-/// Ключ живёт во ФРАГМЕНТЕ, а не в query: фрагмент не уходит на сервер при
-/// открытии ссылки, не попадает в access-логи, Referer и историю редиректов.
-enum JetBoxDeepLink {
-    /// Management-сервер JetBox по умолчанию.
-    static let defaultManagementURL = "https://netbird.jet-net.net"
-
-    struct Payload: Equatable {
-        let setupKey: String
-        let managementURL: String
-
-        /// Маска для показа на экране и в логах: видны только последние 4 символа.
-        var maskedKey: String {
-            guard setupKey.count > 4 else { return "****" }
-            return String(repeating: "*", count: 8) + "…" + setupKey.suffix(4)
-        }
-    }
-
-    static func parse(_ url: URL) -> Payload? {
-        guard url.scheme?.lowercased() == "jetbox",
-              url.host?.lowercased() == "connect",
-              let fragment = url.fragment, !fragment.isEmpty else { return nil }
-
-        var key: String?
-        var management: String?
-
-        for pair in fragment.split(separator: "&") {
-            let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
-            guard parts.count == 2 else { continue }
-            let value = (parts[1].removingPercentEncoding ?? parts[1])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            switch parts[0].lowercased() {
-            case "k": key = value
-            case "m": management = value
-            default: break
-            }
-        }
-
-        guard let key, !key.isEmpty else { return nil }
-        return Payload(setupKey: key,
-                       managementURL: (management?.isEmpty == false ? management! : defaultManagementURL))
-    }
-}
-
-/// Состояние экрана «одной кнопки»: от перехода по ссылке до защищённого туннеля.
-@MainActor
-final class JetBoxOnboarding: ObservableObject {
-    enum Step: Equatable {
-        case idle
-        /// Ссылка разобрана, ждём нажатия единственной кнопки «Подключить».
-        case ready(JetBoxDeepLink.Payload)
-        /// Регистрируем устройство на коробке по setup key.
-        case registering(JetBoxDeepLink.Payload)
-        /// Устройство зарегистрировано, поднимаем туннель.
-        case connecting
-        case failed(String)
-    }
-
-    @Published private(set) var step: Step = .idle
-
-    private var serverViewModel: ServerViewModel?
-
-    /// Точка входа из `onOpenURL`.
-    func handle(_ url: URL) -> Bool {
-        guard let payload = JetBoxDeepLink.parse(url) else { return false }
-        // Переход по ссылке из Кабинета — осознанное действие: экран онбординга
-        // апстрима («подключитесь к облаку NetBird») пользователю не нужен.
-        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-        step = .ready(payload)
-        return true
-    }
-
-    func cancel() {
-        step = .idle
-    }
-
-    /// Единственная кнопка: регистрация по setup key + старт туннеля.
-    func connect(viewModel: ViewModel) {
-        guard case let .ready(payload) = step else { return }
-        step = .registering(payload)
-
-        Task { @MainActor in
-            let model = ServerViewModel(
-                configurationFilePath: Preferences.configFile() ?? "",
-                deviceName: Device.getName()
-            )
-            self.serverViewModel = model
-
-            await model.loginWithSetupKey(managementServerUrl: payload.managementURL,
-                                          setupKey: payload.setupKey)
-
-            guard model.isOperationSuccessful else {
-                let errors = model.viewErrors
-                let message = errors.setupKeyError
-                    ?? errors.urlError
-                    ?? errors.generalError
-                    ?? "Не удалось зарегистрировать устройство на коробке"
-                self.step = .failed(message)
-                return
-            }
-
-            self.step = .connecting
-            viewModel.connect()
-        }
-    }
-}
-
-#endif

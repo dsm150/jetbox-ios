@@ -177,7 +177,7 @@ struct ExitNodeSelectorCard: View {
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.orange)
+                        .foregroundColor(Color("JetBoxAccent"))
                         // Purely decorative: the checkmark would otherwise fold into the
                         // button's derived label, so the row reads "<name>, checkmark"
                         // instead of carrying the selection as a trait.
@@ -209,7 +209,7 @@ struct ExitNodeSelectorCard: View {
     }
 
     private var iconColor: Color {
-        isAvailable ? .orange : Color("TextSecondary")
+        isAvailable ? Color("JetBoxAccent") : Color("TextSecondary")
     }
 
     private var titleColor: Color {

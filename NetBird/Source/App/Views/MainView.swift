@@ -41,6 +41,9 @@ struct iOSMainView: View {
     @EnvironmentObject var viewModel: ViewModel
     // JetBox: режим «одной кнопки», приходит из NetBirdApp.
     @EnvironmentObject var jetbox: JetBoxOnboarding
+    // JetBox: «страшные» экраны апстрима спрятаны флагом, а не удалены —
+    // ребейз на новый тег апстрима остаётся дешёвым.
+    @AppStorage(JetBoxStore.advancedModeKey) private var advancedMode = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var selectedTab = 0
     @State private var activeAlert: MainAlertType?
@@ -64,7 +67,9 @@ struct iOSMainView: View {
 
     var body: some View {
         ZStack {
-            if !hasCompletedOnboarding {
+            if !advancedMode {
+                JetBoxHomeView(routes: viewModel.routeViewModel)
+            } else if !hasCompletedOnboarding {
                 FirstLaunchView(
                     hasCompletedOnboarding: $hasCompletedOnboarding,
                     onChangeServer: {
@@ -79,8 +84,8 @@ struct iOSMainView: View {
 
             // JetBox: экран «одной кнопки» перекрывает всё остальное, пока
             // идёт сценарий «ссылка из Кабинета → подключено».
-            if jetbox.step != .idle {
-                JetBoxConnectView()
+            if jetbox.isPresenting {
+                JetBoxFlowView()
                     .transition(.opacity)
                     .zIndex(10)
             }
@@ -263,124 +268,6 @@ struct iOSMainView: View {
 struct MainView_Previews: PreviewProvider {
     static var previews: some View {
         MainView()
-    }
-}
-
-#endif  // os(iOS)
-
-
-#if os(iOS)
-
-// MARK: - JetBox one-button screen
-//
-//  Добавлено форком JetBox. Всё, что видит клиент после перехода по ссылке
-//  из Кабинета: имя коробки, маска ключа и одна кнопка.
-
-struct JetBoxConnectView: View {
-    @EnvironmentObject var viewModel: ViewModel
-    @EnvironmentObject var jetbox: JetBoxOnboarding
-
-    /// Туннель поднялся — показываем «Вы под защитой JetBox».
-    private var isProtected: Bool {
-        if case .connecting = jetbox.step { return viewModel.vpnDisplayState == .connected }
-        return false
-    }
-
-    var body: some View {
-        ZStack {
-            // BgPrimary в светлой теме — чёрный с alpha 0.05: как подложка
-            // полноэкранного оверлея он не годится, снизу нужен непрозрачный слой.
-            Color(uiColor: .systemBackground).ignoresSafeArea()
-            Color("BgPrimary").ignoresSafeArea()
-
-            VStack(spacing: 28) {
-                Spacer()
-
-                Text("JetBox")
-                    .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    .foregroundColor(Color("TextPrimary"))
-
-                content
-
-                Spacer()
-
-                if case .failed = jetbox.step {
-                    Button("Закрыть") { jetbox.cancel() }
-                        .foregroundColor(Color("TextSecondary"))
-                        .padding(.bottom, 24)
-                } else if isProtected {
-                    Button("Готово") { jetbox.cancel() }
-                        .foregroundColor(Color("TextSecondary"))
-                        .padding(.bottom, 24)
-                }
-            }
-            .padding(.horizontal, 32)
-        }
-    }
-
-    @ViewBuilder
-    private var content: some View {
-        switch jetbox.step {
-        case .idle:
-            EmptyView()
-
-        case .ready(let payload):
-            VStack(spacing: 10) {
-                Text("Ваша коробка")
-                    .font(.footnote)
-                    .foregroundColor(Color("TextSecondary"))
-                Text(payload.managementURL)
-                    .font(.custom("JetBrainsMono-Regular", size: 14))
-                    .foregroundColor(Color("TextPrimary"))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text("Ключ: \(payload.maskedKey)")
-                    .font(.custom("JetBrainsMono-Regular", size: 13))
-                    .foregroundColor(Color("TextSecondary"))
-            }
-
-            AppButton("Подключить") {
-                jetbox.connect(viewModel: viewModel)
-            }
-            .padding(.top, 8)
-
-        case .registering:
-            progress("Регистрируем устройство…")
-
-        case .connecting:
-            if isProtected {
-                VStack(spacing: 12) {
-                    Image(systemName: "checkmark.shield.fill")
-                        .font(.system(size: 56))
-                        .foregroundColor(.green)
-                    Text("Вы под защитой JetBox")
-                        .font(.title3.bold())
-                        .foregroundColor(Color("TextPrimary"))
-                }
-            } else {
-                progress("Подключаем…")
-            }
-
-        case .failed(let message):
-            VStack(spacing: 12) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 44))
-                    .foregroundColor(.orange)
-                Text(message)
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(Color("TextPrimary"))
-            }
-        }
-    }
-
-    private func progress(_ title: String) -> some View {
-        VStack(spacing: 14) {
-            ProgressView()
-            Text(title)
-                .font(.body)
-                .foregroundColor(Color("TextPrimary"))
-        }
     }
 }
 
