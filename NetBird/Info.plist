@@ -17,6 +17,17 @@
 				<string>netbird</string>
 			</array>
 		</dict>
+		<!-- JetBox: ссылка из Кабинета self-service. Setup key передаётся во
+		     фрагменте (#k=...), поэтому не попадает ни в логи веб-сервера,
+		     ни в Referer, ни в историю редиректов. -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>net.jet-net.jetbox</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>jetbox</string>
+			</array>
+		</dict>
 	</array>
 	<!-- The PKCE login flow redirects to the SDK's loopback listener over plain
 	     http. When the system auth session captures that redirect instead of

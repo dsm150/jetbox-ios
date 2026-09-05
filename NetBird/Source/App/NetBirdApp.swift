@@ -9,14 +9,11 @@
 //
 
 import SwiftUI
-import FirebaseCore
-import FirebaseCrashlytics
 import Combine
 import UserNotifications
 import NetBirdSDK
 
 #if os(iOS)
-import FirebasePerformance
 import WidgetKit
 #endif
 
@@ -26,42 +23,23 @@ private var isRunningUnitTests: Bool {
     ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 }
 
-/// Configures Firebase from the bundled GoogleService-Info.plist.
-///
-/// Skipped under unit tests: the CI test plist is a dummy and
-/// FirebaseApp.configure() raises an uncaught Objective-C exception on an
-/// invalid app ID, aborting the test host before the runner can connect.
-private func configureFirebaseIfNeeded() {
-    guard !isRunningUnitTests else { return }
-    if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
-       let options = FirebaseOptions(contentsOfFile: path) {
-        FirebaseApp.configure(options: options)
-    }
-}
+/// JetBox: телеметрия Google (Firebase Analytics / Crashlytics / Performance)
+/// из форка удалена целиком — продукт про приватность, отправлять поведение
+/// клиента в Google нечем и незачем. Заглушки оставлены, чтобы точки вызова
+/// в жизненном цикле приложения совпадали с апстримом и ребейз был дешёвым.
+private func configureFirebaseIfNeeded() {}
 
-/// Forwards Go crash output left behind by a previous run to Crashlytics.
-///
-/// A Go panic aborts the process, and the crash Crashlytics records for it ends
-/// at the Go stack switch with no panicking frames. The panic text and goroutine
-/// dump only exist in netbird.err (see GoCrashCapture), so on the next launch
-/// they are attached to a non-fatal whose headline is the panic line itself.
+/// Апстрим отправлял сюда вывод Go-паники в Crashlytics. В форке паника просто
+/// уходит в локальный лог приложения (см. GoCrashCapture).
 private func reportPreviousGoCrashIfNeeded() {
-    guard FirebaseApp.app() != nil,
-          let output = GoCrashCapture.takeUnreportedCrashOutput() else { return }
+    guard let output = GoCrashCapture.takeUnreportedCrashOutput() else { return }
 
     let headline = output
         .split(whereSeparator: \.isNewline)
         .first { $0.hasPrefix("panic:") || $0.hasPrefix("fatal error:") }
         .map(String.init) ?? "Go runtime crash"
 
-    let crashlytics = Crashlytics.crashlytics()
-    crashlytics.log(output)
-    crashlytics.record(error: NSError(
-        domain: "io.netbird.GoCrash",
-        code: 1,
-        userInfo: [NSLocalizedDescriptionKey: headline]
-    ))
-    AppLogger.shared.log("Reported Go crash output from a previous session to Crashlytics: \(headline)")
+    AppLogger.shared.log("Go crash from a previous session: \(headline)\n\(output)")
 }
 
 #if os(iOS)
@@ -116,6 +94,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 @main
 struct NetBirdApp: App {
     @StateObject private var viewModelLoader = ViewModelLoader()
+    #if os(iOS)
+    // JetBox: состояние режима «одной кнопки» живёт на уровне приложения —
+    // ссылка может прийти и до того, как ViewModel успел загрузиться.
+    @StateObject private var jetbox = JetBoxOnboarding()
+    #endif
     @Environment(\.scenePhase) var scenePhase
     @State private var activationTask: Task<Void, Never>?
     @State private var pendingURL: URL?
@@ -140,12 +123,13 @@ struct NetBirdApp: App {
                 MainView()
                     .environmentObject(viewModel)
                     #if os(iOS)
+                    .environmentObject(jetbox)
                     .onOpenURL { url in
-                        handleWidgetURL(url, viewModel: viewModel)
+                        handleIncomingURL(url, viewModel: viewModel)
                     }
                     .onAppear {
                         if let url = pendingURL {
-                            handleWidgetURL(url, viewModel: viewModel)
+                            handleIncomingURL(url, viewModel: viewModel)
                             pendingURL = nil
                         }
                         if UIApplication.shared.applicationState == .active {
@@ -265,6 +249,16 @@ struct NetBirdApp: App {
     }
 
     #if os(iOS)
+    /// Единая точка входа для всех диплинков.
+    ///
+    /// JetBox-ссылка из Кабинета (`jetbox://connect#k=…`) обрабатывается первой:
+    /// она приводит приложение в режим «одной кнопки». Всё остальное —
+    /// апстримовые ссылки виджета.
+    private func handleIncomingURL(_ url: URL, viewModel: ViewModel) {
+        if jetbox.handle(url) { return }
+        handleWidgetURL(url, viewModel: viewModel)
+    }
+
     /// Handles deep link URLs from the Home Screen widget.
     private func handleWidgetURL(_ url: URL, viewModel: ViewModel) {
         guard url.scheme == "netbird" else { return }
@@ -300,3 +294,120 @@ class ViewModelLoader: ObservableObject {
         }
     }
 }
+
+// MARK: - JetBox one-button provisioning
+//
+//  Добавлено форком JetBox. Апстрим не трогаем — вся логика режима «одной
+//  кнопки» живёт здесь, чтобы ребейз на upstream/main оставался дешёвым.
+
+#if os(iOS)
+
+/// Разбор диплинка `jetbox://connect#k=<setup-key>[&m=<management-url>]`.
+///
+/// Ключ живёт во ФРАГМЕНТЕ, а не в query: фрагмент не уходит на сервер при
+/// открытии ссылки, не попадает в access-логи, Referer и историю редиректов.
+enum JetBoxDeepLink {
+    /// Management-сервер JetBox по умолчанию.
+    static let defaultManagementURL = "https://netbird.jet-net.net"
+
+    struct Payload: Equatable {
+        let setupKey: String
+        let managementURL: String
+
+        /// Маска для показа на экране и в логах: видны только последние 4 символа.
+        var maskedKey: String {
+            guard setupKey.count > 4 else { return "****" }
+            return String(repeating: "*", count: 8) + "…" + setupKey.suffix(4)
+        }
+    }
+
+    static func parse(_ url: URL) -> Payload? {
+        guard url.scheme?.lowercased() == "jetbox",
+              url.host?.lowercased() == "connect",
+              let fragment = url.fragment, !fragment.isEmpty else { return nil }
+
+        var key: String?
+        var management: String?
+
+        for pair in fragment.split(separator: "&") {
+            let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { continue }
+            let value = (parts[1].removingPercentEncoding ?? parts[1])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            switch parts[0].lowercased() {
+            case "k": key = value
+            case "m": management = value
+            default: break
+            }
+        }
+
+        guard let key, !key.isEmpty else { return nil }
+        return Payload(setupKey: key,
+                       managementURL: (management?.isEmpty == false ? management! : defaultManagementURL))
+    }
+}
+
+/// Состояние экрана «одной кнопки»: от перехода по ссылке до защищённого туннеля.
+@MainActor
+final class JetBoxOnboarding: ObservableObject {
+    enum Step: Equatable {
+        case idle
+        /// Ссылка разобрана, ждём нажатия единственной кнопки «Подключить».
+        case ready(JetBoxDeepLink.Payload)
+        /// Регистрируем устройство на коробке по setup key.
+        case registering(JetBoxDeepLink.Payload)
+        /// Устройство зарегистрировано, поднимаем туннель.
+        case connecting
+        case failed(String)
+    }
+
+    @Published private(set) var step: Step = .idle
+
+    private var serverViewModel: ServerViewModel?
+
+    /// Точка входа из `onOpenURL`.
+    func handle(_ url: URL) -> Bool {
+        guard let payload = JetBoxDeepLink.parse(url) else { return false }
+        // Переход по ссылке из Кабинета — осознанное действие: экран онбординга
+        // апстрима («подключитесь к облаку NetBird») пользователю не нужен.
+        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        step = .ready(payload)
+        return true
+    }
+
+    func cancel() {
+        step = .idle
+    }
+
+    /// Единственная кнопка: регистрация по setup key + старт туннеля.
+    func connect(viewModel: ViewModel) {
+        guard case let .ready(payload) = step else { return }
+        step = .registering(payload)
+
+        Task { @MainActor in
+            let model = ServerViewModel(
+                configurationFilePath: Preferences.configFile() ?? "",
+                deviceName: Device.getName()
+            )
+            self.serverViewModel = model
+
+            await model.loginWithSetupKey(managementServerUrl: payload.managementURL,
+                                          setupKey: payload.setupKey)
+
+            guard model.isOperationSuccessful else {
+                let errors = model.viewErrors
+                let message = errors.setupKeyError
+                    ?? errors.urlError
+                    ?? errors.generalError
+                    ?? "Не удалось зарегистрировать устройство на коробке"
+                self.step = .failed(message)
+                return
+            }
+
+            self.step = .connecting
+            viewModel.connect()
+        }
+    }
+}
+
+#endif
