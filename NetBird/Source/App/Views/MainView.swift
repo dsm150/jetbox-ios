@@ -288,6 +288,9 @@ struct JetBoxConnectView: View {
 
     var body: some View {
         ZStack {
+            // BgPrimary в светлой теме — чёрный с alpha 0.05: как подложка
+            // полноэкранного оверлея он не годится, снизу нужен непрозрачный слой.
+            Color(uiColor: .systemBackground).ignoresSafeArea()
             Color("BgPrimary").ignoresSafeArea()
 
             VStack(spacing: 28) {
