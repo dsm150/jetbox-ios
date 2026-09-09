@@ -186,6 +186,11 @@ struct NetBirdApp: App {
         activationTask = Task { @MainActor in
             guard isAppActive, !Task.isCancelled else { return }
 
+            // JetBox: профиль прежней сборки назывался «NetBird Network Extension».
+            // Переименовываем его до чтения состояния — иначе рядом заведётся
+            // второй профиль (см. VPNProfileNaming в NetworkExtensionAdapter).
+            await viewModel.networkExtensionAdapter.migrateProfileNameIfNeeded()
+
             if let initialStatus = await viewModel.networkExtensionAdapter.loadCurrentConnectionState() {
                 // Clear stale button-press flags before applying the fresh NE state.
                 // These flags are only valid for the brief gap between a button tap and

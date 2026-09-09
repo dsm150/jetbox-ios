@@ -151,6 +151,7 @@
 		9B6C03E5ED4245A597C0FBE7 /* iOSConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DE6A20955914E68BFADDEED /* iOSConnectionView.swift */; };
 		9CC0E000AE3F165CA72FD465 /* AppLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA7193B3AE82DF185EDEB1B /* AppLoggerTests.swift */; };
 		JB0000012026090500000011 /* JetBoxLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026090500000010 /* JetBoxLinkTests.swift */; };
+		JB0000012026090900000011 /* VPNProfileNamingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026090900000010 /* VPNProfileNamingTests.swift */; };
 		A1B2C3D42F4A000100000001 /* VPNToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D32F4A000100000001 /* VPNToggleView.swift */; };
 		A1B2C3D52EEDF501001A2B3C /* ConfigurationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42EEDF500001A2B3C /* ConfigurationProvider.swift */; };
 		A1B2C3D62EEDF502001A2B3C /* ConfigurationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42EEDF500001A2B3C /* ConfigurationProvider.swift */; };
@@ -356,6 +357,7 @@
 		5BFDF94163AF4C32A44DB3CD /* FirstLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchView.swift; sourceTree = "<group>"; };
 		8AA7193B3AE82DF185EDEB1B /* AppLoggerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppLoggerTests.swift; sourceTree = "<group>"; };
 		JB0000012026090500000010 /* JetBoxLinkTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JetBoxLinkTests.swift; sourceTree = "<group>"; };
+		JB0000012026090900000010 /* VPNProfileNamingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VPNProfileNamingTests.swift; sourceTree = "<group>"; };
 		8DE6A20955914E68BFADDEED /* iOSConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSConnectionView.swift; sourceTree = "<group>"; };
 		91FA1F06D3375864C74EAB3B /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		978FC46F2EEDF167002D0EB8 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
@@ -706,6 +708,7 @@
 				3E054D83063E440DAD0C52FA /* GlobalConstantsTests.swift */,
 				8AA7193B3AE82DF185EDEB1B /* AppLoggerTests.swift */,
 				JB0000012026090500000010 /* JetBoxLinkTests.swift */,
+				JB0000012026090900000010 /* VPNProfileNamingTests.swift */,
 				53CB9305A9DC6CAD1895495A /* SharedUserDefaultsTests.swift */,
 				AA000B002F22000B00000001 /* ProfileMigrationTests.swift */,
 				AA000B022F22000B00000002 /* ProfileConnectionCacheTests.swift */,
@@ -1163,6 +1166,7 @@
 				94F739DA3E076313908BA6DF /* GlobalConstantsTests.swift in Sources */,
 				9CC0E000AE3F165CA72FD465 /* AppLoggerTests.swift in Sources */,
 				JB0000012026090500000011 /* JetBoxLinkTests.swift in Sources */,
+				JB0000012026090900000011 /* VPNProfileNamingTests.swift in Sources */,
 				1C9E4E97130030CE0D6C8F59 /* SharedUserDefaultsTests.swift in Sources */,
 				AA000B012F22000B00000001 /* ProfileMigrationTests.swift in Sources */,
 				AA000B032F22000B00000003 /* ProfileConnectionCacheTests.swift in Sources */,

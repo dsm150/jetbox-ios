@@ -77,6 +77,37 @@ private nonisolated final class LoginRetryState: @unchecked Sendable {
 }
 #endif
 
+/// JetBox: имя VPN-конфигурации — то, что клиент видит в «Настройки → VPN».
+/// Апстрим звал профиль «NetBird Network Extension»; форк зовёт «JetBox».
+/// На телефонах, где стояла прежняя сборка, профиль со старым именем уже
+/// заведён: его надо узнать и переименовать, а не заводить рядом второй.
+///
+/// Правило поиска вынесено в чистый тип нарочно: `NETunnelProviderManager`
+/// в юнит-тестах не поднимается (у тестового процесса нет entitlement
+/// сетевого расширения), а вот предикат покрыть тестами можно и нужно.
+struct VPNProfileNaming {
+    /// Имя, которым профиль подписан сейчас.
+    let name: String
+    /// Имена прежних сборок — по ним профиль ещё надо узнавать.
+    let legacyNames: [String]
+    /// Bundle ID нашего packet tunnel: устойчивое удостоверение профиля.
+    let providerBundleIdentifier: String
+
+    /// Наш ли это профиль. Совпадения по имени мало: то же имя может носить
+    /// профиль другой сборки того же приложения, поэтому решает
+    /// `providerBundleIdentifier` — им профили и различаются.
+    func matches(providerBundleIdentifier bundleID: String?, name candidate: String?) -> Bool {
+        guard let bundleID, bundleID == providerBundleIdentifier else { return false }
+        guard let candidate else { return false }
+        return candidate == name || legacyNames.contains(candidate)
+    }
+
+    /// Профиль наш, но подписан именем прежней сборки — переименовать.
+    func needsRename(providerBundleIdentifier bundleID: String?, name candidate: String?) -> Bool {
+        matches(providerBundleIdentifier: bundleID, name: candidate) && candidate != name
+    }
+}
+
 public class NetworkExtensionAdapter: ObservableObject {
 
     private let logger = Logger(subsystem: "io.netbird.app", category: "NetworkExtensionAdapter")
@@ -90,12 +121,37 @@ public class NetworkExtensionAdapter: ObservableObject {
 
     #if os(tvOS)
     var extensionID = "net.jet-net.jetbox.tv.extension"
-    var extensionName = "NetBird"
+    var extensionName = "JetBox"
+    /// JetBox: имена профиля из прежних сборок — по ним профиль ещё узнаётся.
+    let legacyExtensionNames = ["NetBird"]
     private let loginRetryState = LoginRetryState()
     #else
     var extensionID = "net.jet-net.jetbox.NetworkExtension"
-    var extensionName = "NetBird Network Extension"
+    var extensionName = "JetBox"
+    /// JetBox: имена профиля из прежних сборок — по ним профиль ещё узнаётся.
+    let legacyExtensionNames = ["NetBird Network Extension"]
     #endif
+
+    /// JetBox: правило «наш ли это профиль» — одно на все места поиска.
+    var profileNaming: VPNProfileNaming {
+        VPNProfileNaming(name: extensionName,
+                         legacyNames: legacyExtensionNames,
+                         providerBundleIdentifier: extensionID)
+    }
+
+    private func providerBundleID(of manager: NEVPNManager) -> String? {
+        (manager.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier
+    }
+
+    /// JetBox: единственная проверка «это профиль нашей сборки», принимающая
+    /// и старое имя. Раньше такая проверка была выписана в пяти местах.
+    private func isOurProfile(_ manager: NEVPNManager) -> Bool {
+        profileNaming.matches(providerBundleIdentifier: providerBundleID(of: manager),
+                              name: manager.localizedDescription)
+    }
+
+    /// JetBox: переименование делается один раз за запуск приложения.
+    private var didAttemptProfileRename = false
 
     let decoder = PropertyListDecoder()
 
@@ -218,10 +274,7 @@ public class NetworkExtensionAdapter: ObservableObject {
         // belong to another installed flavor, such as App Store and development builds.
         // Leave foreign configurations untouched, including active connections. Exact
         // provider matching below prevents one build from binding to another's profile.
-        if let manager = managers.first(where: {
-            $0.localizedDescription == self.extensionName &&
-            ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.extensionID
-        }) {
+        if let manager = managers.first(where: { self.isOurProfile($0) }) {
             self.vpnManager = manager
             // Only write preferences when strictly necessary.
             // Calling saveToPreferences() on an already-configured manager triggers
@@ -242,6 +295,46 @@ public class NetworkExtensionAdapter: ObservableObject {
         self.session = self.vpnManager?.connection as? NETunnelProviderSession
     }
 
+    /// JetBox: разовое переименование профиля прежней сборки.
+    ///
+    /// У всех, кто ставил сборку до 09.09.2026, в системных настройках лежит
+    /// профиль «NetBird Network Extension» с нашим `providerBundleIdentifier`.
+    /// Находим его по bundle ID и переименовываем; без этого поиск по новому
+    /// имени промахнулся бы и рядом появился бы второй профиль.
+    ///
+    /// Трогаем только **отключённый** профиль: переименование — это смена
+    /// конфигурации, а `saveToPreferences()` на живом профиле рождает
+    /// `NEVPNStatusDidChange` (тот самый ложный `.disconnecting`, который
+    /// апстрим обходит в `configureManager`) и может сорвать туннель. Если
+    /// туннель поднят — ждём следующего запуска: старое имя всё это время
+    /// остаётся валидным для поиска, работать это не мешает.
+    @MainActor
+    public func migrateProfileNameIfNeeded() async {
+        guard !didAttemptProfileRename else { return }
+        didAttemptProfileRename = true
+
+        do {
+            let managers = try await NETunnelProviderManager.loadAllFromPreferences()
+            guard let manager = managers.first(where: { self.isOurProfile($0) }) else { return }
+            guard profileNaming.needsRename(providerBundleIdentifier: providerBundleID(of: manager),
+                                            name: manager.localizedDescription) else { return }
+
+            let status = manager.connection.status
+            guard status == .disconnected || status == .invalid else {
+                logger.info("migrateProfileNameIfNeeded: tunnel is busy (status=\(status.rawValue)), rename deferred to next launch")
+                return
+            }
+
+            let oldName = manager.localizedDescription ?? ""
+            manager.localizedDescription = self.extensionName
+            try await manager.saveToPreferences()
+            try await manager.loadFromPreferences()
+            logger.info("migrateProfileNameIfNeeded: renamed VPN profile '\(oldName, privacy: .public)' to '\(self.extensionName, privacy: .public)'")
+        } catch {
+            logger.error("migrateProfileNameIfNeeded: \(error.localizedDescription)")
+        }
+    }
+
     /// Loads an existing VPN manager from preferences and returns the current connection state.
     /// This is used on app startup to establish the session for status polling and get the
     /// initial connection state, without triggering VPN configuration or starting a connection.
@@ -250,10 +343,7 @@ public class NetworkExtensionAdapter: ObservableObject {
     public func loadCurrentConnectionState() async -> NEVPNStatus? {
         do {
             let managers = try await NETunnelProviderManager.loadAllFromPreferences()
-            guard let manager = managers.first(where: {
-                $0.localizedDescription == self.extensionName &&
-                ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.extensionID
-            }) else {
+            guard let manager = managers.first(where: { self.isOurProfile($0) }) else {
                 logger.info("loadCurrentConnectionState: No existing manager found")
                 return nil
             }
@@ -267,10 +357,7 @@ public class NetworkExtensionAdapter: ObservableObject {
             if status == .disconnected || status == .invalid {
                 try? await Task.sleep(nanoseconds: 200_000_000) // 200 ms
                 let refreshed = try await NETunnelProviderManager.loadAllFromPreferences()
-                if let fresh = refreshed.first(where: {
-                    $0.localizedDescription == self.extensionName &&
-                    ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.extensionID
-                }) {
+                if let fresh = refreshed.first(where: { self.isOurProfile($0) }) {
                     status = fresh.connection.status
                     self.vpnManager = fresh
                     self.session = fresh.connection as? NETunnelProviderSession
@@ -1590,7 +1677,7 @@ public class NetworkExtensionAdapter: ObservableObject {
         Task {
             do {
                 let managers = try await NETunnelProviderManager.loadAllFromPreferences()
-                if let manager = managers.first(where: { $0.localizedDescription == self.extensionName }) {
+                if let manager = managers.first(where: { self.isOurProfile($0) }) {
                     completion(manager.connection.status)
                 } else {
                     // No VPN manager exists yet (e.g. first connect before the iOS permission
