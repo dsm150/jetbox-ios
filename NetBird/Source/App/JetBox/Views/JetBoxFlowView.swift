@@ -38,6 +38,21 @@ struct JetBoxFlowView: View {
         }
     }
 
+    /// Что уходит на сервер и что не уходит. App Review 5.4 требует показать
+    /// это на экране **до** любого действия клиента, поэтому блок живёт под
+    /// самой кнопкой подключения, а не в «О программе».
+    private var privacyNotice: some View {
+        VStack(spacing: 6) {
+            Text(JBText.privacyNotice)
+                .font(.caption)
+                .foregroundColor(JBColor.muted)
+                .multilineTextAlignment(.center)
+            Link(JBText.privacyMore, destination: JetBoxConfig.privacyPolicyURL)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(JBColor.accent)
+        }
+    }
+
     // MARK: - Содержимое по шагам
 
     @ViewBuilder
@@ -56,6 +71,7 @@ struct JetBoxFlowView: View {
                 AppButton(JBText.readyButton) {
                     jetbox.connect(viewModel: viewModel)
                 }
+                privacyNotice
             }
 
         case .confirmSwitch(let payload, let current):

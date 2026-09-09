@@ -25,6 +25,10 @@ enum JetBoxConfig {
     /// Management по умолчанию — страховка для старых ссылок.
     /// Кабинет по контракту всегда кладёт `m=` явно.
     static let defaultManagementURL = "https://netbird.jet-net.net"
+    /// Политика конфиденциальности: на неё ведёт «Подробнее» под объявлением
+    /// о данных. App Review 5.4 требует объявить сбор данных на экране
+    /// **до** того, как клиент нажмёт «Подключить».
+    static let privacyPolicyURL = URL(string: "https://jet-net.net/privacy")!
 }
 
 // MARK: - Полезная нагрузка ссылки

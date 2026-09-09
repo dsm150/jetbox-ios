@@ -36,6 +36,10 @@ enum JBText {
     static var readyHint: String { t("jetbox.ready.hint") }
     static var readyKeyLabel: String { t("jetbox.ready.key_label") }
     static var readyButton: String { t("jetbox.ready.button") }
+    /// Объявление о собираемых данных под кнопкой подключения — требование
+    /// App Review 5.4 («clear declaration … prior to any user action»).
+    static var privacyNotice: String { t("jetbox.privacy.notice") }
+    static var privacyMore: String { t("jetbox.privacy.more") }
 
     static var switchTitle: String { t("jetbox.switch.title") }
     static func switchMessage(_ from: String, _ to: String) -> String {

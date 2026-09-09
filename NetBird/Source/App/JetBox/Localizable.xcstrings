@@ -613,6 +613,40 @@
         }
       }
     },
+    "jetbox.privacy.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learn more"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробнее"
+          }
+        }
+      }
+    },
+    "jetbox.privacy.notice": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox sends only technical connection data to the JetNet server: device name, app version and network addresses — your network needs them to recognise this device. Traffic content is not collected or stored. Data is not shared with third parties."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приложение передаёт на сервер JetNet только служебные данные подключения: имя устройства, версию приложения и сетевые адреса — они нужны, чтобы ваша сеть узнала это устройство. Содержимое трафика не собирается и не хранится. Данные не передаются третьим лицам."
+          }
+        }
+      }
+    },
     "jetbox.progress.connecting": {
       "extractionState": "manual",
       "localizations": {
