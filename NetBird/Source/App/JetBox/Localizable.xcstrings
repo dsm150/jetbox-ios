@@ -7,13 +7,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox is the companion app for your JetBox device. Based on the open-source NetBird client (GPL-3.0)."
+            "value": "JetBox is the companion app for your JetBox. Based on the open-source NetBird client (GPL-3.0)."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox — приложение для вашей коробки JetBox. Основано на открытом клиенте NetBird (лицензия GPL-3.0)."
+            "value": "JetBox — приложение для вашего JetBox. Основано на открытом клиенте NetBird (лицензия GPL-3.0)."
           }
         }
       }
@@ -330,13 +330,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The box is not responding"
+            "value": "JetBox is not responding"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Коробка не отвечает"
+            "value": "JetBox не отвечает"
           }
         }
       }
@@ -347,13 +347,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No exits found. The box may be powered off — contact support."
+            "value": "No exits found. The JetBox at your site may be powered off — contact support."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ни одного выхода не найдено. Возможно, коробка выключена — свяжитесь с поддержкой."
+            "value": "Ни одного выхода не найдено. Возможно, объект выключен — свяжитесь с поддержкой."
           }
         }
       }
@@ -364,13 +364,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Which box should carry this phone’s internet traffic?"
+            "value": "Which JetBox should carry this phone’s internet traffic?"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Через какую коробку выпускать интернет с этого телефона?"
+            "value": "Через какой JetBox выпускать интернет с этого телефона?"
           }
         }
       }
@@ -585,13 +585,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No box connected"
+            "value": "No JetBox connected"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Коробка не подключена"
+            "value": "JetBox не подключён"
           }
         }
       }
@@ -772,13 +772,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your box"
+            "value": "Your JetBox"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ваша коробка"
+            "value": "Ваш JetBox"
           }
         }
       }
@@ -789,13 +789,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One tap and all traffic from this phone goes through your box."
+            "value": "One tap and all traffic from this phone goes through your JetBox."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Одно нажатие — и весь интернет на этом телефоне пойдёт через вашу коробку."
+            "value": "Одно нажатие — и весь интернет на этом телефоне пойдёт через ваш JetBox."
           }
         }
       }
@@ -891,13 +891,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No box connected yet"
+            "value": "No JetBox connected yet"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Коробка ещё не подключена"
+            "value": "JetBox ещё не подключён"
           }
         }
       }
@@ -925,13 +925,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Box"
+            "value": "JetBox"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Коробка"
+            "value": "JetBox"
           }
         }
       }
@@ -1027,13 +1027,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A different box"
+            "value": "A different JetBox"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Другая коробка"
+            "value": "Другой JetBox"
           }
         }
       }

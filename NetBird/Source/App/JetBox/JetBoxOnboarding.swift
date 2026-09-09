@@ -136,7 +136,7 @@ final class JetBoxOnboarding: ObservableObject {
             if let active = activePayload, active == payload, !isRestartable {
                 return true
             }
-            AppLogger.shared.log("JetBox: ссылка принята, коробка \(payload.displayName), ключ \(payload.maskedKey)")
+            AppLogger.shared.log("JetBox: ссылка принята, объект \(payload.displayName), ключ \(payload.maskedKey)")
             JetBoxStore.skipUpstreamOnboarding()
             flowTask?.cancel()
             lastPayload = payload
@@ -228,7 +228,7 @@ final class JetBoxOnboarding: ObservableObject {
         }
         registration = nil
         JetBoxStore.remember(payload)
-        AppLogger.shared.log("JetBox: устройство зарегистрировано на коробке")
+        AppLogger.shared.log("JetBox: устройство зарегистрировано на объекте")
 
         // 3. Туннель.
         step = .connecting(payload)
