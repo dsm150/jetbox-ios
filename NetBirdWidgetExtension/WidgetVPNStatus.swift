@@ -3,8 +3,9 @@ import NetworkExtension
 import WidgetKit
 
 extension Color {
-    // NetBird brand orange (#F68330) — matches the app's AccentColor asset.
-    static let netbirdOrange = Color(red: 0.965, green: 0.514, blue: 0.188)
+    // JetBox: фирменный синий #1288E1 — тот же, что у AccentColor приложения.
+    // Апстримовый оранжевый (#F68330) в форке не используется нигде.
+    static let jetboxBlue = Color(red: 0x12/255, green: 0x88/255, blue: 0xE1/255)
 }
 
 enum WidgetVPNStatus: String {
@@ -13,12 +14,14 @@ enum WidgetVPNStatus: String {
     case disconnecting
     case disconnected
 
+    /// Текст берётся через String(localized:), а не литералом: он уходит и в
+    /// Text(...), и в реплики интентов, а Text(String) сам ничего не переводит.
     var displayText: String {
         switch self {
-        case .connected: return "Connected"
-        case .connecting: return "Connecting..."
-        case .disconnecting: return "Disconnecting..."
-        case .disconnected: return "Disconnected"
+        case .connected: return String(localized: "Подключено")
+        case .connecting: return String(localized: "Подключаем…")
+        case .disconnecting: return String(localized: "Отключаем…")
+        case .disconnected: return String(localized: "Отключено")
         }
     }
 
@@ -33,7 +36,7 @@ enum WidgetVPNStatus: String {
     var statusColor: Color {
         switch self {
         case .connected: return .green
-        case .connecting, .disconnecting: return .netbirdOrange
+        case .connecting, .disconnecting: return .jetboxBlue
         case .disconnected: return Color(.systemGray3)
         }
     }

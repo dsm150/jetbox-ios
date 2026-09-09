@@ -28,8 +28,8 @@ struct NetBirdWidget: Widget {
                     .padding()
             }
         }
-        .configurationDisplayName("NetBird VPN")
-        .description("Quick connect or disconnect your VPN.")
+        .configurationDisplayName("JetBox")
+        .description("Подключение и отключение JetBox одним касанием.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

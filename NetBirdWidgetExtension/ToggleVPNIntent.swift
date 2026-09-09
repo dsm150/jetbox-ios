@@ -5,11 +5,11 @@ import WidgetKit
 /// Used by the widget buttons. For Siri/Shortcuts use ConnectVPNIntent or DisconnectVPNIntent.
 @available(iOS 16.0, *)
 struct ToggleVPNIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle NetBird VPN"
-    static var description: IntentDescription = "Connect or disconnect the NetBird VPN."
+    static var title: LocalizedStringResource = "Переключить JetBox"
+    static var description: IntentDescription = "Подключение и отключение JetBox."
     static var openAppWhenRun: Bool = false
 
-    @Parameter(title: "Action")
+    @Parameter(title: "Действие")
     var action: String
 
     init() { self.action = "connect" }

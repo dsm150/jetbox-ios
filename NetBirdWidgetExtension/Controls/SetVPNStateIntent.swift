@@ -4,10 +4,10 @@ import WidgetKit
 
 @available(iOS 18.0, *)
 struct SetVPNStateIntent: SetValueIntent {
-    static var title: LocalizedStringResource = "Set NetBird VPN State"
+    static var title: LocalizedStringResource = "Включить или выключить JetBox"
     static var openAppWhenRun: Bool = false
 
-    @Parameter(title: "Connect")
+    @Parameter(title: "Подключить")
     var value: Bool
 
     func perform() async throws -> some IntentResult {

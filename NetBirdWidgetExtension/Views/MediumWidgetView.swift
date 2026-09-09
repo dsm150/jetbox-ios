@@ -50,15 +50,15 @@ struct MediumWidgetView: View {
     private func iconLabel(isConnected: Bool) -> some View {
         ZStack(alignment: isConnected ? .trailing : .leading) {
             Capsule()
-                .fill(isConnected ? Color.netbirdOrange : Color(.systemGray3))
+                .fill(isConnected ? Color.jetboxBlue : Color(.systemGray3))
             Circle()
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 1)
                 .padding(3)
         }
         .frame(width: 64, height: 36)
-        .accessibilityLabel(isConnected ? "Disconnect VPN" : "Connect VPN")
-        .accessibilityValue(isConnected ? "On" : "Off")
+        .accessibilityLabel(isConnected ? "Отключить JetBox" : "Подключить JetBox")
+        .accessibilityValue(isConnected ? "Вкл" : "Выкл")
         .accessibilityAddTraits(.isButton)
     }
 }

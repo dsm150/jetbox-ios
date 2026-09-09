@@ -6,33 +6,33 @@ struct NetBirdShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: ConnectVPNIntent(),
             phrases: [
-                "Connect \(.applicationName) VPN",
-                "Turn on \(.applicationName) VPN",
-                "Enable \(.applicationName) VPN"
+                "Подключить \(.applicationName)",
+                "Включить \(.applicationName)",
+                "Соединение \(.applicationName)"
             ],
-            shortTitle: "Connect VPN",
+            shortTitle: "Подключить",
             systemImageName: "lock.shield"
         )
 
         AppShortcut(
             intent: DisconnectVPNIntent(),
             phrases: [
-                "Disconnect \(.applicationName) VPN",
-                "Turn off \(.applicationName) VPN",
-                "Disable \(.applicationName) VPN"
+                "Отключить \(.applicationName)",
+                "Выключить \(.applicationName)",
+                "Разорвать соединение \(.applicationName)"
             ],
-            shortTitle: "Disconnect VPN",
+            shortTitle: "Отключить",
             systemImageName: "lock.slash"
         )
 
         AppShortcut(
             intent: VPNStatusIntent(),
             phrases: [
-                "\(.applicationName) VPN status",
-                "Is \(.applicationName) VPN connected",
-                "Check \(.applicationName) VPN"
+                "Состояние \(.applicationName)",
+                "\(.applicationName) подключён",
+                "Проверить \(.applicationName)"
             ],
-            shortTitle: "VPN Status",
+            shortTitle: "Состояние",
             systemImageName: "network"
         )
     }

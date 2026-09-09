@@ -4,7 +4,7 @@ import WidgetKit
 
 @available(iOS 18.0, *)
 struct VPNControlIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle NetBird VPN"
+    static var title: LocalizedStringResource = "Переключить JetBox"
     static var openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {

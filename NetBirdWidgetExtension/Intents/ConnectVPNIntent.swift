@@ -4,24 +4,24 @@ import WidgetKit
 
 @available(iOS 16.0, *)
 struct ConnectVPNIntent: AppIntent {
-    static var title: LocalizedStringResource = "Connect NetBird VPN"
-    static var description: IntentDescription = "Connect to the NetBird VPN network."
+    static var title: LocalizedStringResource = "Подключить JetBox"
+    static var description: IntentDescription = "Подключение к вашей сети JetBox."
     static var openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard let manager = try await VPNIntentHelpers.loadManager() else {
             WidgetCenter.shared.reloadAllTimelines()
-            return .result(dialog: "NetBird VPN is not configured.")
+            return .result(dialog: "JetBox ещё не настроен.")
         }
 
         guard !VPNIntentHelpers.isLoginRequired else {
             WidgetCenter.shared.reloadAllTimelines()
-            return .result(dialog: "NetBird requires sign-in. Please open the app.")
+            return .result(dialog: "Нужно открыть приложение JetBox.")
         }
 
         let status = manager.connection.status
         guard status == .disconnected || status == .invalid else {
-            return .result(dialog: "NetBird VPN is already \(WidgetVPNStatus(neStatus: status).displayText.lowercased()).")
+            return .result(dialog: "JetBox уже \(WidgetVPNStatus(neStatus: status).displayText.lowercased()).")
         }
 
         VPNIntentHelpers.defaults?.set(WidgetVPNStatus.connecting.rawValue, forKey: WidgetConstants.keyVPNStatus)
@@ -38,11 +38,11 @@ struct ConnectVPNIntent: AppIntent {
 
         let final = await VPNIntentHelpers.waitForStableState(manager: manager)
         if final == .connected {
-            return .result(dialog: "NetBird VPN connected.")
+            return .result(dialog: "JetBox подключён.")
         } else if VPNIntentHelpers.isLoginRequired {
-            return .result(dialog: "NetBird requires sign-in. Please open the app.")
+            return .result(dialog: "Нужно открыть приложение JetBox.")
         } else {
-            return .result(dialog: "NetBird VPN failed to connect.")
+            return .result(dialog: "Не удалось подключить JetBox.")
         }
     }
 }
