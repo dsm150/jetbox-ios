@@ -122,10 +122,6 @@
 		50E608132A7958B100BAF09B /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E608122A7958B100BAF09B /* MainViewModel.swift */; };
 		50E608242A79966600BAF09B /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E608232A79966600BAF09B /* AboutView.swift */; };
 		50E608262A79968500BAF09B /* AdvancedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E608252A79968500BAF09B /* AdvancedView.swift */; };
-		5573F6EE2F9F523D00E63A73 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5573F6ED2F9F523D00E63A73 /* GoogleService-Info.plist */; };
-		5573F6EF2F9F523D00E63A73 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5573F6ED2F9F523D00E63A73 /* GoogleService-Info.plist */; };
-		5573F6F02F9F523D00E63A73 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5573F6ED2F9F523D00E63A73 /* GoogleService-Info.plist */; };
-		5573F6F12F9F523D00E63A73 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5573F6ED2F9F523D00E63A73 /* GoogleService-Info.plist */; };
 		558553FB2FE34921004FB58D /* jetbrains-mono-variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 558553FA2FE34921004FB58D /* jetbrains-mono-variable.ttf */; };
 		558553FC2FE34921004FB58D /* inter-variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 558553F92FE34921004FB58D /* inter-variable.ttf */; };
 		558553FD2FE34921004FB58D /* jetbrains-mono-variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 558553FA2FE34921004FB58D /* jetbrains-mono-variable.ttf */; };
@@ -347,7 +343,6 @@
 		50E608232A79966600BAF09B /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		50E608252A79968500BAF09B /* AdvancedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedView.swift; sourceTree = "<group>"; };
 		53CB9305A9DC6CAD1895495A /* SharedUserDefaultsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedUserDefaultsTests.swift; sourceTree = "<group>"; };
-		5573F6ED2F9F523D00E63A73 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		558553F92FE34921004FB58D /* inter-variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "inter-variable.ttf"; sourceTree = "<group>"; };
 		558553FA2FE34921004FB58D /* jetbrains-mono-variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "jetbrains-mono-variable.ttf"; sourceTree = "<group>"; };
 		55B5E81A2F39158200852AA7 /* InternetStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternetStatusView.swift; sourceTree = "<group>"; };
@@ -559,7 +554,6 @@
 		50A8910E2A792A15007C48FC = {
 			isa = PBXGroup;
 			children = (
-				5573F6ED2F9F523D00E63A73 /* GoogleService-Info.plist */,
 				50D402932BD9143900D4AC5B /* NetBirdSDK.xcframework */,
 				50245A0A2A7AA9390034792B /* NetBird-Bridging-Header.h */,
 				50A891192A792A15007C48FC /* NetBird */,
@@ -919,7 +913,6 @@
 			files = (
 				558553FB2FE34921004FB58D /* jetbrains-mono-variable.ttf in Resources */,
 				558553FC2FE34921004FB58D /* inter-variable.ttf in Resources */,
-				5573F6EE2F9F523D00E63A73 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -927,7 +920,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5573F6EF2F9F523D00E63A73 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -937,7 +929,6 @@
 			files = (
 				501B0DCE2AE04DDE004BE7A7 /* button-disconnecting.json in Resources */,
 				501B0DD22AE04DDE004BE7A7 /* logo_NetBird.json in Resources */,
-				5573F6F12F9F523D00E63A73 /* GoogleService-Info.plist in Resources */,
 				501B0DDC2AE04DDE004BE7A7 /* button-connected.json in Resources */,
 				501B0DD62AE04DDE004BE7A7 /* button-start-connecting.json in Resources */,
 				501B0DDA2AE04DDE004BE7A7 /* button-full.json in Resources */,
@@ -961,7 +952,6 @@
 				501B0DDB2AE04DDE004BE7A7 /* button-connected.json in Resources */,
 				558553FD2FE34921004FB58D /* jetbrains-mono-variable.ttf in Resources */,
 				558553FE2FE34921004FB58D /* inter-variable.ttf in Resources */,
-				5573F6F02F9F523D00E63A73 /* GoogleService-Info.plist in Resources */,
 				501B0DCF2AE04DDE004BE7A7 /* button-connecting-loop.json in Resources */,
 				501B0DD72AE04DDE004BE7A7 /* button-full2.json in Resources */,
 			);
@@ -1391,19 +1381,19 @@
 				CODE_SIGN_ENTITLEMENTS = NetbirdNetworkExtension/NetbirdNetworkExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetbirdNetworkExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.jet-net.jetbox.NetworkExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1412,7 +1402,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "NetBird-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1";
 			};
 			name = Debug;
 		};
@@ -1423,19 +1413,19 @@
 				CODE_SIGN_ENTITLEMENTS = NetbirdNetworkExtension/NetbirdNetworkExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetbirdNetworkExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.jet-net.jetbox.NetworkExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1443,7 +1433,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NetBird-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1";
 			};
 			name = Release;
 		};
@@ -1574,7 +1564,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetBird/NetBird.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
@@ -1582,7 +1572,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBird/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1597,7 +1588,7 @@
 					"@executable_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				MARKETING_VERSION = 0.1.6;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.jet-net.jetbox;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1608,7 +1599,7 @@
 				SWIFT_OBJC_BRIDGING_HEADER = "NetBird-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1";
 			};
 			name = Debug;
 		};
@@ -1621,7 +1612,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetBird/NetBird.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
@@ -1629,7 +1620,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBird/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1644,7 +1636,7 @@
 					"@executable_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				MARKETING_VERSION = 0.1.6;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.jet-net.jetbox;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1654,7 +1646,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NetBird-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1";
 			};
 			name = Release;
 		};
@@ -1667,7 +1659,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetBirdWidgetExtension/NetBirdWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1675,7 +1667,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBirdWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1683,7 +1675,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.1.6;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.jet-net.jetbox.WidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1693,7 +1685,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1";
 			};
 			name = Debug;
 		};
@@ -1706,14 +1698,14 @@
 				CODE_SIGN_ENTITLEMENTS = NetBirdWidgetExtension/NetBirdWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBirdWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1721,7 +1713,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 0.1.6;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.jet-net.jetbox.WidgetExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1730,7 +1722,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1";
 			};
 			name = Release;
 		};

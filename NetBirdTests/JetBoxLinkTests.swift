@@ -104,6 +104,17 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertEqual(p?.managementURL, "https://mgmt.example.net")
     }
 
+    /// Кабинет с 08.09.2026 добавляет в ссылку свой параметр `p=` («что
+    /// подключаем»). По контракту §2.1 приложение неизвестные параметры молча
+    /// игнорирует: ни разбор, ни удостоверение коробки от `p` не зависят.
+    func testCabinetParameterPIsIgnored() {
+        let withP = payload("https://box.jet-net.net/connect#k=\(key)&m=https%3A%2F%2Fnetbird.jet-net.net&e=box-ivanov-office&p=%D1%82%D0%B5%D0%BB%D0%B5%D1%84%D0%BE%D0%BD")
+        let withoutP = payload("https://box.jet-net.net/connect#k=\(key)&m=https%3A%2F%2Fnetbird.jet-net.net&e=box-ivanov-office")
+        XCTAssertEqual(withP, withoutP)
+        XCTAssertEqual(withP?.exitNodeName, "box-ivanov-office")
+        XCTAssertEqual(withP?.boxIdentity, withoutP?.boxIdentity)
+    }
+
     func testParameterNamesAreCaseInsensitive() {
         XCTAssertEqual(payload("jetbox://connect#K=\(key)&E=node")?.exitNodeName, "node")
     }
