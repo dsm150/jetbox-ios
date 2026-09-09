@@ -43,7 +43,8 @@ struct iOSMainView: View {
     @EnvironmentObject var jetbox: JetBoxOnboarding
     // JetBox: «страшные» экраны апстрима спрятаны флагом, а не удалены —
     // ребейз на новый тег апстрима остаётся дешёвым.
-    @AppStorage(JetBoxStore.advancedModeKey) private var advancedMode = false
+    @AppStorage(JetBoxAdvancedAccess.modeKey, store: JetBoxAdvancedAccess.defaults)
+    private var advancedMode = false
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var selectedTab = 0
     @State private var activeAlert: MainAlertType?

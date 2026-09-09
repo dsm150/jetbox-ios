@@ -110,6 +110,13 @@ struct NetBirdApp: App {
     init() {
         // Must run before any Go SDK call so a Go panic during startup is captured too.
         GoCrashCapture.redirect()
+        #if os(iOS)
+        // JetBox: расширенные настройки переехали из UserDefaults.standard
+        // в App Group и открываются семью нажатиями. Старый флаг убираем,
+        // иначе на телефоне, где режим был включён тумблером, он останется
+        // включённым в обход семи нажатий.
+        JetBoxAdvancedAccess.migrateLegacyFlagIfNeeded()
+        #endif
         // Configure Firebase on main thread as required by Firebase
         #if os(tvOS)
         configureFirebaseIfNeeded()

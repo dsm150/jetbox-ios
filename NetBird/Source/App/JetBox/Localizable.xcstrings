@@ -823,13 +823,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Advanced mode"
+            "value": "Advanced settings"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Расширенный режим"
+            "value": "Расширенные настройки"
+          }
+        }
+      }
+    },
+    "jetbox.settings.advanced.already": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced settings are already unlocked"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расширенные настройки уже открыты"
           }
         }
       }
@@ -840,13 +857,117 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shows the service screens: peers, resources, troubleshooting and server change. Not needed for normal use."
+            "value": "NetBird service screens: peers, resources, troubleshooting and server change. Not needed for normal use."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Показывает служебные экраны: пиры, ресурсы, отладку и смену сервера. Для обычной работы не нужен."
+            "value": "Служебные экраны NetBird: пиры, ресурсы, отладка и смена сервера. Для обычной работы не нужны."
+          }
+        }
+      }
+    },
+    "jetbox.settings.advanced.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld more tap…"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld more taps…"
+                }
+              }
+            }
+          }
+        },
+        "ru": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ещё %lld нажатие…"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ещё %lld нажатия…"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ещё %lld нажатий…"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ещё %lld нажатия…"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "jetbox.settings.advanced.off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off advanced settings"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выключить расширенные настройки"
+          }
+        }
+      }
+    },
+    "jetbox.settings.advanced.off_footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The service screens will close. To open them again, tap the version row in JetBox settings seven times."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Служебные экраны закроются. Чтобы открыть их снова, семь раз нажмите на строку версии в настройках JetBox."
+          }
+        }
+      }
+    },
+    "jetbox.settings.advanced.unlocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced settings unlocked"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расширенные настройки открыты"
           }
         }
       }

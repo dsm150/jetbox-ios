@@ -105,6 +105,19 @@ enum JBText {
     static var settingsVersion: String { t("jetbox.settings.version") }
     static var settingsAdvanced: String { t("jetbox.settings.advanced") }
     static var settingsAdvancedFooter: String { t("jetbox.settings.advanced.footer") }
+    static var settingsAdvancedUnlocked: String { t("jetbox.settings.advanced.unlocked") }
+    static var settingsAdvancedAlready: String { t("jetbox.settings.advanced.already") }
+    static var settingsAdvancedOff: String { t("jetbox.settings.advanced.off") }
+    static var settingsAdvancedOffFooter: String { t("jetbox.settings.advanced.off_footer") }
+
+    /// Обратный отсчёт «ещё N нажатий…». Единственная строка с формами
+    /// множественного числа, поэтому идёт мимо `t(_:)`: выбрать форму по числу
+    /// умеет только `localizedStringWithFormat` — `String(localized:)` формы
+    /// не разрешает.
+    static func settingsAdvancedHint(_ remaining: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString("jetbox.settings.advanced.hint", comment: ""), remaining)
+    }
 
     static var aboutTitle: String { t("jetbox.about.title") }
     static var aboutBody: String { t("jetbox.about.body") }
