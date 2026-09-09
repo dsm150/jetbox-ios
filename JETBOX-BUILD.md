@@ -131,6 +131,35 @@ xcrun simctl ui booted appearance dark   # / light
 > воспроизводится целиком, само подключение и выбор выхода проверяются только
 > на живом iPhone.
 
+## 4a. Релизная сборка и OTA (без Xcode у телефона)
+
+С 09.09.2026 версия всех трёх таргетов — **1.0 (1)**; при загрузке новой
+сборки в App Store Connect поднимать **только** `CURRENT_PROJECT_VERSION`,
+и **сразу во всех трёх** — Apple требует совпадения версий у расширений
+с приложением, иначе валидация архива падает.
+
+Архив подписывается облачной подписью по ASC-ключу (`~/.config/jetbox-ios/`),
+физический Xcode у телефона не нужен:
+
+```bash
+xcodebuild -project NetBird.xcodeproj -scheme NetBird \
+  -destination 'generic/platform=iOS' -archivePath build/JetBox.xcarchive archive \
+  DEVELOPMENT_TEAM=U2ZLMVKGQR -allowProvisioningUpdates \
+  -authenticationKeyPath ~/.config/jetbox-ios/asc.p8 \
+  -authenticationKeyID $(cat ~/.config/jetbox-ios/asc.keyid) \
+  -authenticationKeyIssuerID $(cat ~/.config/jetbox-ios/asc.issuer)
+
+xcodebuild -exportArchive -archivePath build/JetBox.xcarchive \
+  -exportPath build/export -exportOptionsPlist build/ExportOptions.plist \
+  -allowProvisioningUpdates -authenticationKeyPath … -authenticationKeyID … \
+  -authenticationKeyIssuerID …
+```
+
+`method=debugging` — сборка для устройств, зарегистрированных в аккаунте.
+Finder перетаскиванием `.ipa` **не ставит**: раздача только OTA — `manifest.plist`
+плюс страница с `itms-services://` на https (кладётся во временный каталог
+`app/static/<случайное имя>/` Кабинета и снимается после проверки).
+
 ## 5. Простой и расширенный режим
 
 По умолчанию приложение в **простом режиме**: свои экраны JetBox, вкладки
@@ -163,5 +192,10 @@ Server) спрятаны. Флаг — `jetbox.advancedMode` в `UserDefaults.st
    себе сборку.
 5. Пин ядра брать тот же, что у апстрима в `netbird-core`, и не отставать —
    иначе бинарный API `NetBirdSDK` разъедется со Swift-кодом.
-6. Апстримовые имена ассетов сохранены (`netbird-logo-menu`,
+6. **У расширений свои каталоги ассетов.** `NetBirdWidgetExtension/Assets.xcassets`
+   держит собственные копии `logo-onboarding`, `netbird-logo-menu` и прочего:
+   ребрендинг приложения их не задевает. При смене знака проверять каждый
+   каталог, а не только `NetBird/Assets.xcassets` (на этом попались 09.09 —
+   в виджете оставался логотип NetBird).
+7. Апстримовые имена ассетов сохранены (`netbird-logo-menu`,
    `logo-onboarding`, `icon-netbird-button`) — заменено только содержимое.
