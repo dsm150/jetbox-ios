@@ -144,7 +144,7 @@ xcrun simctl ui booted appearance dark   # / light
 ```bash
 xcodebuild -project NetBird.xcodeproj -scheme NetBird \
   -destination 'generic/platform=iOS' -archivePath build/JetBox.xcarchive archive \
-  DEVELOPMENT_TEAM=U2ZLMVKGQR -allowProvisioningUpdates \
+  DEVELOPMENT_TEAM=$(cat ~/.config/jetbox-ios/asc.team) -allowProvisioningUpdates \
   -authenticationKeyPath ~/.config/jetbox-ios/asc.p8 \
   -authenticationKeyID $(cat ~/.config/jetbox-ios/asc.keyid) \
   -authenticationKeyIssuerID $(cat ~/.config/jetbox-ios/asc.issuer)

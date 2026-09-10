@@ -151,6 +151,12 @@ struct JetBoxAboutView: View {
                     Link(JBText.aboutSite, destination: URL(string: "https://jet-net.net")!)
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(JBColor.accent)
+                    // GPL-3.0 обязывает открыть исходники форка — ссылка
+                    // стоит рядом с упоминанием лицензии в тексте выше.
+                    Link(JBText.aboutSource,
+                         destination: URL(string: "https://github.com/dsm150/jetbox-ios")!)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(JBColor.accent)
                 }
                 .padding(.vertical, 8)
             }

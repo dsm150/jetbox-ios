@@ -1,148 +1,149 @@
-<br/>
- <div align="center">
- <p align="center">
-   <img width="234" src="https://raw.githubusercontent.com/netbirdio/netbird/main/docs/media/logo-full.png"/>
- </p>
-   <p>
-      <a href="https://github.com/netbirdio/netbird/blob/main/LICENSE">
-        <img height="20" src="https://www.gnu.org/graphics/gplv3-88x31.png" alt="License: GPL-3.0" />
-      </a>
-     <a href="https://join.slack.com/t/netbirdio/shared_invite/zt-vrahf41g-ik1v7fV8du6t0RwxSrJ96A">
-         <img src="https://img.shields.io/badge/slack-@netbird-red.svg?logo=slack" alt="Slack"/>
-      </a>
-      <a href="https://github.com/netbirdio/ios-client/actions/workflows/build.yml">
-         <img src="https://github.com/netbirdio/ios-client/actions/workflows/build.yml/badge.svg" alt="Build Status"/>
-      </a>
-      <a href="https://github.com/netbirdio/ios-client/actions/workflows/test.yml">
-         <img src="https://github.com/netbirdio/ios-client/actions/workflows/test.yml/badge.svg" alt="Test Status"/>
-      </a>
-   </p>
- </div>
+# JetBox для iOS
 
+Приложение JetBox для iPhone. Форк открытого клиента
+[NetBird для iOS](https://github.com/netbirdio/ios-client), лицензия
+[GPL-3.0](LICENSE). Исходники открыты, потому что этого требует лицензия
+апстрима, — и потому что клиент должен иметь возможность проверить, что
+делает приложение на его телефоне.
 
- <p align="center">
- <strong>
-   Start using NetBird at <a href="https://netbird.io/pricing">netbird.io</a>
-   <br/>
-   See <a href="https://netbird.io/docs/">Documentation</a>
-   <br/>
-    Join our <a href="https://join.slack.com/t/netbirdio/shared_invite/zt-vrahf41g-ik1v7fV8du6t0RwxSrJ96A">Slack channel</a>
-   <br/>
+*English version below.*
 
- </strong>
- </p>
+## Что это
 
- <br>
+JetBox — устройство JetNet, которое стоит в доме или в офисе и держит
+собственную частную сеть на [WireGuard](https://www.wireguard.com/)
+через [NetBird](https://netbird.io/). Это приложение — телефонная часть
+такой сети: одно нажатие, и iPhone оказывается внутри неё.
 
-# NetBird iOS & tvOS Client
+* один экран, одна кнопка, никаких настроек при первом запуске;
+* параметры подключения приходят одной ссылкой от личного кабинета —
+  вводить ключи и адреса вручную не нужно;
+* исходные экраны NetBird остались в сборке и открываются в расширенном
+  режиме, если нужно посмотреть пиры, маршруты и журнал.
 
-The NetBird iOS/tvOS client allows connections from mobile devices running iOS 14.0+ and Apple TV running tvOS 17.0+ to private resources in the NetBird network.
+## Для кого
 
-## Install
-You can download and install the app from the App Store:
+Для владельцев JetBox — тех, кому JetNet поставил устройство. Без него
+приложению не к чему подключаться: сервер управления, ключи и выходные
+узлы принадлежат конкретной установке.
 
-[<img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="80">](https://apps.apple.com/app/netbird-p2p-vpn/id6469329339)
+Работать приложение может и с любой другой инсталляцией NetBird — адрес
+сервера управления приходит параметром ссылки, — но поддерживается только
+сценарий JetNet.
 
-## Screenshots
+## Сборка
 
-<p align="center">
-  <img src="https://github.com/netbirdio/ios-client/assets/32096965/f3eff73a-44e9-46e2-b63d-cce004246875" alt="mainscreen" width="250" style="margin-right: 10px;"/>
-  <img src="https://github.com/netbirdio/ios-client/assets/32096965/0e73f79a-0d95-41eb-8e8e-6ed489c85b14" alt="peer-overview" width="250" style="margin-right: 10px;"/>
-  <img src="https://github.com/netbirdio/ios-client/assets/32096965/a633c80e-86d0-41fe-88d0-8a7bb6cbaf66" alt="menu" width="250"/>
-</p>
-
-## Code structure
-The code is divided into 4 parts:
-- The main netbird Go code, included as a git submodule at `/netbird-core` from the [NetBird](https://github.com/netbirdio/netbird) repo, compiled into an xcframework. This contains most of the client logic.
-- The network extension `/NetbirdNetworkExtension` that is running in the background where the compiled Go code is executed.
-- The UI and app code under `/NetBird`
-- The `/NetbirdKit/NetworkExtensionAdapter` that controls the extension and builds the link between UI and extension
-
-## Requirements
-
-- iOS 14.0+ / tvOS 17.0+
-- Xcode 16.1+
-- Go (version determined by the netbird submodule's `go.mod`)
-- gomobile (for iOS builds)
-- gomobile-netbird (for tvOS builds — NetBird's fork with tvOS support)
-
-### gomobile
-
-For iOS-only builds, install the standard gomobile:
+Нужны Xcode 26.x, Go ровно той версии, что записана в
+`netbird-core/go.mod`, и путь к Xcode **без пробелов** (иначе `cgo`
+не найдёт компилятор при сборке ядра).
 
 ```bash
-go install golang.org/x/mobile/cmd/gomobile@latest
+git clone --recurse-submodules https://github.com/dsm150/jetbox-ios.git
+cd jetbox-ios
+./build-go-lib.sh                     # ядро агента → NetBirdSDK.xcframework
+xcodebuild build \
+  -project NetBird.xcodeproj \
+  -scheme NetBird \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -derivedDataPath build
 ```
 
-### gomobile-netbird
-
-For tvOS builds, install `gomobile-netbird`, NetBird's fork of gomobile that adds tvOS support. See: https://github.com/netbirdio/gomobile-tvos-fork
+Тесты:
 
 ```bash
-go install github.com/netbirdio/gomobile-tvos-fork/cmd/gomobile-netbird@latest
+xcodebuild test \
+  -project NetBird.xcodeproj \
+  -scheme NetBird \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -derivedDataPath build
 ```
 
-## Run locally
+Подробности — сроки сборки ядра, подпись, архив, известные грабли — в
+[JETBOX-BUILD.md](JETBOX-BUILD.md).
 
-The main netbird Go code is included as a git submodule at `netbird-core/`.
+`NetBirdSDK.xcframework` в git не хранится: это собранный артефакт
+чужого кода (ядро агента, BSD-3-Clause), он пересобирается скриптом
+`build-go-lib.sh` из подмодуля `netbird-core`.
+
+## Лицензия и происхождение
+
+* Лицензия — GPL-3.0, файл [LICENSE](LICENSE) взят у апстрима и не менялся.
+* Что именно изменено в форке и от какого коммита он отведён — в
+  [NOTICE](NOTICE).
+* Ядро агента подключено подмодулем на
+  [netbirdio/netbird](https://github.com/netbirdio/netbird) (BSD-3-Clause);
+  чужой код в этот репозиторий не копируется.
+* Проект не связан с NetBird GmbH и не поддерживается ею.
+
+Вопросы по этому форку — <info@jet-net.net>.
+Вопросы по самому клиенту NetBird — в апстрим.
+
+---
+
+# JetBox for iOS
+
+The JetBox app for iPhone. A fork of the open-source
+[NetBird iOS client](https://github.com/netbirdio/ios-client), licensed
+under [GPL-3.0](LICENSE). The source is open because the upstream license
+requires it — and because the owner of a phone should be able to check
+what an app does on it.
+
+## What it is
+
+JetBox is a JetNet appliance that lives in a home or an office and runs a
+private network of its own, built on [WireGuard](https://www.wireguard.com/)
+via [NetBird](https://netbird.io/). This app is the phone side of that
+network: one tap, and the iPhone is inside it.
+
+* one screen, one button, nothing to configure on first launch;
+* connection parameters arrive as a single link from the customer portal —
+  no setup keys or server addresses to type;
+* the original NetBird screens are still in the build and open in advanced
+  mode, when peers, routes and logs are needed.
+
+## Who it is for
+
+For JetNet customers who have the appliance. Without one there is nothing
+for the app to connect to: the management server, the keys and the exit
+nodes belong to a particular installation.
+
+The app can technically work against any other NetBird installation — the
+management URL is a parameter of the link — but only the JetNet scenario is
+supported.
+
+## Building
+
+You need Xcode 26.x, the exact Go version pinned in `netbird-core/go.mod`,
+and an Xcode path **without spaces** (otherwise `cgo` will not find the
+compiler while building the core).
 
 ```bash
-git clone --recursive https://github.com/netbirdio/ios-client.git
-cd ios-client
+git clone --recurse-submodules https://github.com/dsm150/jetbox-ios.git
+cd jetbox-ios
+./build-go-lib.sh                     # agent core → NetBirdSDK.xcframework
+xcodebuild build \
+  -project NetBird.xcodeproj \
+  -scheme NetBird \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -derivedDataPath build
 ```
 
-If you already cloned without `--recursive`:
-```bash
-git submodule update --init --recursive
-```
+Build notes — core build times, signing, archiving, known pitfalls — are in
+[JETBOX-BUILD.md](JETBOX-BUILD.md) (in Russian).
 
-Build the XCFramework for iOS:
-```bash
-./build-go-lib.sh
-```
+`NetBirdSDK.xcframework` is not kept in git: it is a build artifact of
+third-party code (the agent core, BSD-3-Clause) and is regenerated by
+`build-go-lib.sh` from the `netbird-core` submodule.
 
-Or for tvOS (includes iOS, iOS Simulator, tvOS, and tvOS Simulator targets):
-```bash
-./build-go-lib.sh --tvos
-```
+## License and provenance
 
-You can also pass an explicit version:
-```bash
-./build-go-lib.sh 0.2.0
-./build-go-lib.sh --tvos 0.2.0
-```
+* Licensed under GPL-3.0; [LICENSE](LICENSE) is the upstream file, unmodified.
+* What exactly was changed in this fork, and the upstream commit it was
+  branched from, are listed in [NOTICE](NOTICE).
+* The agent core is a submodule pointing at
+  [netbirdio/netbird](https://github.com/netbirdio/netbird) (BSD-3-Clause);
+  no third-party code is vendored into this repository.
+* This project is not affiliated with or endorsed by NetBird GmbH.
 
-Open the Xcode project, and we are ready to go.
-
-### Updating the netbird submodule
-
-To update to a newer netbird version:
-```bash
-cd netbird-core
-git fetch --tags
-git checkout v0.x.y   # or any branch/commit
-cd ..
-git add netbird-core
-git commit -m "update netbird submodule to v0.x.y"
-```
-
-### Running on iOS Device
-
-> **Note:** The app cannot run in the iOS simulator. To test the app, a physical device needs to be connected to Xcode via cable and set as the run destination.
-
-### Running on Apple TV
-
-> **Note:** The app cannot run in the tvOS simulator. To test the app, a physical device running tvOS 17.0 or later needs to be [paired with Xcode](https://support.apple.com/en-us/101262).
-
-### Firebase Configuration (Optional)
-
-The app supports Firebase for analytics and crash reporting. To enable it, add your `GoogleService-Info.plist` file to the project root. The app will work without Firebase configuration.
-
-## Other project repositories
-
-NetBird project is composed of multiple repositories:
-- NetBird: https://github.com/netbirdio/netbird, contains the code for the agents and control plane services.
-- Dashboard: https://github.com/netbirdio/dashboard, contains the Administration UI for the management service
-- Documentations: https://github.com/netbirdio/docs, contains the documentation from https://netbird.io/docs
-- Android Client: https://github.com/netbirdio/android-client
-- iOS/tvOS Client: https://github.com/netbirdio/ios-client (this repository)
+Questions about this fork: <info@jet-net.net>.
+Questions about the NetBird client itself belong upstream.

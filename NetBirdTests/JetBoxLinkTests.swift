@@ -13,7 +13,10 @@ import XCTest
 
 final class JetBoxLinkTests: XCTestCase {
 
-    private let key = "0EF79C2F-1A34-4B21-9C0D-1BF529332998"
+    /// Вымышленная фикстура формата setup-key: настоящих ключей в репозитории
+    /// нет и быть не может — низкая энтропия специально, чтобы значение
+    /// нельзя было принять за живой ключ.
+    private let key = "11111111-2222-4333-8444-555555555555"
 
     private func parse(_ string: String) -> JetBoxLink.Outcome {
         guard let url = URL(string: string) else {
@@ -174,7 +177,7 @@ final class JetBoxLinkTests: XCTestCase {
         let p = payload("jetbox://connect#k=\(key)")
         let masked = p?.maskedKey ?? ""
         XCTAssertFalse(masked.contains(key))
-        XCTAssertTrue(masked.hasSuffix("2998"))
+        XCTAssertTrue(masked.hasSuffix(String(key.suffix(4))))
         XCTAssertEqual(masked.filter { $0 == "•" }.count, 8)
     }
 

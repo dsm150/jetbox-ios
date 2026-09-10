@@ -1,0 +1,67 @@
+JetBox iOS
+Copyright (c) 2026 JetNet
+
+Это форк открытого клиента NetBird для iOS.
+This is a fork of the open-source NetBird iOS client.
+
+------------------------------------------------------------------------------
+Апстрим / Upstream
+------------------------------------------------------------------------------
+
+  https://github.com/netbirdio/ios-client
+  Точка форка / fork point: commit 3c03582
+  Лицензия / license: GNU General Public License v3.0 (см. LICENSE)
+
+Файл LICENSE — лицензия апстрима, она не изменялась.
+The LICENSE file is the upstream license and has not been modified.
+
+Ядро агента (Go) не копируется в этот репозиторий: оно подключено
+подмодулем `netbird-core` на https://github.com/netbirdio/netbird
+(лицензия BSD-3-Clause).
+The Go agent core is not vendored here: it is a submodule pointing at
+https://github.com/netbirdio/netbird (BSD-3-Clause).
+
+------------------------------------------------------------------------------
+Что изменено в форке / What was changed
+------------------------------------------------------------------------------
+
+  * Свои идентификаторы приложения и расширений (`net.jet-net.jetbox…`),
+    свои группа приложений и Associated Domains.
+    Own bundle identifiers for the app and its extensions, own app group
+    and associated domains.
+
+  * Бренд JetBox: имя, иконка, палитра, логотип, имя VPN-профиля;
+    из виджета и Пункта управления убраны знаки NetBird.
+    JetBox branding: name, icon, palette, logo, VPN profile name; NetBird
+    marks removed from the widget and the Control Center control.
+
+  * Русская локализация интерфейса (ru + en).
+    Russian localization of the interface (ru + en).
+
+  * Ссылка подключения: универсальная ссылка `/connect` и схема `jetbox://`
+    — разбор параметров подключения (JetBoxLink) вместо ручного ввода
+    setup-ключа и адреса управления.
+    Connection link: universal link `/connect` and the `jetbox://` scheme —
+    connection parameters are parsed (JetBoxLink) instead of typing a setup
+    key and management URL by hand.
+
+  * Режим одной кнопки: один экран подключения и один переключатель вместо
+    списка пиров, профилей и серверов.
+    Single-button mode: one connection screen and one switch instead of the
+    peers, profiles and servers UI.
+
+  * Скрытый расширенный режим: исходные экраны апстрима остаются в сборке и
+    открываются семью нажатиями в настройках.
+    Hidden advanced mode: the original upstream screens remain in the build
+    and are unlocked by seven taps in settings.
+
+  * Убраны внешние зависимости и телеметрия апстрима (Firebase,
+    Crashlytics, соответствующие фазы сборки).
+    Upstream third-party dependencies and telemetry removed (Firebase,
+    Crashlytics and their build phases).
+
+------------------------------------------------------------------------------
+Контакт / Contact
+------------------------------------------------------------------------------
+
+  info@jet-net.net

@@ -35,6 +35,23 @@
         }
       }
     },
+    "jetbox.about.source": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source code"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исходный код"
+          }
+        }
+      }
+    },
     "jetbox.about.title": {
       "extractionState": "manual",
       "localizations": {

@@ -122,4 +122,5 @@ enum JBText {
     static var aboutTitle: String { t("jetbox.about.title") }
     static var aboutBody: String { t("jetbox.about.body") }
     static var aboutSite: String { t("jetbox.about.site") }
+    static var aboutSource: String { t("jetbox.about.source") }
 }
