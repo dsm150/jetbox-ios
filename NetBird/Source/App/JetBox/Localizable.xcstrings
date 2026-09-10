@@ -789,13 +789,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One tap and all traffic from this phone goes through your JetBox."
+            "value": "One tap and the phone joins your home network."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Одно нажатие — и весь интернет на этом телефоне пойдёт через ваш JetBox."
+            "value": "Одно нажатие — и телефон окажется в вашей домашней сети."
           }
         }
       }
