@@ -28,14 +28,40 @@ final class JetBoxLiveStats: ObservableObject {
     /// приложения.
     @Published private(set) var connectedSince: Date?
 
-    /// Каждый ответ расширения о статусе. Зовётся на главной очереди.
+    /// Последний замер «до дома» (JetBoxHomeProbe). Ядро меряет задержку
+    /// только на прямом соединении — его цифра идёт лишь запасной.
+    private var probedLatencyMs: Int?
+    private var probing = false
+
+    /// Каждый ответ расширения о статусе (раз в 10 с, пока приложение
+    /// открыто). Зовётся на главной очереди.
     func ingest(_ details: StatusDetails, connectedSince: Date?) {
-        let snapshot = Self.boxPeer(in: details.peerInfo).map {
-            Snapshot(latencyMs: Self.latencyMs($0.latency), relayed: $0.relayed,
+        let peer = Self.boxPeer(in: details.peerInfo)
+        if let peer, peer.connStatus.lowercased() == "connected" {
+            probe(host: JetBoxHomeProbe.bareIP(peer.ip))
+        } else {
+            probedLatencyMs = nil
+        }
+        let snapshot = peer.map {
+            Snapshot(latencyMs: probedLatencyMs ?? Self.latencyMs($0.latency), relayed: $0.relayed,
                      bytesRx: $0.bytesRx, bytesTx: $0.bytesTx)
         }
         if snapshot != box { box = snapshot }
         if connectedSince != self.connectedSince { self.connectedSince = connectedSince }
+    }
+
+    private func probe(host: String) {
+        guard !probing else { return }
+        probing = true
+        JetBoxHomeProbe.measure(host: host) { [weak self] ms in
+            guard let self else { return }
+            self.probing = false
+            self.probedLatencyMs = ms
+            if let ms, var current = self.box, current.latencyMs != ms {
+                current.latencyMs = ms
+                self.box = current
+            }
+        }
     }
 
     // MARK: - Чистая логика (JetBoxLiveStatsTests)
