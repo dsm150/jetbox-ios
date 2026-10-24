@@ -263,6 +263,13 @@ struct JetBoxShieldDemoView: View {
             onSettings: {},
             onChangeExit: {}
         )
+        .onAppear {
+            // Запуск сразу в «Подключаем…» доигрывает переход в успех сам —
+            // так видео снимается без медленных нажатий симулятора.
+            if state == .connecting {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { state = .connected }
+            }
+        }
     }
 
     private func run(_ action: JetBoxPowerAction) {
