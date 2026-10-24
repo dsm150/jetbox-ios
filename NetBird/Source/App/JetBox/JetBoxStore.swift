@@ -38,6 +38,18 @@ struct JetBoxBox: Codable, Equatable {
         let host = URL(string: managementURL)?.host?.lowercased() ?? managementURL.lowercased()
         return host + "|" + (exitNodeName ?? "")
     }
+
+    /// Имя дома из свежей ссылки того же JetBox. Объект могли переименовать в
+    /// Кабинете — имя на телефоне обновляем сразу при открытии ссылки, не
+    /// дожидаясь повторного подключения. nil — менять нечего (другой JetBox,
+    /// в ссылке нет имени или оно то же).
+    func renamed(by payload: JetBoxLinkPayload) -> JetBoxBox? {
+        guard payload.boxIdentity == identity,
+              let name = payload.boxName, !name.isEmpty, name != boxName else { return nil }
+        var box = self
+        box.boxName = name
+        return box
+    }
 }
 
 enum JetBoxStore {

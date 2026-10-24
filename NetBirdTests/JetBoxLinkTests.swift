@@ -195,4 +195,28 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertNotEqual(a?.boxIdentity, b?.boxIdentity)
         XCTAssertEqual(a?.boxIdentity, sameAsA?.boxIdentity)
     }
+
+    // MARK: - Имя дома обновляется по ссылке того же JetBox
+
+    private func stored(_ name: String?) -> JetBoxBox {
+        JetBoxBox(managementURL: "https://mgmt.example.net", exitNodeName: "one",
+                  selectedExitNode: "one", boxName: name, registeredAt: Date(timeIntervalSince1970: 0))
+    }
+
+    func testSameBoxLinkRenamesStoredBox() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one&n=%D0%9D%D0%BE%D0%B2%D1%8B%D0%B9")!
+        let renamed = stored("Старый").renamed(by: link)
+        XCTAssertEqual(renamed?.boxName, "Новый")
+        XCTAssertEqual(renamed?.registeredAt, Date(timeIntervalSince1970: 0), "остальное не трогаем")
+    }
+
+    func testOtherBoxLinkDoesNotRename() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=two&n=Other")!
+        XCTAssertNil(stored("Старый").renamed(by: link))
+    }
+
+    func testLinkWithoutNameOrWithSameNameChangesNothing() {
+        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one")!))
+        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one&n=%D0%94%D0%BE%D0%BC")!))
+    }
 }
