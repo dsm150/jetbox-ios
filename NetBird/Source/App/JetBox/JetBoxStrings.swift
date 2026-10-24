@@ -123,4 +123,24 @@ enum JBText {
     static var aboutBody: String { t("jetbox.about.body") }
     static var aboutSite: String { t("jetbox.about.site") }
     static var aboutSource: String { t("jetbox.about.source") }
+    static func aboutLegal(_ year: String) -> String { t("jetbox.about.legal", year) }
+    static var aboutLicense: String { t("jetbox.about.license") }
+
+    // MARK: Нижняя панель и подробности подключения
+
+    static var dockOn: String { t("jetbox.dock.on") }
+    static var dockConnecting: String { t("jetbox.dock.connecting") }
+    static var dockOff: String { t("jetbox.dock.off") }
+    static var dockOffline: String { t("jetbox.dock.offline") }
+    static var dockUptime: String { t("jetbox.dock.uptime") }
+    static var dockLatency: String { t("jetbox.dock.latency") }
+    static var dockRoute: String { t("jetbox.dock.route") }
+    static var dockDirect: String { t("jetbox.dock.direct") }
+    static var dockRelayed: String { t("jetbox.dock.relayed") }
+    static func milliseconds(_ value: Int) -> String { t("jetbox.dock.ms", String(value)) }
+    static var detailsUptime: String { t("jetbox.details.uptime") }
+    static var detailsLatency: String { t("jetbox.details.latency") }
+    static var detailsRoute: String { t("jetbox.details.route") }
+    static var detailsRelayed: String { t("jetbox.details.relayed") }
+    static var detailsTraffic: String { t("jetbox.details.traffic") }
 }

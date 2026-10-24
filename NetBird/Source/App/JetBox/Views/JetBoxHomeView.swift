@@ -2,8 +2,8 @@
 //  JetBoxHomeView.swift
 //  JetBox
 //
-//  Главный экран простого режима: щит-кнопка, состояние защиты, JetBox,
-//  выход и капсула действия — в языке Liquid Glass. Апстримовые вкладки
+//  Главный экран простого режима: щит-кнопка, состояние защиты и стеклянная
+//  панель дома — в языке Liquid Glass. Апстримовые вкладки
 //  (Peers, Resources, Settings) сюда не приходят — они живут в расширенном
 //  режиме, который открывается семью нажатиями по версии в настройках.
 //
@@ -18,15 +18,16 @@ struct JetBoxHomeView: View {
     /// наблюдаем за списком маршрутов явно, как это делает апстрим
     /// в ExitNodeSelectorCard.
     @ObservedObject var routes: RoutesViewModel
+    @ObservedObject private var stats = JetBoxLiveStats.shared
     @State private var showsSettings = false
-    @State private var showsExitPicker = false
+    @State private var showsDetails = false
 
     private var box: JetBoxBox? { JetBoxStore.currentBox }
 
     var body: some View {
         #if DEBUG
         if JetBoxShieldDemo.isRequested {
-            JetBoxShieldDemoView()
+            JetBoxShieldDemoView(routes: routes)
         } else {
             live
         }
@@ -42,27 +43,27 @@ struct JetBoxHomeView: View {
             phase: JetBoxShieldPhase(state: state, isInternetConnected: viewModel.isInternetConnected),
             statusText: Self.statusText(for: state, online: viewModel.isInternetConnected),
             box: box,
-            exitName: currentExitName,
-            canChangeExit: state == .connected,
+            stats: stats.box,
+            connectedSince: stats.connectedSince,
             power: power,
             onPower: { perform(power) },
             onSettings: { showsSettings = true },
-            onChangeExit: { showsExitPicker = true }
+            onOpenDetails: { showsDetails = true }
         )
         .sheet(isPresented: $showsSettings) {
             JetBoxSettingsView()
                 .environmentObject(viewModel)
         }
-        .sheet(isPresented: $showsExitPicker) {
-            JetBoxExitSheet(routes: routes)
-                .environmentObject(viewModel)
-        }
-        .onAppear {
-            // Селектор выхода читается только через расширение: пока туннеля
-            // нет, список пуст — это нормально, обновимся после подключения.
-            if viewModel.vpnDisplayState == .connected {
-                routes.getRoutes()
+        .sheet(isPresented: $showsDetails) {
+            if let box {
+                JetBoxConnectionSheet(routes: routes, stats: stats, box: box,
+                                      isConnected: viewModel.vpnDisplayState == .connected)
             }
+        }
+        .onChange(of: viewModel.vpnDisplayState) { state in
+            // Разрешение на уведомления — когда защита впервые включилась,
+            // а не при запуске: тогда понятно, о чём будут уведомления.
+            if state == .connected { JetBoxNotifications.requestIfNeeded() }
         }
     }
 
@@ -72,11 +73,6 @@ struct JetBoxHomeView: View {
         case .disconnect: viewModel.close()
         case .none: break
         }
-    }
-
-    private var currentExitName: String? {
-        if let selected = routes.selectedExitNode?.name { return selected }
-        return box?.effectiveExitNode
     }
 
     static func statusText(for state: VPNDisplayState, online: Bool) -> String {
@@ -91,16 +87,17 @@ struct JetBoxHomeView: View {
 
 /// Главный экран без привязки к данным: всё приходит параметрами.
 /// Так его можно показать и с настоящим туннелем, и в DEBUG-демо.
+/// Включает и выключает только щит; внизу — стеклянная панель дома.
 struct JetBoxHomeLayout: View {
     let phase: JetBoxShieldPhase
     let statusText: String
     let box: JetBoxBox?
-    let exitName: String?
-    let canChangeExit: Bool
+    let stats: JetBoxLiveStats.Snapshot?
+    let connectedSince: Date?
     let power: JetBoxPowerAction
     let onPower: () -> Void
     let onSettings: () -> Void
-    let onChangeExit: () -> Void
+    let onOpenDetails: () -> Void
 
     var body: some View {
         ZStack {
@@ -123,22 +120,21 @@ struct JetBoxHomeLayout: View {
                     .foregroundColor(phase == .on ? JBColor.ok : JBColor.text)
                     .multilineTextAlignment(.center)
                     .animation(.easeInOut(duration: 0.3), value: phase)
-                    .padding(.bottom, 24)
+
+                Spacer(minLength: 24)
 
                 Group {
-                    if let box { boxCard(box) } else { noBoxCard }
+                    if let box {
+                        JetBoxHomeDock(phase: phase, box: box, stats: stats,
+                                       connectedSince: connectedSince, onOpen: onOpenDetails)
+                    } else {
+                        JetBoxNoBoxDock()
+                    }
                 }
                 .frame(maxWidth: 420)
-
-                Spacer(minLength: 16)
-
-                if box != nil {
-                    actionButton
-                        .frame(maxWidth: 420)
-                        .padding(.bottom, 12)
-                }
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 20)
         }
     }
 
@@ -162,61 +158,7 @@ struct JetBoxHomeLayout: View {
             JBGlassIconButton(systemName: "gearshape", label: JBText.settingsTitle, action: onSettings)
         }
         .padding(.top, 8)
-    }
-
-    private func boxCard(_ box: JetBoxBox) -> some View {
-        JBCard {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(JBText.settingsSectionBox)
-                    .font(.footnote)
-                    .foregroundColor(JBColor.muted)
-                Text(box.displayName)
-                    .font(.title3.weight(.semibold))
-                    .foregroundColor(JBColor.text)
-                    .lineLimit(2)
-                Divider().overlay(JBColor.line)
-                HStack {
-                    Text(exitName.map { JBText.homeExit($0) } ?? JBText.homeExitNone)
-                        .font(.subheadline)
-                        .foregroundColor(JBColor.muted)
-                        .lineLimit(1)
-                    Spacer(minLength: 8)
-                    if canChangeExit {
-                        Button(JBText.homeChangeExit, action: onChangeExit)
-                            .font(.subheadline.weight(.medium))
-                            .foregroundColor(JBColor.accent)
-                    }
-                }
-            }
-        }
-    }
-
-    private var noBoxCard: some View {
-        JBCard {
-            VStack(spacing: 10) {
-                Text(JBText.homeNoBoxTitle)
-                    .font(.headline)
-                    .foregroundColor(JBColor.text)
-                Text(JBText.homeNoBoxBody)
-                    .font(.subheadline)
-                    .foregroundColor(JBColor.muted)
-                    .multilineTextAlignment(.center)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var actionButton: some View {
-        switch power {
-        case .connect:
-            JBGlassButton(JBText.homeConnect) { press() }
-        case .disconnect:
-            JBGlassButton(JBText.homeDisconnect, role: .secondary) { press() }
-        case .none:
-            JBGlassButton(statusText, role: .secondary) {}
-                .disabled(true)
-                .opacity(0.6)
-        }
+        .padding(.horizontal, 4)
     }
 }
 
@@ -242,7 +184,10 @@ enum JetBoxShieldDemo {
 }
 
 struct JetBoxShieldDemoView: View {
+    @ObservedObject var routes: RoutesViewModel
     @State private var state: VPNDisplayState = JetBoxShieldDemo.initialState
+    @State private var since = Date().addingTimeInterval(-754)
+    @State private var showsDetails = false
 
     private let box = JetBoxBox(managementURL: "https://netbird.jet-net.net",
                                 exitNodeName: "home-ivanov",
@@ -250,33 +195,48 @@ struct JetBoxShieldDemoView: View {
                                 boxName: "Дом на Озёрной",
                                 registeredAt: Date())
 
+    /// Примерные показатели — только для демо.
+    private let sample = JetBoxLiveStats.Snapshot(latencyMs: 24, relayed: false,
+                                                  bytesRx: 48_200_000, bytesTx: 6_100_000)
+
     var body: some View {
         let power = JetBoxPowerAction.action(for: state, hasBox: true)
         JetBoxHomeLayout(
             phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
             statusText: JetBoxHomeView.statusText(for: state, online: true),
             box: box,
-            exitName: box.effectiveExitNode,
-            canChangeExit: state == .connected,
+            stats: state == .connected ? sample : nil,
+            connectedSince: state == .connected ? since : nil,
             power: power,
             onPower: { run(power) },
             onSettings: {},
-            onChangeExit: {}
+            onOpenDetails: { showsDetails = true }
         )
+        .sheet(isPresented: $showsDetails) {
+            JetBoxConnectionSheet(routes: routes, stats: JetBoxLiveStats.shared, box: box,
+                                  isConnected: state == .connected,
+                                  demo: sample, demoSince: since)
+        }
         .onAppear {
             // Запуск сразу в «Подключаем…» доигрывает переход в успех сам —
             // так видео снимается без медленных нажатий симулятора.
             if state == .connecting {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { state = .connected }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { connected() }
             }
+            if UserDefaults.standard.bool(forKey: "JetBoxShieldDemoDetails") { showsDetails = true }
         }
+    }
+
+    private func connected() {
+        since = Date()
+        state = .connected
     }
 
     private func run(_ action: JetBoxPowerAction) {
         switch action {
         case .connect:
             state = .connecting
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { state = .connected }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { connected() }
         case .disconnect:
             state = .disconnecting
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { state = .disconnected }
