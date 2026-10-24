@@ -661,6 +661,10 @@ class ViewModel: ObservableObject {
         #endif
         networkExtensionAdapter.startTimer { [weak self] details in
             guard let self else { return }
+            #if os(iOS)
+            // JetBox: живые показатели нижней панели (пинг, трафик, время в сети).
+            JetBoxLiveStats.shared.ingest(details, connectedSince: self.networkExtensionAdapter.session?.connectedDate)
+            #endif
             self.checkExtensionState()
             self.checkNetworkUnavailableFlag()
             self.checkLoginRequiredFlag()
