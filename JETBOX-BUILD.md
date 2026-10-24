@@ -166,10 +166,11 @@ xcrun simctl ui booted appearance dark   # / light
 
 ## 4a. Релизная сборка и OTA (без Xcode у телефона)
 
-С 09.09.2026 версия всех трёх таргетов — **1.0 (1)**; при загрузке новой
-сборки в App Store Connect поднимать **только** `CURRENT_PROJECT_VERSION`,
-и **сразу во всех трёх** — Apple требует совпадения версий у расширений
-с приложением, иначе валидация архива падает.
+Версия всех таргетов — **1.0**, сборка растёт на каждую загрузку в
+App Store Connect: 1.0 (1) — 10.09.2026, 1.0 (2) — 24.10.2026 (апстрим
+v0.4.1+). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
+(`sed -i '' 's/CURRENT_PROJECT_VERSION = N;/CURRENT_PROJECT_VERSION = N+1;/g'`) —
+Apple требует совпадения версий у расширений с приложением.
 
 Архив подписывается облачной подписью по ASC-ключу (`~/.config/jetbox-ios/`),
 физический Xcode у телефона не нужен:
@@ -187,6 +188,22 @@ xcodebuild -exportArchive -archivePath build/JetBox.xcarchive \
   -allowProvisioningUpdates -authenticationKeyPath … -authenticationKeyID … \
   -authenticationKeyIssuerID …
 ```
+
+Для **App Store / TestFlight** — `build/ExportOptions-appstore.plist`:
+`method=app-store`, `uploadSymbols=false`, `destination=export`, `teamID` из
+`asc.team` (с `app-store-connect` + `uploadSymbols` экспорт падает «Copy
+failed»). Дальше проверка и загрузка ключом ASC (altool ищет ключ в
+`~/.appstoreconnect/private_keys/AuthKey_<KID>.p8`):
+
+```bash
+KID=$(cat ~/.config/jetbox-ios/asc.keyid); ISS=$(cat ~/.config/jetbox-ios/asc.issuer)
+xcrun altool --validate-app -f build/export-appstore-N/NetBird.ipa -t ios --apiKey $KID --apiIssuer $ISS
+xcrun altool --upload-app   -f build/export-appstore-N/NetBird.ipa -t ios --apiKey $KID --apiIssuer $ISS
+```
+
+Сборка обрабатывается 5–30 мин, потом её надо **привязать к версии** в ASC
+(`PATCH /v1/appStoreVersions/<id>/relationships/build`) и выдать группе
+TestFlight «Владелец».
 
 `method=debugging` — сборка для устройств, зарегистрированных в аккаунте.
 Finder перетаскиванием `.ipa` **не ставит**: раздача только OTA — `manifest.plist`

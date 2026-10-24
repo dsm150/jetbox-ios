@@ -10,6 +10,7 @@ This is a fork of the open-source NetBird iOS client.
 
   https://github.com/netbirdio/ios-client
   Точка форка / fork point: commit 3c03582
+  Слит с апстримом до / merged with upstream up to: v0.4.1 + 199831b
   Лицензия / license: GNU General Public License v3.0 (см. LICENSE)
 
 Файл LICENSE — лицензия апстрима, она не изменялась.
