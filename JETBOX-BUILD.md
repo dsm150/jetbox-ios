@@ -60,8 +60,17 @@ git submodule update --init --recursive
    симлинк `~/XcodeNoSpace.app`. `DEVELOPER_DIR` на симлинк **не помогает** —
    `xcrun` разворачивает симлинк обратно.
    ```bash
-   PATH=~/.config/jetbox-ios/xcrun-shim:$PATH ./build-go-lib.sh 0.78.0+cb7ca8e
+   for p in patches/netbird-core/*.patch; do patch -d netbird-core -p1 < "$p"; done
+   PATH=~/.config/jetbox-ios/xcrun-shim:$PATH ./build-go-lib.sh 0.78.0+cb7ca8e.jetbox1
    ```
+
+### Патчи ядра
+
+`patches/netbird-core/` — правки ядра, которые нам нужны раньше, чем их примет
+NetBird (описание и статус апстрима — в `README.md` там же). Накладываются
+**перед** сборкой, версия получает суффикс `.jetbox<N>`. При каждом сдвиге пина
+ядра: проверить, не принят ли патч апстримом (тогда удалить), и что он ложится
+(`patch --dry-run`).
 
 ### Какую версию передавать
 
@@ -75,7 +84,8 @@ git submodule update --init --recursive
 | Пин ядра | Версия | Где |
 |---|---|---|
 | `23a1487` | — (собрано 05.09 без аргумента) | 1.0 (1) |
-| `cb7ca8e` | `0.78.0+cb7ca8e` | 1.0 (2), апстрим v0.4.1 |
+| `cb7ca8e` | `0.78.0+cb7ca8e` | 1.0 (2)–1.0 (4), апстрим v0.4.1 |
+| `cb7ca8e` + `0001` | `0.78.0+cb7ca8e.jetbox1` | 1.0 (5): трафик пиров на iOS |
 
 ## 2. Приложение
 
@@ -169,7 +179,9 @@ xcrun simctl ui booted appearance dark   # / light
 Версия всех таргетов — **1.0**, сборка растёт на каждую загрузку в
 App Store Connect: 1.0 (1) — 10.09.2026, 1.0 (2) — 24.10.2026 (апстрим
 v0.4.1+), 1.0 (3) — 24.10.2026 (Liquid Glass, щит-кнопка, новая иконка), 1.0 (4) — 24.10.2026
-(стеклянная панель дома, уведомления после подключения, «О программе» без NetBird). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
+(стеклянная панель дома, уведомления после подключения, «О программе» без NetBird),
+1.0 (5) — 24.10.2026 (фирменный синий, «до дома» замером DNS, напрямую по умолчанию,
+патч ядра на трафик). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
 (`sed -i '' 's/CURRENT_PROJECT_VERSION = N;/CURRENT_PROJECT_VERSION = N+1;/g'`) —
 Apple требует совпадения версий у расширений с приложением.
 
@@ -301,7 +313,8 @@ git -c merge.conflictstyle=zdiff3 merge --no-ff --no-commit <тег>
 | Файл | Наше | Что берём у апстрима |
 |---|---|---|
 | `NetbirdKit/NetworkExtensionAdapter.swift` | `extensionID = net.jet-net.jetbox.NetworkExtension`, `extensionName = "JetBox"`, поиск профиля через `isOurProfile` (имя + `providerBundleIdentifier`, старое имя узнаётся) | всё остальное. ⚠️ С v0.4.1 апстрим выводит ID из бандла как `<bundle>.NetbirdNetworkExtension` — у нас суффикс другой, шаблон не подходит |
-| `NetBird/Source/App/NetBirdApp.swift` | `configureFirebaseIfNeeded() {}` — пустая, Firebase в форке нет; в `AppDelegate` **нет** `requestAuthorization` (спрашиваем после первого подключения — `JetBoxNotifications`) | новые точки жизненного цикла |
+| `NetBird/Source/App/NetBirdApp.swift` | `configureFirebaseIfNeeded() {}` — пустая, Firebase в форке нет; в `AppDelegate` **нет** `requestAuthorization` (спрашиваем после первого подключения — `JetBoxNotifications`); в `init` — одна строка `JetBoxStartup.run()` | новые точки жизненного цикла |
+| `netbird-core` (сабмодуль) | правок в дереве нет — только `patches/netbird-core/*.patch` | пин ядра |
 | `NetBird/Source/App/ViewModels/MainViewModel.swift` | в `startPollingDetails` под `#if os(iOS)` — `JetBoxLiveStats.shared.ingest(details, connectedSince:)` (живые показатели панели) | всё остальное |
 | `NetBird/Source/App/Views/AboutView.swift` | без «Join Beta Program» и алерта TestFlight NetBird; ссылки — `JetBoxConfig.licenseURL`/`privacyPolicyURL`; «© <год> JetNet» | новые строки экрана |
 | `NetBird/Source/App/Views/MainView.swift` | флаг простого режима, `JetBoxHomeView`, оверлей `JetBoxFlowView`, анимация `jetbox.step` | модификаторы рядом (`onAppear` и т. п.) — обе стороны |
