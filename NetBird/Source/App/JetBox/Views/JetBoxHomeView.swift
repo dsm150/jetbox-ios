@@ -2,9 +2,10 @@
 //  JetBoxHomeView.swift
 //  JetBox
 //
-//  Главный экран простого режима: состояние защиты, коробка, выход и одна
-//  кнопка. Апстримовые вкладки (Peers, Resources, Settings) сюда не приходят —
-//  они живут в расширенном режиме и включаются тумблером в настройках.
+//  Главный экран простого режима: щит-кнопка, состояние защиты, JetBox,
+//  выход и капсула действия — в языке Liquid Glass. Апстримовые вкладки
+//  (Peers, Resources, Settings) сюда не приходят — они живут в расширенном
+//  режиме, который открывается семью нажатиями по версии в настройках.
 //
 
 import SwiftUI
@@ -23,41 +24,31 @@ struct JetBoxHomeView: View {
     private var box: JetBoxBox? { JetBoxStore.currentBox }
 
     var body: some View {
-        ZStack {
-            JBColor.background.ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                header
-
-                Spacer(minLength: 12)
-
-                shield
-                    .padding(.bottom, 8)
-
-                Text(statusText)
-                    .font(.title2.weight(.semibold))
-                    .foregroundColor(JBColor.text)
-                    .multilineTextAlignment(.center)
-                    .padding(.bottom, 24)
-
-                if let box {
-                    boxCard(box)
-                        .frame(maxWidth: 420)
-                } else {
-                    noBoxCard
-                        .frame(maxWidth: 420)
-                }
-
-                Spacer(minLength: 16)
-
-                if box != nil {
-                    actionButton
-                        .frame(maxWidth: 420)
-                        .padding(.bottom, 24)
-                }
-            }
-            .padding(.horizontal, 24)
+        #if DEBUG
+        if JetBoxShieldDemo.isRequested {
+            JetBoxShieldDemoView()
+        } else {
+            live
         }
+        #else
+        live
+        #endif
+    }
+
+    private var live: some View {
+        let state = viewModel.vpnDisplayState
+        let power = JetBoxPowerAction.action(for: state, hasBox: box != nil)
+        return JetBoxHomeLayout(
+            phase: JetBoxShieldPhase(state: state, isInternetConnected: viewModel.isInternetConnected),
+            statusText: Self.statusText(for: state, online: viewModel.isInternetConnected),
+            box: box,
+            exitName: currentExitName,
+            canChangeExit: state == .connected,
+            power: power,
+            onPower: { perform(power) },
+            onSettings: { showsSettings = true },
+            onChangeExit: { showsExitPicker = true }
+        )
         .sheet(isPresented: $showsSettings) {
             JetBoxSettingsView()
                 .environmentObject(viewModel)
@@ -75,36 +66,102 @@ struct JetBoxHomeView: View {
         }
     }
 
-    // MARK: - Части экрана
+    private func perform(_ action: JetBoxPowerAction) {
+        switch action {
+        case .connect: viewModel.connect()
+        case .disconnect: viewModel.close()
+        case .none: break
+        }
+    }
+
+    private var currentExitName: String? {
+        if let selected = routes.selectedExitNode?.name { return selected }
+        return box?.effectiveExitNode
+    }
+
+    static func statusText(for state: VPNDisplayState, online: Bool) -> String {
+        switch state {
+        case .connected: return online ? JBText.homeConnected : JBText.homeOffline
+        case .connecting: return JBText.homeConnecting
+        case .disconnecting: return JBText.homeDisconnecting
+        case .disconnected: return JBText.homeDisconnected
+        }
+    }
+}
+
+/// Главный экран без привязки к данным: всё приходит параметрами.
+/// Так его можно показать и с настоящим туннелем, и в DEBUG-демо.
+struct JetBoxHomeLayout: View {
+    let phase: JetBoxShieldPhase
+    let statusText: String
+    let box: JetBoxBox?
+    let exitName: String?
+    let canChangeExit: Bool
+    let power: JetBoxPowerAction
+    let onPower: () -> Void
+    let onSettings: () -> Void
+    let onChangeExit: () -> Void
+
+    var body: some View {
+        ZStack {
+            JetBoxBackdrop(phase: phase)
+
+            VStack(spacing: 0) {
+                header
+
+                Spacer(minLength: 12)
+
+                JetBoxShield(
+                    phase: phase,
+                    accessibilityLabel: shieldLabel,
+                    action: power == .none ? nil : { press() }
+                )
+                .padding(.bottom, 26)
+
+                Text(statusText)
+                    .font(.title2.weight(.semibold))
+                    .foregroundColor(phase == .on ? JBColor.ok : JBColor.text)
+                    .multilineTextAlignment(.center)
+                    .animation(.easeInOut(duration: 0.3), value: phase)
+                    .padding(.bottom, 24)
+
+                Group {
+                    if let box { boxCard(box) } else { noBoxCard }
+                }
+                .frame(maxWidth: 420)
+
+                Spacer(minLength: 16)
+
+                if box != nil {
+                    actionButton
+                        .frame(maxWidth: 420)
+                        .padding(.bottom, 12)
+                }
+            }
+            .padding(.horizontal, 24)
+        }
+    }
+
+    private func press() {
+        JBHaptics.tap()
+        onPower()
+    }
+
+    private var shieldLabel: String {
+        switch power {
+        case .connect: return JBText.homeConnect
+        case .disconnect: return JBText.homeDisconnect
+        case .none: return statusText
+        }
+    }
 
     private var header: some View {
         HStack {
             JetBoxLogo(markHeight: 34)
             Spacer()
-            Button {
-                showsSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.title3)
-                    .foregroundColor(JBColor.muted)
-                    .padding(8)
-            }
-            .accessibilityLabel(JBText.settingsTitle)
+            JBGlassIconButton(systemName: "gearshape", label: JBText.settingsTitle, action: onSettings)
         }
         .padding(.top, 8)
-    }
-
-    private var shield: some View {
-        ZStack {
-            Circle()
-                .fill(shieldColor.opacity(0.12))
-                .frame(width: 168, height: 168)
-            Image(systemName: shieldSymbol)
-                .font(.system(size: 74, weight: .regular))
-                .foregroundColor(shieldColor)
-                .symbolRenderingMode(.hierarchical)
-        }
-        .animation(.easeInOut(duration: 0.25), value: viewModel.vpnDisplayState)
     }
 
     private func boxCard(_ box: JetBoxBox) -> some View {
@@ -119,13 +176,13 @@ struct JetBoxHomeView: View {
                     .lineLimit(2)
                 Divider().overlay(JBColor.line)
                 HStack {
-                    Text(currentExitName.map { JBText.homeExit($0) } ?? JBText.homeExitNone)
+                    Text(exitName.map { JBText.homeExit($0) } ?? JBText.homeExitNone)
                         .font(.subheadline)
                         .foregroundColor(JBColor.muted)
                         .lineLimit(1)
                     Spacer(minLength: 8)
-                    if viewModel.vpnDisplayState == .connected {
-                        Button(JBText.homeChangeExit) { showsExitPicker = true }
+                    if canChangeExit {
+                        Button(JBText.homeChangeExit, action: onChangeExit)
                             .font(.subheadline.weight(.medium))
                             .foregroundColor(JBColor.accent)
                     }
@@ -148,53 +205,80 @@ struct JetBoxHomeView: View {
         }
     }
 
+    @ViewBuilder
     private var actionButton: some View {
-        Group {
-            switch viewModel.vpnDisplayState {
-            case .connected:
-                AppButton(JBText.homeDisconnect, style: .secondary) { viewModel.close() }
-            case .disconnected:
-                AppButton(JBText.homeConnect) { viewModel.connect() }
-            case .connecting, .disconnecting:
-                AppButton(statusText, style: .secondary) {}
-                    .disabled(true)
-                    .opacity(0.6)
-            }
-        }
-    }
-
-    // MARK: - Состояние
-
-    private var currentExitName: String? {
-        if let selected = routes.selectedExitNode?.name { return selected }
-        return box?.effectiveExitNode
-    }
-
-    private var statusText: String {
-        switch viewModel.vpnDisplayState {
-        case .connected: return viewModel.isInternetConnected ? JBText.homeConnected : JBText.homeOffline
-        case .connecting: return JBText.homeConnecting
-        case .disconnecting: return JBText.homeDisconnecting
-        case .disconnected: return JBText.homeDisconnected
-        }
-    }
-
-    private var shieldSymbol: String {
-        switch viewModel.vpnDisplayState {
-        case .connected: return viewModel.isInternetConnected ? "checkmark.shield.fill" : "exclamationmark.shield.fill"
-        case .connecting, .disconnecting: return "shield.lefthalf.filled"
-        case .disconnected: return "shield.slash"
-        }
-    }
-
-    private var shieldColor: Color {
-        switch viewModel.vpnDisplayState {
-        case .connected: return viewModel.isInternetConnected ? JBColor.ok : JBColor.warn
-        case .connecting, .disconnecting: return JBColor.accent
-        case .disconnected: return JBColor.muted
+        switch power {
+        case .connect:
+            JBGlassButton(JBText.homeConnect) { press() }
+        case .disconnect:
+            JBGlassButton(JBText.homeDisconnect, role: .secondary) { press() }
+        case .none:
+            JBGlassButton(statusText, role: .secondary) {}
+                .disabled(true)
+                .opacity(0.6)
         }
     }
 }
+
+#if DEBUG
+/// Только для съёмки в симуляторе: туннель там не поднимается, поэтому
+/// фазы отыгрываются таймером. Аргумент запуска `-JetBoxShieldDemo`;
+/// `-JetBoxShieldDemoState connecting|connected|disconnecting` — начать с
+/// нужной фазы (нажатие в симуляторе идёт секунды, фаза успевает пройти).
+/// В релизную сборку не попадает.
+enum JetBoxShieldDemo {
+    static var isRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains("-JetBoxShieldDemo")
+    }
+
+    static var initialState: VPNDisplayState {
+        switch UserDefaults.standard.string(forKey: "JetBoxShieldDemoState") {
+        case "connecting": return .connecting
+        case "connected": return .connected
+        case "disconnecting": return .disconnecting
+        default: return .disconnected
+        }
+    }
+}
+
+struct JetBoxShieldDemoView: View {
+    @State private var state: VPNDisplayState = JetBoxShieldDemo.initialState
+
+    private let box = JetBoxBox(managementURL: "https://netbird.jet-net.net",
+                                exitNodeName: "home-ivanov",
+                                selectedExitNode: nil,
+                                boxName: "Дом на Озёрной",
+                                registeredAt: Date())
+
+    var body: some View {
+        let power = JetBoxPowerAction.action(for: state, hasBox: true)
+        JetBoxHomeLayout(
+            phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
+            statusText: JetBoxHomeView.statusText(for: state, online: true),
+            box: box,
+            exitName: box.effectiveExitNode,
+            canChangeExit: state == .connected,
+            power: power,
+            onPower: { run(power) },
+            onSettings: {},
+            onChangeExit: {}
+        )
+    }
+
+    private func run(_ action: JetBoxPowerAction) {
+        switch action {
+        case .connect:
+            state = .connecting
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { state = .connected }
+        case .disconnect:
+            state = .disconnecting
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { state = .disconnected }
+        case .none:
+            break
+        }
+    }
+}
+#endif
 
 // MARK: - Смена выхода из простого режима
 

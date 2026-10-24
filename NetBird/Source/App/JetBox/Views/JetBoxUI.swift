@@ -57,11 +57,11 @@ struct JBCard<Content: View>: View {
             .frame(maxWidth: .infinity)
             .padding(18)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(JBColor.surface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(JBColor.line, lineWidth: 1)
             )
     }

@@ -57,10 +57,8 @@ struct JetBoxShield: View {
         ZStack {
             decorations
             disc
-            Image(systemName: phase.symbol)
+            symbol
                 .font(.system(size: diameter * 0.40, weight: .regular))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundColor(phase.tint)
                 .scaleEffect(pop)
                 .id(phase.symbol)
                 .transition(.opacity.combined(with: .scale(scale: 0.88)))
@@ -74,6 +72,21 @@ struct JetBoxShield: View {
         .frame(width: diameter, height: diameter)
         .animation(.easeInOut(duration: 0.35), value: phase)
         .contentShape(Circle())
+    }
+
+    /// Под защитой — сплошной зелёный щит с белой галочкой: на зелёном
+    /// стекле иерархическая заливка сливалась с фоном.
+    @ViewBuilder
+    private var symbol: some View {
+        if phase == .on {
+            Image(systemName: phase.symbol)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Color.white, phase.tint)
+        } else {
+            Image(systemName: phase.symbol)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundColor(phase.tint)
+        }
     }
 
     @ViewBuilder
@@ -92,7 +105,11 @@ struct JetBoxShield: View {
     }
 
     private var discTint: Color {
-        phase == .off ? JBColor.muted.opacity(0.10) : phase.tint.opacity(0.28)
+        switch phase {
+        case .off: return JBColor.muted.opacity(0.10)
+        case .on: return phase.tint.opacity(0.18)
+        case .working, .offline: return phase.tint.opacity(0.24)
+        }
     }
 
     /// Кольца вокруг диска. Время берём у TimelineView — анимация не зависит
