@@ -7,3 +7,7 @@
 # (11111111-2222-4333-8444-555555555555); историю не перезаписываем, чтобы
 # не рвать ссылки на коммиты и ребейз на апстрим.
 67ef69c6af1fbbadf1a4a22adc9ca10b2f76c921:NetBirdTests/JetBoxLinkTests.swift:generic-api-key:16
+
+# Апстрим, v0.4.0 (#206 MDM): фикстура preSharedKey в тесте MDM — base64
+# строки «test-key-value-for-unit-tests-01». Публична в netbirdio/ios-client.
+8fa8d34ff30a5d961466f33397fc2272ca4f233c:NetBirdTests/MDMBridgeIntegrationTests.swift:generic-api-key:77
