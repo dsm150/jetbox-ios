@@ -88,33 +88,4 @@ struct JBRow: View {
     }
 }
 
-/// Заглушка ожидания: спиннер и одна строка что именно происходит.
-struct JBProgress: View {
-    let title: String
-
-    var body: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-            Text(title)
-                .font(.body)
-                .foregroundColor(JBColor.text)
-                .multilineTextAlignment(.center)
-        }
-    }
-}
-
-extension View {
-    /// Списку — фон страницы бренда вместо системного серого.
-    /// Модификатор появился в iOS 16, а проект собирается с 15.0.
-    @ViewBuilder
-    func jetBoxListBackground() -> some View {
-        if #available(iOS 16.0, *) {
-            self.scrollContentBackground(.hidden).background(JBColor.background)
-        } else {
-            self
-        }
-    }
-}
-
 #endif

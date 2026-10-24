@@ -79,7 +79,6 @@ struct JetBoxSettingsView: View {
                     }
                 }
             }
-            .jetBoxListBackground()
             .overlay(alignment: .bottom) {
                 if let toast {
                     Text(toast)
