@@ -36,8 +36,6 @@ struct JetBoxSettingsView: View {
                 Section(JBText.settingsSectionBox) {
                     if let box {
                         JBRow(title: JBText.settingsBoxName, value: box.displayName)
-                        JBRow(title: JBText.settingsServer,
-                              value: URL(string: box.managementURL)?.host ?? box.managementURL)
                     } else {
                         Text(JBText.settingsNoBox)
                             .font(.subheadline)

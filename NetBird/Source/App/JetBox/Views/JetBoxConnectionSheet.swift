@@ -61,10 +61,6 @@ struct JetBoxConnectionSheet: View {
                     }
                 }
 
-                Section {
-                    JBRow(title: JBText.settingsServer,
-                          value: URL(string: box.managementURL)?.host ?? box.managementURL)
-                }
             }
             .navigationTitle(box.displayName)
             .navigationBarTitleDisplayMode(.inline)

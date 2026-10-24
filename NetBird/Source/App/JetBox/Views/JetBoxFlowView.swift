@@ -164,8 +164,8 @@ struct JetBoxFlowView: View {
                     .foregroundColor(JBColor.text)
                     .lineLimit(2)
                 Divider().overlay(JBColor.line)
-                JBRow(title: JBText.settingsServer,
-                      value: URL(string: payload.managementURL)?.host ?? payload.managementURL)
+                // Адрес сервера управления не показываем: клиент подключается
+                // к своему дому, а «сервер» сбивал бы с толку и его, и ревьюера.
                 // Ключ целиком не показываем нигде: на экране только хвост,
                 // чтобы поддержка могла сверить «та ли ссылка».
                 JBRow(title: JBText.readyKeyLabel, value: payload.maskedKey)

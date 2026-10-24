@@ -1363,23 +1363,6 @@
         }
       }
     },
-    "jetbox.settings.server": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Server"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сервер"
-          }
-        }
-      }
-    },
     "jetbox.settings.title": {
       "extractionState": "manual",
       "localizations": {

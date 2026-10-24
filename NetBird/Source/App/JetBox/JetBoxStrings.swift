@@ -98,7 +98,6 @@ enum JBText {
     static var settingsTitle: String { t("jetbox.settings.title") }
     static var settingsSectionBox: String { t("jetbox.settings.section.box") }
     static var settingsBoxName: String { t("jetbox.settings.name") }
-    static var settingsServer: String { t("jetbox.settings.server") }
     static var settingsExit: String { t("jetbox.settings.exit") }
     static var settingsNoBox: String { t("jetbox.settings.no_box") }
     static var settingsSectionApp: String { t("jetbox.settings.section.app") }
