@@ -3,8 +3,9 @@
 //  JetBox
 //
 //  Экран, который клиент видит после перехода по ссылке из Кабинета:
-//  от «вот ваша коробка, нажмите одну кнопку» до «вы под защитой».
-//  Перекрывает всё остальное, пока сценарий не закончится.
+//  от «вот ваш JetBox, нажмите одну кнопку» до «вы под защитой».
+//  Перекрывает всё остальное, пока сценарий не закончится. Тот же язык
+//  Liquid Glass, что и на главном: живой фон, щит на шагах и в успехе.
 //
 
 import SwiftUI
@@ -17,13 +18,22 @@ struct JetBoxFlowView: View {
 
     var body: some View {
         ZStack {
-            JBColor.background.ignoresSafeArea()
+            JetBoxBackdrop(phase: shieldPhase)
 
             VStack(spacing: 0) {
                 Spacer(minLength: 24)
 
-                JetBoxLogo(markHeight: 52)
-                    .padding(.bottom, 32)
+                // Один щит на все шаги прогресса и успех: так переход
+                // «крутится → под защитой» празднуется тем же видом.
+                if showsShield {
+                    JetBoxShield(phase: shieldPhase, diameter: 156,
+                                 accessibilityLabel: shieldPhase == .on ? JBText.protectedTitle : stepTitle,
+                                 celebratesOnAppear: true)
+                        .padding(.bottom, 28)
+                } else {
+                    JetBoxLogo(markHeight: 52)
+                        .padding(.bottom, 32)
+                }
 
                 content
                     .frame(maxWidth: 420)
@@ -36,6 +46,38 @@ struct JetBoxFlowView: View {
             }
             .padding(.horizontal, 24)
         }
+    }
+
+    private var showsShield: Bool {
+        switch jetbox.step {
+        case .registering, .connecting, .selectingExit, .protected: return true
+        default: return false
+        }
+    }
+
+    private var shieldPhase: JetBoxShieldPhase {
+        switch jetbox.step {
+        case .registering, .connecting, .selectingExit: return .working(reverse: false)
+        case .protected: return .on
+        case .failed: return .offline
+        default: return .off
+        }
+    }
+
+    private var stepTitle: String {
+        switch jetbox.step {
+        case .registering: return JBText.registering
+        case .connecting: return JBText.connecting
+        case .selectingExit: return JBText.selectingExit
+        default: return ""
+        }
+    }
+
+    private func stepText(_ title: String) -> some View {
+        Text(title)
+            .font(.body)
+            .foregroundColor(JBColor.text)
+            .multilineTextAlignment(.center)
     }
 
     /// Что уходит на сервер и что не уходит. App Review 5.4 требует показать
@@ -68,7 +110,7 @@ struct JetBoxFlowView: View {
                     .font(.footnote)
                     .foregroundColor(JBColor.muted)
                     .multilineTextAlignment(.center)
-                AppButton(JBText.readyButton) {
+                JBGlassButton(JBText.readyButton) {
                     jetbox.connect(viewModel: viewModel)
                 }
                 privacyNotice
@@ -86,19 +128,19 @@ struct JetBoxFlowView: View {
                     .font(.subheadline)
                     .foregroundColor(JBColor.muted)
                     .multilineTextAlignment(.center)
-                AppButton(JBText.switchConfirm) {
+                JBGlassButton(JBText.switchConfirm) {
                     jetbox.confirmSwitch(viewModel: viewModel)
                 }
             }
 
         case .registering:
-            JBProgress(title: JBText.registering)
+            stepText(JBText.registering)
 
         case .connecting:
-            JBProgress(title: JBText.connecting)
+            stepText(JBText.connecting)
 
         case .selectingExit:
-            JBProgress(title: JBText.selectingExit)
+            stepText(JBText.selectingExit)
 
         case .chooseExit(_, let options):
             JetBoxExitPickerView(options: options)
@@ -133,9 +175,6 @@ struct JetBoxFlowView: View {
 
     private func protectedView(exitNode: String?) -> some View {
         VStack(spacing: 18) {
-            Image(systemName: "checkmark.shield.fill")
-                .font(.system(size: 64))
-                .foregroundColor(JBColor.ok)
             Text(JBText.protectedTitle)
                 .font(.title2.weight(.semibold))
                 .foregroundColor(JBColor.text)
@@ -153,12 +192,12 @@ struct JetBoxFlowView: View {
     private var footer: some View {
         switch jetbox.step {
         case .protected:
-            AppButton(JBText.done, style: .secondary) { jetbox.dismiss() }
+            JBGlassButton(JBText.done, role: .secondary) { jetbox.dismiss() }
 
         case .failed(let failure):
             VStack(spacing: 10) {
                 if failure.isRetryable {
-                    AppButton(JBText.retry) { jetbox.retry(viewModel: viewModel) }
+                    JBGlassButton(JBText.retry) { jetbox.retry(viewModel: viewModel) }
                 }
                 Button(JBText.close) { jetbox.dismiss() }
                     .font(.subheadline)
