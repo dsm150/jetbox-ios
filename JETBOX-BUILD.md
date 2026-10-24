@@ -168,7 +168,7 @@ xcrun simctl ui booted appearance dark   # / light
 
 Версия всех таргетов — **1.0**, сборка растёт на каждую загрузку в
 App Store Connect: 1.0 (1) — 10.09.2026, 1.0 (2) — 24.10.2026 (апстрим
-v0.4.1+). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
+v0.4.1+), 1.0 (3) — 24.10.2026 (Liquid Glass, щит-кнопка, новая иконка). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
 (`sed -i '' 's/CURRENT_PROJECT_VERSION = N;/CURRENT_PROJECT_VERSION = N+1;/g'`) —
 Apple требует совпадения версий у расширений с приложением.
 
@@ -214,10 +214,37 @@ Finder перетаскиванием `.ipa` **не ставит**: раздач
 
 По умолчанию приложение в **простом режиме**: свои экраны JetBox, вкладки
 NetBird (Peers, Resources, Settings с Advanced/Troubleshoot/Profiles/Change
-Server) спрятаны. Флаг — `jetbox.advancedMode` в `UserDefaults.standard`.
+Server) спрятаны. Флаги — `jetbox.advancedUnlocked` и `jetbox.advancedMode`
+в App Group.
 
-Включается тумблером **Настройки → Расширенный режим**; обратно —
-тем же тумблером в первой секции апстримового экрана Settings.
+Открывается **семью быстрыми нажатиями по строке «Версия»** в настройках
+JetBox (с четвёртого — «Ещё N нажатий…»), затем пункт «Расширенные
+настройки». Обратно — первая строка апстримового экрана Settings
+«Выключить расширенные настройки»: закрывает и режим, и доступ.
+
+## 5a. Оформление Liquid Glass и демо щита
+
+С 1.0 (3) экраны JetBox — в языке Liquid Glass (iOS 26): стеклянный щит-кнопка,
+стеклянные капсулы и кнопка настроек, живой фон. На iOS 15–25 — тот же макет
+с материалом `.ultraThinMaterial` и заливными капсулами. Компоненты —
+`Views/JetBoxShield.swift`, `JetBoxGlass.swift`, `JetBoxBackdrop.swift`;
+действие щита и кнопки — одна функция `JetBoxPowerAction` (тесты
+`JetBoxPowerActionTests`). Иконка — `JetBox/AppIcon.icon` (Icon Composer),
+для iOS до 26 — одноимённый `AppIcon.appiconset`. Рендер вариантов иконки:
+
+```bash
+"/Applications/Xcode 2.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool" \
+  NetBird/Source/App/JetBox/AppIcon.icon --export-image --output-file /tmp/icon.png \
+  --platform iOS --rendition Default --width 1024 --height 1024 --scale 1   # Dark, ClearLight, TintedDark…
+```
+
+Туннель в симуляторе не поднимается, поэтому для съёмки главного экрана есть
+**DEBUG-демо** (в релизную сборку не попадает):
+
+```bash
+xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo                       # тап по щиту отыгрывает фазы
+xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo -JetBoxShieldDemoState connecting   # сразу в фазе
+```
 
 Апстримовые экраны **спрятаны, а не удалены** — иначе каждый ребейз
 превращался бы в разбор конфликтов.
