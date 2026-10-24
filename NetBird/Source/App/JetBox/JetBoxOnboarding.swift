@@ -178,8 +178,10 @@ final class JetBoxOnboarding: ObservableObject {
                 await applyExitNode(named: name, viewModel: viewModel)
                 JetBoxStore.rememberExitNode(name)
                 step = .protected(exitNode: name)
+                JetBoxNotifications.requestIfNeeded()
             } else {
                 step = .protected(exitNode: nil)
+                JetBoxNotifications.requestIfNeeded()
             }
         }
     }
@@ -246,10 +248,12 @@ final class JetBoxOnboarding: ObservableObject {
         case .selected(let name):
             JetBoxStore.rememberExitNode(name)
             step = .protected(exitNode: name)
+            JetBoxNotifications.requestIfNeeded()
         case .ambiguous(let options):
             step = .chooseExit(payload, options: options)
         case .none:
             step = .protected(exitNode: nil)
+            JetBoxNotifications.requestIfNeeded()
         }
     }
 

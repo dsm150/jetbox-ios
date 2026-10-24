@@ -57,13 +57,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         let center = UNUserNotificationCenter.current()
         center.delegate = self
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if let error = error {
-                AppLogger.shared.log("Notification authorization error: \(error.localizedDescription)")
-            } else {
-                AppLogger.shared.log("Notification authorization granted: \(granted)")
-            }
-        }
+        // JetBox: разрешение на уведомления спрашивается не при запуске, а когда
+        // защита впервые включилась — JetBoxNotifications.requestIfNeeded().
 
         return true
     }
