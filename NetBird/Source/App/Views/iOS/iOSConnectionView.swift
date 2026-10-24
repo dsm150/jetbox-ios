@@ -118,8 +118,14 @@ struct iOSConnectionView: View {
                                 .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }
 
-                        ExitNodeSelectorCard(routeViewModel: viewModel.routeViewModel)
-                            .padding(.horizontal, 16)
+                        // With client routes disabled by policy the engine
+                        // installs none, so the selector would be a control
+                        // that cannot do anything - drop it rather than show
+                        // it dead.
+                        if !viewModel.mdmRestrictions.mdm.disableClientRoutes {
+                            ExitNodeSelectorCard(routeViewModel: viewModel.routeViewModel)
+                                .padding(.horizontal, 16)
+                        }
                     }
                     .padding(.bottom, 16)
                     .animation(.easeInOut(duration: 0.3), value: viewModel.isInternetConnected)
@@ -185,12 +191,10 @@ struct iOSConnectionView: View {
         }
         .onAppear {
             // Returning to this tab doesn't go through applyExtensionStatus, so refresh the
-            // network map here to keep the exit node selector current. Only while connected:
-            // GetRoutes answers with an empty list when there is no tunnel session and would
-            // wipe a list that is still valid.
-            if viewModel.vpnDisplayState == .connected {
-                viewModel.routeViewModel.getRoutes()
-            }
+            // network map here to keep the exit node selector current. Unconditional: a read
+            // with no tunnel session fails instead of answering "zero routes", and a failed
+            // read leaves the cached list alone (see RoutesViewModel.getRoutes).
+            viewModel.routeViewModel.getRoutes()
         }
     }
 
