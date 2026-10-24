@@ -168,7 +168,8 @@ xcrun simctl ui booted appearance dark   # / light
 
 Версия всех таргетов — **1.0**, сборка растёт на каждую загрузку в
 App Store Connect: 1.0 (1) — 10.09.2026, 1.0 (2) — 24.10.2026 (апстрим
-v0.4.1+), 1.0 (3) — 24.10.2026 (Liquid Glass, щит-кнопка, новая иконка). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
+v0.4.1+), 1.0 (3) — 24.10.2026 (Liquid Glass, щит-кнопка, новая иконка), 1.0 (4) — 24.10.2026
+(стеклянная панель дома, уведомления после подключения, «О программе» без NetBird). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
 (`sed -i '' 's/CURRENT_PROJECT_VERSION = N;/CURRENT_PROJECT_VERSION = N+1;/g'`) —
 Apple требует совпадения версий у расширений с приложением.
 
@@ -225,7 +226,11 @@ JetBox (с четвёртого — «Ещё N нажатий…»), затем 
 ## 5a. Оформление Liquid Glass и демо щита
 
 С 1.0 (3) экраны JetBox — в языке Liquid Glass (iOS 26): стеклянный щит-кнопка,
-стеклянные капсулы и кнопка настроек, живой фон. На iOS 15–25 — тот же макет
+стеклянные капсулы и кнопка настроек, живой фон. С 1.0 (4) включает и выключает
+**только щит**; внизу — стеклянная панель дома (`Views/JetBoxHomeDock.swift`:
+время в сети, пинг до дома, напрямую/ретранслятор; данные — `JetBoxLiveStats`),
+по нажатию — лист `JetBoxConnectionSheet` (выбор выхода — только если выходов
+больше одного). На iOS 15–25 — тот же макет
 с материалом `.ultraThinMaterial` и заливными капсулами. Компоненты —
 `Views/JetBoxShield.swift`, `JetBoxGlass.swift`, `JetBoxBackdrop.swift`;
 действие щита и кнопки — одна функция `JetBoxPowerAction` (тесты
@@ -244,6 +249,7 @@ JetBox (с четвёртого — «Ещё N нажатий…»), затем 
 ```bash
 xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo                       # тап по щиту отыгрывает фазы
 xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo -JetBoxShieldDemoState connecting   # сразу в фазе
+xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo -JetBoxShieldDemoState connected -JetBoxShieldDemoDetails YES  # с листом подробностей
 ```
 
 Апстримовые экраны **спрятаны, а не удалены** — иначе каждый ребейз
@@ -295,7 +301,9 @@ git -c merge.conflictstyle=zdiff3 merge --no-ff --no-commit <тег>
 | Файл | Наше | Что берём у апстрима |
 |---|---|---|
 | `NetbirdKit/NetworkExtensionAdapter.swift` | `extensionID = net.jet-net.jetbox.NetworkExtension`, `extensionName = "JetBox"`, поиск профиля через `isOurProfile` (имя + `providerBundleIdentifier`, старое имя узнаётся) | всё остальное. ⚠️ С v0.4.1 апстрим выводит ID из бандла как `<bundle>.NetbirdNetworkExtension` — у нас суффикс другой, шаблон не подходит |
-| `NetBird/Source/App/NetBirdApp.swift` | `configureFirebaseIfNeeded() {}` — пустая, Firebase в форке нет | новые точки жизненного цикла |
+| `NetBird/Source/App/NetBirdApp.swift` | `configureFirebaseIfNeeded() {}` — пустая, Firebase в форке нет; в `AppDelegate` **нет** `requestAuthorization` (спрашиваем после первого подключения — `JetBoxNotifications`) | новые точки жизненного цикла |
+| `NetBird/Source/App/ViewModels/MainViewModel.swift` | в `startPollingDetails` под `#if os(iOS)` — `JetBoxLiveStats.shared.ingest(details, connectedSince:)` (живые показатели панели) | всё остальное |
+| `NetBird/Source/App/Views/AboutView.swift` | без «Join Beta Program» и алерта TestFlight NetBird; ссылки — `JetBoxConfig.licenseURL`/`privacyPolicyURL`; «© <год> JetNet» | новые строки экрана |
 | `NetBird/Source/App/Views/MainView.swift` | флаг простого режима, `JetBoxHomeView`, оверлей `JetBoxFlowView`, анимация `jetbox.step` | модификаторы рядом (`onAppear` и т. п.) — обе стороны |
 | `NetBird/Source/App/Views/iOS/iOSSettingsView.swift` | первой строкой `JetBoxAdvancedModeSection` | секции и гейты — обе стороны |
 | `NetbirdNetworkExtension/PacketTunnelProvider.swift` | — | группа приложений через `GlobalConstants.userPreferencesSuiteName` (у нас там `group.net.jet-net.jetbox`) |
