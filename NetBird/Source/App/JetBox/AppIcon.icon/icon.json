@@ -1,0 +1,57 @@
+{
+  "fill-specializations" : [
+    {
+      "value" : {
+        "linear-gradient" : [
+          "srgb:0.15294,0.23922,0.34510,1.00000",
+          "srgb:0.11373,0.36863,0.61176,1.00000"
+        ],
+        "orientation" : {
+          "start" : { "x" : 0.5, "y" : 0 },
+          "stop" : { "x" : 0.5, "y" : 1 }
+        }
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "linear-gradient" : [
+          "srgb:0.04314,0.07843,0.12549,1.00000",
+          "srgb:0.10196,0.20392,0.32549,1.00000"
+        ],
+        "orientation" : {
+          "start" : { "x" : 0.5, "y" : 0 },
+          "stop" : { "x" : 0.5, "y" : 1 }
+        }
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "jb-letters.svg",
+          "name" : "letters",
+          "position" : { "scale" : 0.72, "translation-in-points" : [ 0, 0 ] }
+        }
+      ],
+      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
+      "specular" : true,
+      "translucency" : { "enabled" : true, "value" : 0.15 }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "jb-trails.svg",
+          "name" : "trails",
+          "position" : { "scale" : 0.72, "translation-in-points" : [ 0, 0 ] }
+        }
+      ],
+      "shadow" : { "kind" : "neutral", "opacity" : 0.4 },
+      "specular" : true
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}
