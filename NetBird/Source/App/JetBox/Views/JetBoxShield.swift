@@ -63,7 +63,7 @@ struct JetBoxShield: View {
                 .id(phase.symbol)
                 .transition(.opacity.combined(with: .scale(scale: 0.88)))
             Circle()
-                .stroke(JBColor.ok, lineWidth: 2)
+                .stroke(JBColor.accent, lineWidth: 2)
                 .frame(width: diameter, height: diameter)
                 .scaleEffect(waveScale)
                 .opacity(waveOpacity)
@@ -74,8 +74,8 @@ struct JetBoxShield: View {
         .contentShape(Circle())
     }
 
-    /// Под защитой — сплошной зелёный щит с белой галочкой: на зелёном
-    /// стекле иерархическая заливка сливалась с фоном.
+    /// Под защитой — сплошной фирменный синий щит с белой галочкой: на
+    /// тонированном стекле иерархическая заливка сливалась с фоном.
     @ViewBuilder
     private var symbol: some View {
         if phase == .on {
@@ -107,8 +107,9 @@ struct JetBoxShield: View {
     private var discTint: Color {
         switch phase {
         case .off: return JBColor.muted.opacity(0.10)
-        case .on: return phase.tint.opacity(0.18)
-        case .working, .offline: return phase.tint.opacity(0.24)
+        case .working: return phase.tint.opacity(0.16)
+        case .on: return phase.tint.opacity(0.30)
+        case .offline: return phase.tint.opacity(0.24)
         }
     }
 
@@ -152,7 +153,7 @@ struct JetBoxShield: View {
         case .on:
             let b = breath(t, period: 4)
             Circle()
-                .fill(RadialGradient(gradient: Gradient(colors: [JBColor.ok.opacity(0.38), JBColor.ok.opacity(0)]),
+                .fill(RadialGradient(gradient: Gradient(colors: [JBColor.accent.opacity(0.40), JBColor.accent.opacity(0)]),
                                      center: .center,
                                      startRadius: diameter * 0.35, endRadius: diameter * 0.78))
                 .frame(width: diameter * 1.6, height: diameter * 1.6)

@@ -117,7 +117,7 @@ struct JetBoxHomeLayout: View {
 
                 Text(statusText)
                     .font(.title2.weight(.semibold))
-                    .foregroundColor(phase == .on ? JBColor.ok : JBColor.text)
+                    .foregroundColor(phase == .on ? JBColor.accent : JBColor.text)
                     .multilineTextAlignment(.center)
                     .animation(.easeInOut(duration: 0.3), value: phase)
 

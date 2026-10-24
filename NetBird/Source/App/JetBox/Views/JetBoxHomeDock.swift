@@ -112,9 +112,8 @@ struct JetBoxHomeDock: View {
 
     private var tint: Color {
         switch phase {
-        case .on: return JBColor.ok
         case .offline: return JBColor.warn
-        case .off, .working: return JBColor.accent
+        case .off, .working, .on: return JBColor.accent
         }
     }
 }

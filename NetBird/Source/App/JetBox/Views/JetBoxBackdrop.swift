@@ -4,7 +4,7 @@
 //
 //  Фон под стеклом: три мягких пятна фирменного цвета медленно дрейфуют.
 //  Стеклу Apple нужно, что преломлять — на ровном фоне оно выглядит серым.
-//  Под защитой пятна перетекают в зелёный. Радиальный градиент вместо blur:
+//  Под защитой пятна насыщаются фирменным синим. Радиальный градиент вместо blur:
 //  тот же вид без постоянной нагрузки на GPU.
 //
 
@@ -45,20 +45,24 @@ struct JetBoxBackdrop: View {
 
     private var strength: Double { scheme == .dark ? 0.34 : 0.24 }
 
+    /// Только фирменные цвета: синий насыщается от «выключено» к «под
+    /// защитой» (зелёный убран по решению владельца 24.10.2026).
     private var primary: Color {
         switch phase {
-        case .on: return JBColor.ok.opacity(strength)
+        case .off: return JBColor.accent.opacity(strength * 0.6)
+        case .working: return JBColor.accent.opacity(strength)
+        case .on: return JBColor.accent.opacity(min(strength * 1.45, 0.5))
         case .offline: return JBColor.warn.opacity(strength * 0.8)
-        case .off, .working: return JBColor.accent.opacity(strength)
         }
     }
 
     /// Второй тон — голубее фирменного синего, чтобы фон не был плоским.
     private var secondary: Color {
         switch phase {
-        case .on: return JBColor.ok.opacity(strength * 0.7)
         case .offline: return JBColor.warn.opacity(strength * 0.5)
-        case .off, .working: return Color(red: 0.36, green: 0.76, blue: 1.0).opacity(strength * 0.8)
+        case .off: return Color(red: 0.36, green: 0.76, blue: 1.0).opacity(strength * 0.5)
+        case .working: return Color(red: 0.36, green: 0.76, blue: 1.0).opacity(strength * 0.8)
+        case .on: return Color(red: 0.36, green: 0.76, blue: 1.0).opacity(strength * 1.2)
         }
     }
 

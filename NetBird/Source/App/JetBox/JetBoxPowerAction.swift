@@ -60,7 +60,8 @@ enum JetBoxShieldPhase: Equatable {
         switch self {
         case .off: return JBColor.muted
         case .working: return JBColor.accent
-        case .on: return JBColor.ok
+        // Под защитой — фирменный синий, не зелёный (решение владельца 24.10.2026).
+        case .on: return JBColor.accent
         case .offline: return JBColor.warn
         }
     }
