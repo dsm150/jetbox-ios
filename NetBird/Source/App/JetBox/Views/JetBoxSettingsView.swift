@@ -38,8 +38,6 @@ struct JetBoxSettingsView: View {
                         JBRow(title: JBText.settingsBoxName, value: box.displayName)
                         JBRow(title: JBText.settingsServer,
                               value: URL(string: box.managementURL)?.host ?? box.managementURL)
-                        JBRow(title: JBText.settingsExit,
-                              value: box.effectiveExitNode ?? JBText.homeExitNone)
                     } else {
                         Text(JBText.settingsNoBox)
                             .font(.subheadline)
@@ -152,10 +150,18 @@ struct JetBoxAboutView: View {
                         .foregroundColor(JBColor.accent)
                     // GPL-3.0 обязывает открыть исходники форка — ссылка
                     // стоит рядом с упоминанием лицензии в тексте выше.
-                    Link(JBText.aboutSource,
-                         destination: URL(string: "https://github.com/dsm150/jetbox-ios")!)
+                    Link(JBText.aboutSource, destination: JetBoxConfig.sourceCodeURL)
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(JBColor.accent)
+                    Link(JBText.aboutLicense, destination: JetBoxConfig.licenseURL)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(JBColor.accent)
+                    // Сведения, которые GPL-3.0 §5(d) требует показывать в
+                    // интерфейсе: авторские права, отсутствие гарантий, лицензия.
+                    Text(JBText.aboutLegal(String(Calendar.current.component(.year, from: Date()))))
+                        .font(.footnote)
+                        .foregroundColor(JBColor.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.vertical, 8)
             }

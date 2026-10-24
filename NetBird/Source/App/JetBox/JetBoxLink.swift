@@ -29,6 +29,9 @@ enum JetBoxConfig {
     /// о данных. App Review 5.4 требует объявить сбор данных на экране
     /// **до** того, как клиент нажмёт «Подключить».
     static let privacyPolicyURL = URL(string: "https://jet-net.net/privacy")!
+    /// Исходники форка и текст лицензии — GPL-3.0 требует их доступности.
+    static let sourceCodeURL = URL(string: "https://github.com/dsm150/jetbox-ios")!
+    static let licenseURL = URL(string: "https://github.com/dsm150/jetbox-ios/blob/main/LICENSE")!
 }
 
 // MARK: - Полезная нагрузка ссылки

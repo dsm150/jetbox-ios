@@ -36,7 +36,8 @@ struct AboutView: View {
             }
 
             Section {
-                if let termsURL = URL(string: "https://netbird.io/terms") {
+                // JetBox: лицензия форка и наша политика вместо страниц NetBird.
+                if let termsURL = Optional(JetBoxConfig.licenseURL) {
                     Link(destination: termsURL) {
                         HStack {
                             Text("License agreement")
@@ -49,7 +50,7 @@ struct AboutView: View {
                     }
                 }
 
-                if let privacyURL = URL(string: "https://netbird.io/privacy") {
+                if let privacyURL = Optional(JetBoxConfig.privacyPolicyURL) {
                     Link(destination: privacyURL) {
                         HStack {
                             Text("Privacy policy")
@@ -64,15 +65,9 @@ struct AboutView: View {
             }
 
             Section {
-                Button("Join Beta Program") {
-                    viewModel.showBetaProgramAlert = true
-                }
-            }
-
-            Section {
                 HStack {
                     Spacer()
-                    Text("\u{00A9} \(String(Calendar.current.component(.year, from: Date()))) NetBird all rights reserved")
+                    Text("\u{00A9} \(String(Calendar.current.component(.year, from: Date()))) JetNet")
                         .font(.footnote)
                         .foregroundColor(Color("TextSecondary"))
                     Spacer()
@@ -83,18 +78,6 @@ struct AboutView: View {
         .listStyle(InsetGroupedListStyle())
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
-        .alert(isPresented: $viewModel.showBetaProgramAlert) {
-            Alert(
-                title: Text("Join TestFlight Beta"),
-                message: Text("By signing up for TestFlight you will receive new updates early and can give us valuable feedback before the official release."),
-                primaryButton: .default(Text("Sign Up")) {
-                    if let url = URL(string: "https://testflight.apple.com/join/jISzXOP8") {
-                        UIApplication.shared.open(url)
-                    }
-                },
-                secondaryButton: .cancel()
-            )
-        }
     }
 
     private var appVersion: String {
