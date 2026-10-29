@@ -8,7 +8,7 @@
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.net.jet-net.jetbox.tv</string>
+		<string>group.net.jetnet.jetbox.tv</string>
 	</array>
 </dict>
 </plist>

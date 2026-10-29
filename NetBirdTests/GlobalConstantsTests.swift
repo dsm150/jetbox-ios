@@ -17,6 +17,6 @@ final class GlobalConstantsTests: XCTestCase {
     }
 
     func testUserPreferencesSuiteName() {
-        XCTAssertEqual(GlobalConstants.userPreferencesSuiteName, "group.net.jet-net.jetbox")
+        XCTAssertEqual(GlobalConstants.userPreferencesSuiteName, "group.net.jetnet.jetbox")
     }
 }

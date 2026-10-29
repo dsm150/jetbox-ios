@@ -22,7 +22,7 @@
 		     ни в Referer, ни в историю редиректов. -->
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>net.jet-net.jetbox</string>
+			<string>net.jetnet.jetbox</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>jetbox</string>

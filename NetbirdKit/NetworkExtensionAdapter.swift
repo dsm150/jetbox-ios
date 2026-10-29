@@ -120,13 +120,13 @@ public class NetworkExtensionAdapter: ObservableObject {
     var vpnManager: NETunnelProviderManager?
 
     #if os(tvOS)
-    var extensionID = "net.jet-net.jetbox.tv.extension"
+    var extensionID = "net.jetnet.jetbox.tv.extension"
     var extensionName = "JetBox"
     /// JetBox: имена профиля из прежних сборок — по ним профиль ещё узнаётся.
     let legacyExtensionNames = ["NetBird"]
     private let loginRetryState = LoginRetryState()
     #else
-    var extensionID = "net.jet-net.jetbox.NetworkExtension"
+    var extensionID = "net.jetnet.jetbox.NetworkExtension"
     var extensionName = "JetBox"
     /// JetBox: имена профиля из прежних сборок — по ним профиль ещё узнаётся.
     let legacyExtensionNames = ["NetBird Network Extension"]

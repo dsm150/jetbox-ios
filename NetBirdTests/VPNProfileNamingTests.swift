@@ -16,13 +16,13 @@ import XCTest
 
 final class VPNProfileNamingTests: XCTestCase {
 
-    private let ourBundleID = "net.jet-net.jetbox.NetworkExtension"
+    private let ourBundleID = "net.jetnet.jetbox.NetworkExtension"
     private let legacyName = "NetBird Network Extension"
 
     private let naming = VPNProfileNaming(
         name: "JetBox",
         legacyNames: ["NetBird Network Extension"],
-        providerBundleIdentifier: "net.jet-net.jetbox.NetworkExtension"
+        providerBundleIdentifier: "net.jetnet.jetbox.NetworkExtension"
     )
 
     // MARK: - Свой профиль
@@ -88,7 +88,7 @@ final class VPNProfileNamingTests: XCTestCase {
     func testAdapterUsesJetBoxNameAndKnowsTheLegacyOne() {
         let adapter = NetworkExtensionAdapter()
         XCTAssertEqual(adapter.extensionName, "JetBox")
-        XCTAssertEqual(adapter.extensionID, "net.jet-net.jetbox.NetworkExtension")
+        XCTAssertEqual(adapter.extensionID, "net.jetnet.jetbox.NetworkExtension")
         XCTAssertTrue(adapter.legacyExtensionNames.contains("NetBird Network Extension"))
 
         // Профиль, оставшийся от прежней сборки, адаптер обязан узнать

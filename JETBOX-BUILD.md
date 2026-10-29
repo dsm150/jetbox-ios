@@ -116,13 +116,19 @@ Swift-package-зависимостей у форка нет: Firebase и Lottie 
 
 | Таргет | Bundle ID |
 |---|---|
-| NetBird (приложение) | `net.jet-net.jetbox` |
-| NetbirdNetworkExtension | `net.jet-net.jetbox.NetworkExtension` |
-| NetBirdWidgetExtensionExtension | `net.jet-net.jetbox.WidgetExtension` |
-| App Group (все три) | `group.net.jet-net.jetbox` |
+| NetBird (приложение) | `net.jetnet.jetbox` |
+| NetbirdNetworkExtension | `net.jetnet.jetbox.NetworkExtension` |
+| NetBirdWidgetExtensionExtension | `net.jetnet.jetbox.WidgetExtension` |
+| App Group (все три) | `group.net.jetnet.jetbox` |
 | Associated Domains | `applinks:box.jet-net.net` |
 
-`DEVELOPMENT_TEAM` намеренно пустой — Team выбирает владелец.
+`DEVELOPMENT_TEAM` намеренно пустой — команда передаётся командой сборки.
+С 1.0 (8) (29.10.2026) приложение живёт в команде организации **INSTASHOP
+Corporation, `FRPY3A4QGK`** (ASC: приложение `6828493462`). До 1.0 (7) были
+`net.jet-net.jetbox…` в команде частного лица `U2ZLMVKGQR` — Apple отклонила по
+Guideline 5.4 (VPN только от организации); те ID остались в старой команде.
+Миграции VPN-профиля со старого ID нет и быть не может: это другое приложение,
+iOS не показывает ему чужие профили — пользователь ставит новое и открывает ссылку заново.
 
 Что завести в аккаунте Apple Developer (App ID, App Group, capabilities) —
 пошагово в [../APPLE-SETUP.md](../APPLE-SETUP.md).
@@ -165,8 +171,8 @@ xcrun simctl openurl booted \
 Смена языка и темы в симуляторе:
 
 ```bash
-xcrun simctl launch booted net.jet-net.jetbox -AppleLanguages "(ru)" -AppleLocale ru_RU
-xcrun simctl launch booted net.jet-net.jetbox -AppleLanguages "(en)" -AppleLocale en_US
+xcrun simctl launch booted net.jetnet.jetbox -AppleLanguages "(ru)" -AppleLocale ru_RU
+xcrun simctl launch booted net.jetnet.jetbox -AppleLanguages "(en)" -AppleLocale en_US
 xcrun simctl ui booted appearance dark   # / light
 ```
 
@@ -182,20 +188,26 @@ v0.4.1+), 1.0 (3) — 24.10.2026 (Liquid Glass, щит-кнопка, новая 
 (стеклянная панель дома, уведомления после подключения, «О программе» без NetBird),
 1.0 (5) — 24.10.2026 (фирменный синий, «до дома» замером DNS, напрямую по умолчанию,
 патч ядра на трафик), 1.0 (6) — 25.10.2026 (нигде не показываем «Сервер»), 1.0 (7) — 25.10.2026 (имя дома
-обновляется по ссылке, лист подробностей по высоте содержимого). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
+обновляется по ссылке, лист подробностей по высоте содержимого), 1.0 (8) — 29.10.2026 (переезд
+в команду `FRPY3A4QGK`, ID `net.jetnet.jetbox…`). Поднимать `CURRENT_PROJECT_VERSION` **сразу во всех таргетах**
 (`sed -i '' 's/CURRENT_PROJECT_VERSION = N;/CURRENT_PROJECT_VERSION = N+1;/g'`) —
 Apple требует совпадения версий у расширений с приложением.
 
-Архив подписывается облачной подписью по ASC-ключу (`~/.config/jetbox-ios/`),
-физический Xcode у телефона не нужен:
+Архив подписывается облачной подписью по ASC-ключу команды `FRPY3A4QGK`
+(`~/.config/jetbox-ios-cardo/`, роль Admin; старый `~/.config/jetbox-ios/` — команда
+`U2ZLMVKGQR`, для JetBox больше не нужен), физический Xcode у телефона не нужен.
+Сертификат распространения — существующий «iOS Distribution: INSTASHOP Corporation»
+(его ключ уже в связке ключей этого мака), профили «iOS Team Store Provisioning
+Profile: net.jetnet.jetbox…» Xcode завёл сам:
 
 ```bash
+K=~/.config/jetbox-ios-cardo
 xcodebuild -project NetBird.xcodeproj -scheme NetBird \
   -destination 'generic/platform=iOS' -archivePath build/JetBox.xcarchive archive \
-  DEVELOPMENT_TEAM=$(cat ~/.config/jetbox-ios/asc.team) -allowProvisioningUpdates \
-  -authenticationKeyPath ~/.config/jetbox-ios/asc.p8 \
-  -authenticationKeyID $(cat ~/.config/jetbox-ios/asc.keyid) \
-  -authenticationKeyIssuerID $(cat ~/.config/jetbox-ios/asc.issuer)
+  DEVELOPMENT_TEAM=FRPY3A4QGK -allowProvisioningUpdates \
+  -authenticationKeyPath $K/asc.p8 \
+  -authenticationKeyID $(cat $K/asc.keyid) \
+  -authenticationKeyIssuerID $(cat $K/asc.issuer)
 
 xcodebuild -exportArchive -archivePath build/JetBox.xcarchive \
   -exportPath build/export -exportOptionsPlist build/ExportOptions.plist \
@@ -204,15 +216,15 @@ xcodebuild -exportArchive -archivePath build/JetBox.xcarchive \
 ```
 
 Для **App Store / TestFlight** — `build/ExportOptions-appstore.plist`:
-`method=app-store`, `uploadSymbols=false`, `destination=export`, `teamID` из
-`asc.team` (с `app-store-connect` + `uploadSymbols` экспорт падает «Copy
-failed»). Дальше проверка и загрузка ключом ASC (altool ищет ключ в
-`~/.appstoreconnect/private_keys/AuthKey_<KID>.p8`):
+`method=app-store`, `uploadSymbols=false`, `destination=export`,
+`teamID=FRPY3A4QGK` (с `app-store-connect` + `uploadSymbols` экспорт падает «Copy
+failed»). Дальше проверка и загрузка ключом ASC; путь к ключу — `--p8-file-path`
+(в `~/.appstoreconnect/private_keys/` ключ JetBox не кладём — там чужие ключи команды):
 
 ```bash
-KID=$(cat ~/.config/jetbox-ios/asc.keyid); ISS=$(cat ~/.config/jetbox-ios/asc.issuer)
-xcrun altool --validate-app -f build/export-appstore-N/NetBird.ipa -t ios --apiKey $KID --apiIssuer $ISS
-xcrun altool --upload-app   -f build/export-appstore-N/NetBird.ipa -t ios --apiKey $KID --apiIssuer $ISS
+K=~/.config/jetbox-ios-cardo; KID=$(cat $K/asc.keyid); ISS=$(cat $K/asc.issuer)
+xcrun altool --validate-app -f build/export-appstore-N/NetBird.ipa -t ios --apiKey $KID --apiIssuer $ISS --p8-file-path $K/asc.p8
+xcrun altool --upload-app   -f build/export-appstore-N/NetBird.ipa -t ios --apiKey $KID --apiIssuer $ISS --p8-file-path $K/asc.p8
 ```
 
 Сборка обрабатывается 5–30 мин, потом её надо **привязать к версии** в ASC
@@ -260,9 +272,9 @@ JetBox (с четвёртого — «Ещё N нажатий…»), затем 
 **DEBUG-демо** (в релизную сборку не попадает):
 
 ```bash
-xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo                       # тап по щиту отыгрывает фазы
-xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo -JetBoxShieldDemoState connecting   # сразу в фазе
-xcrun simctl launch <UDID> net.jet-net.jetbox -JetBoxShieldDemo -JetBoxShieldDemoState connected -JetBoxShieldDemoDetails YES  # с листом подробностей
+xcrun simctl launch <UDID> net.jetnet.jetbox -JetBoxShieldDemo                       # тап по щиту отыгрывает фазы
+xcrun simctl launch <UDID> net.jetnet.jetbox -JetBoxShieldDemo -JetBoxShieldDemoState connecting   # сразу в фазе
+xcrun simctl launch <UDID> net.jetnet.jetbox -JetBoxShieldDemo -JetBoxShieldDemoState connected -JetBoxShieldDemoDetails YES  # с листом подробностей
 ```
 
 Апстримовые экраны **спрятаны, а не удалены** — иначе каждый ребейз
@@ -313,19 +325,19 @@ git -c merge.conflictstyle=zdiff3 merge --no-ff --no-commit <тег>
 
 | Файл | Наше | Что берём у апстрима |
 |---|---|---|
-| `NetbirdKit/NetworkExtensionAdapter.swift` | `extensionID = net.jet-net.jetbox.NetworkExtension`, `extensionName = "JetBox"`, поиск профиля через `isOurProfile` (имя + `providerBundleIdentifier`, старое имя узнаётся) | всё остальное. ⚠️ С v0.4.1 апстрим выводит ID из бандла как `<bundle>.NetbirdNetworkExtension` — у нас суффикс другой, шаблон не подходит |
+| `NetbirdKit/NetworkExtensionAdapter.swift` | `extensionID = net.jetnet.jetbox.NetworkExtension`, `extensionName = "JetBox"`, поиск профиля через `isOurProfile` (имя + `providerBundleIdentifier`, старое имя узнаётся) | всё остальное. ⚠️ С v0.4.1 апстрим выводит ID из бандла как `<bundle>.NetbirdNetworkExtension` — у нас суффикс другой, шаблон не подходит |
 | `NetBird/Source/App/NetBirdApp.swift` | `configureFirebaseIfNeeded() {}` — пустая, Firebase в форке нет; в `AppDelegate` **нет** `requestAuthorization` (спрашиваем после первого подключения — `JetBoxNotifications`); в `init` — одна строка `JetBoxStartup.run()` | новые точки жизненного цикла |
 | `netbird-core` (сабмодуль) | правок в дереве нет — только `patches/netbird-core/*.patch` | пин ядра |
 | `NetBird/Source/App/ViewModels/MainViewModel.swift` | в `startPollingDetails` под `#if os(iOS)` — `JetBoxLiveStats.shared.ingest(details, connectedSince:)` (живые показатели панели) | всё остальное |
 | `NetBird/Source/App/Views/AboutView.swift` | без «Join Beta Program» и алерта TestFlight NetBird; ссылки — `JetBoxConfig.licenseURL`/`privacyPolicyURL`; «© <год> JetNet» | новые строки экрана |
 | `NetBird/Source/App/Views/MainView.swift` | флаг простого режима, `JetBoxHomeView`, оверлей `JetBoxFlowView`, анимация `jetbox.step` | модификаторы рядом (`onAppear` и т. п.) — обе стороны |
 | `NetBird/Source/App/Views/iOS/iOSSettingsView.swift` | первой строкой `JetBoxAdvancedModeSection` | секции и гейты — обе стороны |
-| `NetbirdNetworkExtension/PacketTunnelProvider.swift` | — | группа приложений через `GlobalConstants.userPreferencesSuiteName` (у нас там `group.net.jet-net.jetbox`) |
-| `NetbirdKit/GlobalConstants.swift` | `group.net.jet-net.jetbox` | новые ключи |
+| `NetbirdNetworkExtension/PacketTunnelProvider.swift` | — | группа приложений через `GlobalConstants.userPreferencesSuiteName` (у нас там `group.net.jetnet.jetbox`) |
+| `NetbirdKit/GlobalConstants.swift` | `group.net.jetnet.jetbox` | новые ключи |
 | `NetBirdWidgetExtension/**` | русские строки, `jetbox-mark`, тинт бренда | логика интентов (обычно сливается сама) |
 | `NetBird/Info.plist` | схема `jetbox`, Associated Domains | новые ключи |
 | `README.md` | наш целиком | — |
-| `project.pbxproj` | идентификаторы `net.jet-net.jetbox…`, версии, без фаз Crashlytics | новые файлы и таргеты; после слияния — `grep PRODUCT_BUNDLE_IDENTIFIER` |
+| `project.pbxproj` | идентификаторы `net.jetnet.jetbox…`, версии, без фаз Crashlytics | новые файлы и таргеты; после слияния — `grep PRODUCT_BUNDLE_IDENTIFIER` |
 
 ### 6.4. Проверки после слияния
 

@@ -24,7 +24,7 @@ enum JetBoxHomeProbe {
     /// Меряет и отдаёт результат (мс) на главной очереди; nil — не ответил.
     static func measure(host: String, completion: @escaping (Int?) -> Void) {
         let connection = NWConnection(host: NWEndpoint.Host(host), port: 53, using: .udp)
-        let queue = DispatchQueue(label: "net.jet-net.jetbox.home-probe")
+        let queue = DispatchQueue(label: "net.jetnet.jetbox.home-probe")
         var results: [Int] = []
         var finished = false
 
