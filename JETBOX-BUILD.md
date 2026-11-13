@@ -228,8 +228,9 @@ xcrun altool --upload-app   -f build/export-appstore-N/NetBird.ipa -t ios --apiK
 ```
 
 Сборка обрабатывается 5–30 мин, потом её надо **привязать к версии** в ASC
-(`PATCH /v1/appStoreVersions/<id>/relationships/build`) и выдать группе
-TestFlight «Владелец».
+(`PATCH /v1/appStoreVersions/<id>/relationships/build`). Внутренняя группа TestFlight
+**«Владелец»** заведена 13.11.2026 с `hasAccessToAllBuilds`: новая сборка попадает в неё сама, владелец —
+тестировщик группы (до 13.11 групп у приложения не было, и сборку 1.0 (8) не видел никто).
 
 `method=debugging` — сборка для устройств, зарегистрированных в аккаунте.
 Finder перетаскиванием `.ipa` **не ставит**: раздача только OTA — `manifest.plist`
