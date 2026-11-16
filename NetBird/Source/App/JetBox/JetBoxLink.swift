@@ -45,6 +45,12 @@ struct JetBoxLinkPayload: Equatable, Codable {
     let exitNodeName: String?
     /// Человекочитаемое имя коробки для экрана, если прислано.
     let boxName: String?
+    /// Токен приложения устройства (`t`, контракт 1.2): уникален на устройство,
+    /// Кабинет меняет его вместе с ключом. Приложение берёт его только для
+    /// удостоверения подключения — API Кабинета iOS пока не вызывает.
+    var appToken: String? = nil
+    /// `x=0`: выход в интернет по умолчанию не включать (облачный тариф).
+    var enablesDefaultExit: Bool = true
 
     /// Маска ключа для экрана и логов: видны только последние 4 символа.
     var maskedKey: String {
@@ -59,11 +65,25 @@ struct JetBoxLinkPayload: Equatable, Codable {
         return URL(string: managementURL)?.host ?? managementURL
     }
 
-    /// Признак «та же коробка»: management + выход. По нему отличается
-    /// повторный переход по своей ссылке от переезда на другую коробку.
+    /// Удостоверение подключения (контракт 1.2, §2.10): `хост(m)|e`, без `e` —
+    /// `хост(m)|t`, без обоих — `хост(m)|n`. Решает только, спросить ли
+    /// «переключить?»; нужен ли новый ключ, решает отпечаток setup key.
     var boxIdentity: String {
+        JetBoxLinkIdentity.make(managementURL: managementURL, exitNode: exitNodeName,
+                                appTokenFingerprint: appToken.map(JetBoxIdentity.fingerprint(of:)),
+                                boxName: boxName)
+    }
+}
+
+/// Одно правило удостоверения для ссылки и для сохранённой коробки.
+enum JetBoxLinkIdentity {
+    static func make(managementURL: String, exitNode: String?, appTokenFingerprint: String?,
+                     boxName: String?) -> String {
         let host = URL(string: managementURL)?.host?.lowercased() ?? managementURL.lowercased()
-        return host + "|" + (exitNodeName ?? "")
+        if let exitNode, !exitNode.isEmpty { return host + "|" + exitNode }
+        if let appTokenFingerprint, !appTokenFingerprint.isEmpty { return host + "|t:" + appTokenFingerprint }
+        if let boxName, !boxName.isEmpty { return host + "|n:" + boxName }
+        return host + "|"
     }
 }
 
@@ -103,7 +123,9 @@ enum JetBoxLink {
             setupKey: key,
             managementURL: management,
             exitNodeName: params["e"].flatMap { $0.isEmpty ? nil : $0 },
-            boxName: params["n"].flatMap { $0.isEmpty ? nil : $0 }
+            boxName: params["n"].flatMap { $0.isEmpty ? nil : $0 },
+            appToken: params["t"].flatMap { $0.isEmpty ? nil : $0 },
+            enablesDefaultExit: params["x"] != "0"
         ))
     }
 

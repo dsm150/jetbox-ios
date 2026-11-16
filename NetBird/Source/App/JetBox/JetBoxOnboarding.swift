@@ -111,6 +111,8 @@ final class JetBoxOnboarding: ObservableObject {
     private let tunnelTimeout: TimeInterval = 45
     /// Сколько ждём появления маршрутов после подъёма туннеля.
     private let routesTimeout: TimeInterval = 15
+    /// Сколько ждём остановки прежнего туннеля при замене подключения.
+    private let stopTimeout: TimeInterval = 10
 
     var isPresenting: Bool { step != .idle }
 
@@ -141,7 +143,7 @@ final class JetBoxOnboarding: ObservableObject {
             flowTask?.cancel()
             lastPayload = payload
 
-            if let box = JetBoxStore.currentBox, box.identity != payload.boxIdentity {
+            if let box = JetBoxStore.currentBox, !box.isSameConnection(as: payload) {
                 step = .confirmSwitch(payload, current: box.displayName)
             } else {
                 // Тот же JetBox: имя из ссылки свежее — запоминаем сразу, даже
@@ -216,12 +218,19 @@ final class JetBoxOnboarding: ObservableObject {
             return
         }
 
-        // 2. Регистрация устройства по setup key.
+        // 2. Регистрация устройства по setup key. При замене подключения —
+        //    под новым ключом WireGuard, см. JetBoxIdentity.
         step = .registering(payload)
-        let model = ServerViewModel(
-            configurationFilePath: Preferences.configFile() ?? "",
-            deviceName: Device.getName()
-        )
+        var clock = StageClock()
+        let activeConfig = Preferences.configFile() ?? ""
+        let plan = JetBoxIdentity.plan(current: JetBoxStore.currentBox, payload: payload,
+                                       configExists: FileManager.default.fileExists(atPath: activeConfig))
+        let loginConfig = plan == .fresh ? JetBoxIdentity.stagingPath(for: activeConfig) : activeConfig
+        if plan == .fresh {
+            try? FileManager.default.removeItem(atPath: loginConfig)
+            AppLogger.shared.log("JetBox: замена подключения — регистрируем новую личность устройства")
+        }
+        let model = ServerViewModel(configurationFilePath: loginConfig, deviceName: Device.getName())
         registration = model
 
         await model.loginWithSetupKey(managementServerUrl: payload.managementURL,
@@ -229,13 +238,27 @@ final class JetBoxOnboarding: ObservableObject {
         if Task.isCancelled { return }
 
         guard model.isOperationSuccessful else {
+            if plan == .fresh { try? FileManager.default.removeItem(atPath: loginConfig) }
             step = .failed(Self.failure(from: model.viewErrors))
             registration = nil
             return
         }
         registration = nil
+        if plan == .fresh {
+            do {
+                try JetBoxIdentity.install(staging: loginConfig, into: activeConfig)
+            } catch {
+                AppLogger.shared.log("JetBox: не удалось поставить новый конфиг: \(error.localizedDescription)")
+                step = .failed(.tunnelFailed)
+                return
+            }
+            // Работающий туннель держит прежнюю личность в памяти — его нужно
+            // перезапустить, иначе «подключено» покажет старое подключение.
+            await stopTunnel(viewModel: viewModel)
+            if Task.isCancelled { return }
+        }
         JetBoxStore.remember(payload)
-        AppLogger.shared.log("JetBox: устройство зарегистрировано на объекте")
+        AppLogger.shared.log("JetBox: устройство зарегистрировано на объекте (\(clock.lap()) мс)")
 
         // 3. Туннель.
         step = .connecting(payload)
@@ -243,13 +266,20 @@ final class JetBoxOnboarding: ObservableObject {
 
         guard await waitForTunnel(viewModel: viewModel) else {
             if Task.isCancelled { return }
+            AppLogger.shared.log("JetBox: туннель не поднялся за \(clock.lap()) мс")
             step = .failed(.tunnelFailed)
             return
         }
+        AppLogger.shared.log("JetBox: туннель поднят (\(clock.lap()) мс)")
 
         // 4. Выход в интернет.
         step = .selectingExit(payload)
-        switch await resolveExitNode(payload: payload, viewModel: viewModel) {
+        // `x=0` (облако): выход по умолчанию не включаем, клиент включит сам.
+        let exitOutcome: ExitOutcome = payload.enablesDefaultExit
+            ? await resolveExitNode(payload: payload, viewModel: viewModel)
+            : .none
+        AppLogger.shared.log("JetBox: выход определён (\(clock.lap()) мс), всего \(clock.total()) мс")
+        switch exitOutcome {
         case .selected(let name):
             JetBoxStore.rememberExitNode(name)
             step = .protected(exitNode: name)
@@ -260,6 +290,21 @@ final class JetBoxOnboarding: ObservableObject {
             step = .protected(exitNode: nil)
             JetBoxNotifications.requestIfNeeded()
         }
+    }
+
+    /// Останавливает туннель и ждёт, пока расширение доложит `.disconnected`.
+    /// Если включено «Подключать автоматически», система может поднять туннель
+    /// сама — это не страшно: новый конфиг к этому моменту уже на месте.
+    private func stopTunnel(viewModel: ViewModel) async {
+        guard viewModel.vpnDisplayState != .disconnected else { return }
+        viewModel.performClose()
+        let deadline = Date().addingTimeInterval(stopTimeout)
+        while Date() < deadline {
+            if Task.isCancelled { return }
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            if viewModel.vpnDisplayState == .disconnected { return }
+        }
+        AppLogger.shared.log("JetBox: туннель не остановился за \(Int(stopTimeout)) с, подключаемся заново")
     }
 
     /// Ждём, пока расширение доложит `.connected`. Отдельного колбэка на это
@@ -379,3 +424,20 @@ final class JetBoxOnboarding: ObservableObject {
 }
 
 #endif
+
+/// Время этапов подключения — для журнала: клиент жалуется «подключается
+/// минуту», а по журналу видно, какой этап её съел.
+private struct StageClock {
+    private let start = Date()
+    private var last = Date()
+
+    mutating func lap() -> Int {
+        let now = Date()
+        defer { last = now }
+        return Int(now.timeIntervalSince(last) * 1000)
+    }
+
+    func total() -> Int {
+        Int(Date().timeIntervalSince(start) * 1000)
+    }
+}

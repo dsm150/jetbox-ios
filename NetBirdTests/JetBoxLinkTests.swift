@@ -219,4 +219,111 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one")!))
         XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one&n=%D0%94%D0%BE%D0%BC")!))
     }
+
+    // MARK: - Личность устройства при замене подключения (баг 13.11.2026)
+
+    private let otherKey = "22222222-3333-4444-8555-666666666666"
+
+    private func registered(key: String?, exit: String? = "one", name: String? = "Дом",
+                            management: String = "https://mgmt.example.net") -> JetBoxBox {
+        JetBoxBox(managementURL: management, exitNodeName: exit, selectedExitNode: exit,
+                  boxName: name, registeredAt: Date(timeIntervalSince1970: 0),
+                  setupKeyFingerprint: key.map(JetBoxIdentity.fingerprint(of:)))
+    }
+
+    func testNoConfigMeansCoreCreatesKeyAnyway() {
+        let link = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net")!
+        XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: link, configExists: false), .reuse)
+        XCTAssertEqual(JetBoxIdentity.plan(current: nil, payload: link, configExists: false), .reuse)
+    }
+
+    func testSameLinkReusesIdentity() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one")!
+        XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: link, configExists: true), .reuse)
+    }
+
+    func testOtherSetupKeyGetsFreshIdentity() {
+        // Облачный абонент: тот же management, другой ключ, выхода в ссылке нет.
+        let cloud = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&n=Cloud")!
+        XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: cloud, configExists: true), .fresh)
+    }
+
+    func testOtherManagementGetsFreshIdentity() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://other.example.net&e=one")!
+        XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: link, configExists: true), .fresh)
+    }
+
+    func testRecordWithoutFingerprintFallsBackToBoxIdentity() {
+        // Запись от сборки до 1.0 (9): ровно сценарий бага — коробка, затем облако.
+        let cloud = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&n=Cloud")!
+        let sameBox = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&e=one")!
+        XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: nil), payload: cloud, configExists: true), .fresh)
+        XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: nil), payload: sameBox, configExists: true), .reuse)
+    }
+
+    func testForeignConfigGetsFreshIdentity() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net")!
+        XCTAssertEqual(JetBoxIdentity.plan(current: nil, payload: link, configExists: true), .fresh)
+    }
+
+    func testFingerprintIsStableAndHidesKey() {
+        let fp = JetBoxIdentity.fingerprint(of: key)
+        XCTAssertEqual(fp, JetBoxIdentity.fingerprint(of: key.uppercased()), "регистр UUID не важен")
+        XCTAssertNotEqual(fp, JetBoxIdentity.fingerprint(of: otherKey))
+        XCTAssertEqual(fp.count, 32)
+        XCTAssertFalse(fp.contains(String(key.suffix(4))), "в отпечатке нет кусков ключа")
+    }
+
+    func testIdentityPrefersExitThenAppTokenThenName() {
+        let box = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one&t=tok1&n=Dom")!
+        let cloudA = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&t=tok1&n=Dom")!
+        let cloudB = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&t=tok2&n=Dom")!
+        let legacyA = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&n=Dom")!
+        let legacyB = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&n=Other")!
+        XCTAssertEqual(box.boxIdentity, "mgmt.example.net|one", "старый формат удостоверения коробки не меняется")
+        XCTAssertNotEqual(cloudA.boxIdentity, cloudB.boxIdentity, "облачных абонентов различает t")
+        XCTAssertFalse(cloudA.boxIdentity.contains("tok1"), "токен в удостоверении только отпечатком")
+        XCTAssertNotEqual(legacyA.boxIdentity, legacyB.boxIdentity, "без e и t различает n")
+    }
+
+    func testStoredBoxMatchesItsOwnCloudLink() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&t=tok1&n=Cloud")!
+        var box = registered(key: key, exit: nil, name: "Cloud")
+        box.appTokenFingerprint = JetBoxIdentity.fingerprint(of: "tok1")
+        XCTAssertEqual(box.identity, link.boxIdentity)
+        XCTAssertTrue(box.isSameConnection(as: link))
+        let other = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&t=tok2&n=Cloud")!
+        XCTAssertFalse(box.isSameConnection(as: other), "должны спросить «переключить?»")
+        XCTAssertNil(box.renamed(by: other), "чужое имя не присваиваем")
+    }
+
+    func testReissuedBoxLinkNeedsNoConfirmationButGetsFreshKey() {
+        // «Новая ссылка» той же коробки: то же e, другой setup key.
+        let current = registered(key: key)
+        let reissued = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&e=one")!
+        XCTAssertTrue(current.isSameConnection(as: reissued))
+        XCTAssertEqual(JetBoxIdentity.plan(current: current, payload: reissued, configExists: true), .fresh)
+    }
+
+    func testDefaultExitFlag() {
+        XCTAssertTrue(payload("jetbox://connect#k=\(key)&e=one")!.enablesDefaultExit)
+        XCTAssertFalse(payload("jetbox://connect#k=\(key)&x=0")!.enablesDefaultExit)
+        XCTAssertTrue(payload("jetbox://connect#k=\(key)&x=1")!.enablesDefaultExit)
+        XCTAssertEqual(payload("jetbox://connect#k=\(key)&t=abc")!.appToken, "abc")
+    }
+
+    func testStagedConfigReplacesActiveOnlyOnInstall() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let active = dir.appendingPathComponent("default.json").path
+        let staging = JetBoxIdentity.stagingPath(for: active)
+        try Data("old".utf8).write(to: URL(fileURLWithPath: active))
+        try Data("new".utf8).write(to: URL(fileURLWithPath: staging))
+
+        try JetBoxIdentity.install(staging: staging, into: active)
+
+        XCTAssertEqual(try String(contentsOfFile: active, encoding: .utf8), "new")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: staging), "временный файл не остаётся")
+    }
 }

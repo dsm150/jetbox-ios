@@ -8,6 +8,7 @@
 //
 //  Setup key здесь НЕ хранится. После успешной регистрации он больше не нужен:
 //  ядро сохранило свой конфиг, а лишняя копия секрета на диске — лишний риск.
+//  Хранится только его отпечаток (SHA-256) — см. JetBoxIdentity.
 //
 
 import Foundation
@@ -24,6 +25,11 @@ struct JetBoxBox: Codable, Equatable {
     var selectedExitNode: String?
     var boxName: String?
     var registeredAt: Date
+    /// Отпечаток setup key, по которому телефон зарегистрирован. nil — запись
+    /// сделана сборкой до 1.0 (9).
+    var setupKeyFingerprint: String?
+    /// Отпечаток токена приложения `t` — для удостоверения подключения.
+    var appTokenFingerprint: String?
 
     var displayName: String {
         if let boxName, !boxName.isEmpty { return boxName }
@@ -35,8 +41,8 @@ struct JetBoxBox: Codable, Equatable {
     var effectiveExitNode: String? { selectedExitNode ?? exitNodeName }
 
     var identity: String {
-        let host = URL(string: managementURL)?.host?.lowercased() ?? managementURL.lowercased()
-        return host + "|" + (exitNodeName ?? "")
+        JetBoxLinkIdentity.make(managementURL: managementURL, exitNode: exitNodeName,
+                                appTokenFingerprint: appTokenFingerprint, boxName: boxName)
     }
 
     /// Имя дома из свежей ссылки того же JetBox. Объект могли переименовать в
@@ -44,11 +50,16 @@ struct JetBoxBox: Codable, Equatable {
     /// дожидаясь повторного подключения. nil — менять нечего (другой JetBox,
     /// в ссылке нет имени или оно то же).
     func renamed(by payload: JetBoxLinkPayload) -> JetBoxBox? {
-        guard payload.boxIdentity == identity,
+        guard isSameConnection(as: payload),
               let name = payload.boxName, !name.isEmpty, name != boxName else { return nil }
         var box = self
         box.boxName = name
         return box
+    }
+
+    /// Ссылка ведёт к тому же подключению — тогда «переключить?» не спрашиваем.
+    func isSameConnection(as payload: JetBoxLinkPayload) -> Bool {
+        payload.boxIdentity == identity
     }
 }
 
@@ -92,7 +103,9 @@ enum JetBoxStore {
             exitNodeName: payload.exitNodeName,
             selectedExitNode: payload.exitNodeName,
             boxName: payload.boxName,
-            registeredAt: Date()
+            registeredAt: Date(),
+            setupKeyFingerprint: JetBoxIdentity.fingerprint(of: payload.setupKey),
+            appTokenFingerprint: payload.appToken.map(JetBoxIdentity.fingerprint(of:))
         )
     }
 

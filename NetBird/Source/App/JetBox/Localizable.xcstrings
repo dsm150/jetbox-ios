@@ -1420,13 +1420,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This phone is registered with “%1$@”, but the link points to “%2$@”. Switch? The current connection will be dropped."
+            "value": "This phone is registered with “%1$@”, but the link points to “%2$@”. Switch? The previous connection will be replaced."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сейчас телефон привязан к «%1$@», а ссылка ведёт на «%2$@». Переключить? Текущее подключение будет сброшено."
+            "value": "Сейчас телефон привязан к «%1$@», а ссылка ведёт на «%2$@». Переключить? Прежнее подключение будет заменено."
           }
         }
       }
