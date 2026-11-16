@@ -101,7 +101,8 @@ enum JetBoxStore {
         currentBox = JetBoxBox(
             managementURL: payload.managementURL,
             exitNodeName: payload.exitNodeName,
-            selectedExitNode: payload.exitNodeName,
+            // `x=0`: выход из ссылки только разрешён, не включён (контракт 1.2, §2.10).
+            selectedExitNode: payload.enablesDefaultExit ? payload.exitNodeName : nil,
             boxName: payload.boxName,
             registeredAt: Date(),
             setupKeyFingerprint: JetBoxIdentity.fingerprint(of: payload.setupKey),
