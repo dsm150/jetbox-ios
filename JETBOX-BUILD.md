@@ -198,7 +198,9 @@ Apple требует совпадения версий у расширений �
 (`~/.config/jetbox-ios-cardo/`, роль Admin; старый `~/.config/jetbox-ios/` — команда
 `U2ZLMVKGQR`, для JetBox больше не нужен), физический Xcode у телефона не нужен.
 Сертификат распространения — существующий «iOS Distribution: INSTASHOP Corporation»
-(его ключ уже в связке ключей этого мака), профили «iOS Team Store Provisioning
+(его ключ — в связке `~/Library/Keychains/aiboss-build.keychain-db` из цепочки AI Boss; без её пароля
+codesign при экспорте виснет на окне «codesign wants to use the aiboss-build keychain» — пароль вводит
+владелец или Алексей, агент его не знает и не вводит), профили «iOS Team Store Provisioning
 Profile: net.jetnet.jetbox…» Xcode завёл сам:
 
 ```bash
@@ -218,7 +220,8 @@ xcodebuild -exportArchive -archivePath build/JetBox.xcarchive \
 
 Для **App Store / TestFlight** — `build/ExportOptions-appstore.plist`:
 `method=app-store`, `uploadSymbols=false`, `destination=export`,
-`teamID=FRPY3A4QGK` (с `app-store-connect` + `uploadSymbols` экспорт падает «Copy
+`teamID=FRPY3A4QGK` — файл `build/ExportOptions-appstore-FRPY.plist`; в старом `ExportOptions-appstore.plist`
+команда `U2ZLMVKGQR`, экспорт с ним падает «No Account for Team» (с `app-store-connect` + `uploadSymbols` экспорт падает «Copy
 failed»). Дальше проверка и загрузка ключом ASC; путь к ключу — `--p8-file-path`
 (в `~/.appstoreconnect/private_keys/` ключ JetBox не кладём — там чужие ключи команды):
 
