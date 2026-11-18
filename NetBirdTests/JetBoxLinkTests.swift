@@ -381,7 +381,7 @@ final class JetBoxLinkTests: XCTestCase {
     func testForeignManagementIsRefusedBeforeAnything() {
         let link = URL(string: "https://box.jet-net.net/connect#k=\(key)&m=https%3A%2F%2Fevil.example.com&e=one")!
         XCTAssertEqual(JetBoxLink.parse(link), .foreignServer)
-        let ip = URL(string: "jetbox://connect#k=\(key)&m=https%3A%2F%2F100.79.0.1%3A33073")!
+        let ip = URL(string: "jetbox://connect#k=\(key)&m=https%3A%2F%2F100.64.0.1%3A33073")!
         XCTAssertEqual(JetBoxLink.parse(ip), .foreignServer)
     }
 

@@ -83,7 +83,7 @@ enum JetBoxHomeProbe {
         return b.count >= 12 && b[0] == UInt8(id >> 8) && b[1] == UInt8(id & 0xFF) && (b[2] & 0x80) != 0
     }
 
-    /// Адрес пира бывает с маской («100.79.148.91/16»).
+    /// Адрес пира бывает с маской («100.64.10.20/16»).
     static func bareIP(_ address: String) -> String {
         String(address.split(separator: "/").first ?? Substring(address))
     }

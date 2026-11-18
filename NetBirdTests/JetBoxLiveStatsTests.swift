@@ -13,7 +13,7 @@ final class JetBoxLiveStatsTests: XCTestCase {
 
     private func peer(_ name: String, status: String = "Connected", routes: [String] = [],
                       latency: String = "0s", relayed: Bool = false) -> PeerInfo {
-        PeerInfo(ip: "100.79.0.1", fqdn: name, localIceCandidateEndpoint: "", remoteIceCandidateEndpoint: "",
+        PeerInfo(ip: "100.64.0.1", fqdn: name, localIceCandidateEndpoint: "", remoteIceCandidateEndpoint: "",
                  localIceCandidateType: "", remoteIceCandidateType: "", pubKey: "", latency: latency,
                  bytesRx: 0, bytesTx: 0, connStatus: status, connStatusUpdate: "", direct: !relayed,
                  lastWireguardHandshake: "", relayed: relayed, rosenpassEnabled: false, routes: routes)
@@ -83,8 +83,8 @@ final class JetBoxHomeProbeTests: XCTestCase {
     }
 
     func testPeerAddressWithoutMask() {
-        XCTAssertEqual(JetBoxHomeProbe.bareIP("100.79.148.91/16"), "100.79.148.91")
-        XCTAssertEqual(JetBoxHomeProbe.bareIP("100.79.148.91"), "100.79.148.91")
+        XCTAssertEqual(JetBoxHomeProbe.bareIP("100.64.10.20/16"), "100.64.10.20")
+        XCTAssertEqual(JetBoxHomeProbe.bareIP("100.64.10.20"), "100.64.10.20")
     }
 }
 
