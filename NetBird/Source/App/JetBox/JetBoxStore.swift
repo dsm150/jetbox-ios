@@ -28,8 +28,6 @@ struct JetBoxBox: Codable, Equatable {
     /// Отпечаток setup key, по которому телефон зарегистрирован. nil — запись
     /// сделана сборкой до 1.0 (9).
     var setupKeyFingerprint: String?
-    /// Отпечаток токена приложения `t` — для удостоверения подключения.
-    var appTokenFingerprint: String?
 
     var displayName: String {
         if let boxName, !boxName.isEmpty { return boxName }
@@ -41,25 +39,30 @@ struct JetBoxBox: Codable, Equatable {
     var effectiveExitNode: String? { selectedExitNode ?? exitNodeName }
 
     var identity: String {
-        JetBoxLinkIdentity.make(managementURL: managementURL, exitNode: exitNodeName,
-                                appTokenFingerprint: appTokenFingerprint, boxName: boxName)
+        JetBoxLinkIdentity.make(managementURL: managementURL, exitNode: exitNodeName, boxName: boxName)
     }
 
-    /// Имя дома из свежей ссылки того же JetBox. Объект могли переименовать в
-    /// Кабинете — имя на телефоне обновляем сразу при открытии ссылки, не
-    /// дожидаясь повторного подключения. nil — менять нечего (другой JetBox,
-    /// в ссылке нет имени или оно то же).
-    func renamed(by payload: JetBoxLinkPayload) -> JetBoxBox? {
-        guard isSameConnection(as: payload),
-              let name = payload.boxName, !name.isEmpty, name != boxName else { return nil }
+    /// Имя в ссылке входит в удостоверение (§2.11), поэтому переименованная
+    /// площадка спрашивает «переключить?» — цена принята руководителем 18.11.2026.
+    /// Имя запоминаем, только когда в записи его не было: ссылка была без `n`.
+    func named(by payload: JetBoxLinkPayload) -> JetBoxBox? {
+        guard isSameConnection(as: payload), boxName?.isEmpty ?? true,
+              let name = payload.boxName, !name.isEmpty else { return nil }
         var box = self
         box.boxName = name
         return box
     }
 
     /// Ссылка ведёт к тому же подключению — тогда «переключить?» не спрашиваем.
+    /// Если имени нет у записи или у ссылки (старые ссылки без `n`), сравниваем
+    /// без `n`: иначе первая же ссылка с именем дала бы ложное «Другой JetBox».
     func isSameConnection(as payload: JetBoxLinkPayload) -> Bool {
-        payload.boxIdentity == identity
+        if payload.boxIdentity == identity { return true }
+        let nameMissing = (boxName?.isEmpty ?? true) || (payload.boxName?.isEmpty ?? true)
+        guard nameMissing, let exit = exitNodeName, !exit.isEmpty,
+              !JetBoxLinkIdentity.isSharedExit(exit) else { return false }
+        return JetBoxLinkIdentity.withoutName(managementURL: payload.managementURL, exitNode: payload.exitNodeName)
+            == JetBoxLinkIdentity.withoutName(managementURL: managementURL, exitNode: exitNodeName)
     }
 }
 
@@ -105,8 +108,7 @@ enum JetBoxStore {
             selectedExitNode: payload.enablesDefaultExit ? payload.exitNodeName : nil,
             boxName: payload.boxName,
             registeredAt: Date(),
-            setupKeyFingerprint: JetBoxIdentity.fingerprint(of: payload.setupKey),
-            appTokenFingerprint: payload.appToken.map(JetBoxIdentity.fingerprint(of:))
+            setupKeyFingerprint: JetBoxIdentity.fingerprint(of: payload.setupKey)
         )
     }
 

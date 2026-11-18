@@ -156,10 +156,10 @@ final class JetBoxOnboarding: ObservableObject {
             if let box = JetBoxStore.currentBox, !box.isSameConnection(as: payload) {
                 step = .confirmSwitch(payload, current: box.displayName)
             } else {
-                // Тот же JetBox: имя из ссылки свежее — запоминаем сразу, даже
-                // если клиент нажмёт «Отмена».
-                if let renamed = JetBoxStore.currentBox?.renamed(by: payload) {
-                    JetBoxStore.currentBox = renamed
+                // Тот же JetBox, а имени в записи не было — запоминаем сразу,
+                // даже если клиент нажмёт «Отмена».
+                if let named = JetBoxStore.currentBox?.named(by: payload) {
+                    JetBoxStore.currentBox = named
                 }
                 step = .ready(payload)
             }

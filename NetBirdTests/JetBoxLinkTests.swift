@@ -197,28 +197,59 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertEqual(a?.boxIdentity, sameAsA?.boxIdentity)
     }
 
-    // MARK: - Имя дома обновляется по ссылке того же JetBox
+    // MARK: - Имя в удостоверении (контракт 1.3, §2.11)
 
     private func stored(_ name: String?) -> JetBoxBox {
         JetBoxBox(managementURL: "https://mgmt.jet-net.net", exitNodeName: "one",
                   selectedExitNode: "one", boxName: name, registeredAt: Date(timeIntervalSince1970: 0))
     }
 
-    func testSameBoxLinkRenamesStoredBox() {
+    func testRenamedSiteAsksToSwitch() {
+        // Цена правила хост|e|n, принятая руководителем 18.11.2026.
         let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one&n=%D0%9D%D0%BE%D0%B2%D1%8B%D0%B9")!
-        let renamed = stored("Старый").renamed(by: link)
-        XCTAssertEqual(renamed?.boxName, "Новый")
-        XCTAssertEqual(renamed?.registeredAt, Date(timeIntervalSince1970: 0), "остальное не трогаем")
+        XCTAssertFalse(stored("Старый").isSameConnection(as: link))
+        XCTAssertNil(stored("Старый").named(by: link), "переименование — только через подтверждение")
     }
 
-    func testOtherBoxLinkDoesNotRename() {
+    func testRecordWithoutNameTakesNameFromSameBoxLink() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one&n=%D0%94%D0%BE%D0%BC")!
+        XCTAssertTrue(stored(nil).isSameConnection(as: link), "запись без n сравниваем без n")
+        let named = stored(nil).named(by: link)
+        XCTAssertEqual(named?.boxName, "Дом")
+        XCTAssertEqual(named?.registeredAt, Date(timeIntervalSince1970: 0), "остальное не трогаем")
+    }
+
+    func testLinkWithoutNameMatchesNamedRecord() {
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one")!
+        XCTAssertTrue(stored("Дом").isSameConnection(as: link), "старая ссылка без n — та же коробка")
+        XCTAssertNil(stored("Дом").named(by: link))
+    }
+
+    func testSharedCloudExitNeverMatchesWithoutName() {
+        // Общий e облака: запись без имени не считаем «тем же» ни для какой ссылки.
+        let cloudNoName = JetBoxBox(managementURL: "https://mgmt.jet-net.net", exitNodeName: "cl-exit",
+                                    selectedExitNode: nil, boxName: nil, registeredAt: Date(timeIntervalSince1970: 0))
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=cl-exit&n=JetBox%20%C2%B7%20petr")!
+        XCTAssertFalse(cloudNoName.isSameConnection(as: link))
+        XCTAssertTrue(JetBoxLinkIdentity.isSharedExit("cl-exit"))
+        XCTAssertFalse(JetBoxLinkIdentity.isSharedExit("sv-acme-exit"))
+    }
+
+    func testOtherBoxLinkIsNotSameConnection() {
         let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=two&n=Other")!
-        XCTAssertNil(stored("Старый").renamed(by: link))
+        XCTAssertFalse(stored("Старый").isSameConnection(as: link))
+        XCTAssertFalse(stored(nil).isSameConnection(as: link))
     }
 
-    func testLinkWithoutNameOrWithSameNameChangesNothing() {
-        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one")!))
-        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one&n=%D0%94%D0%BE%D0%BC")!))
+    /// Общие векторы удостоверения всех платформ (`identity.json`, контракт 1.3, §2.11).
+    func testIdentitySharedVectors() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("identity.json")
+        struct Vectors: Decodable { struct Case: Decodable { let link: String; let identity: String; let about: String }; let cases: [Case] }
+        let vectors = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: url))
+        XCTAssertFalse(vectors.cases.isEmpty)
+        for c in vectors.cases {
+            XCTAssertEqual(payload(c.link)?.boxIdentity, c.identity, c.about)
+        }
     }
 
     // MARK: - Личность устройства при замене подключения (баг 13.11.2026)
@@ -275,27 +306,17 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertFalse(fp.contains(String(key.suffix(4))), "в отпечатке нет кусков ключа")
     }
 
-    func testIdentityPrefersExitThenAppTokenThenName() {
-        let box = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one&t=tok1&n=Dom")!
-        let cloudA = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&t=tok1&n=Dom")!
-        let cloudB = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&t=tok2&n=Dom")!
-        let legacyA = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&n=Dom")!
-        let legacyB = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&n=Other")!
-        XCTAssertEqual(box.boxIdentity, "mgmt.jet-net.net|one", "старый формат удостоверения коробки не меняется")
-        XCTAssertNotEqual(cloudA.boxIdentity, cloudB.boxIdentity, "облачных абонентов различает t")
-        XCTAssertFalse(cloudA.boxIdentity.contains("tok1"), "токен в удостоверении только отпечатком")
-        XCTAssertNotEqual(legacyA.boxIdentity, legacyB.boxIdentity, "без e и t различает n")
-    }
-
-    func testStoredBoxMatchesItsOwnCloudLink() {
-        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&t=tok1&n=Cloud")!
-        var box = registered(key: key, exit: nil, name: "Cloud")
-        box.appTokenFingerprint = JetBoxIdentity.fingerprint(of: "tok1")
-        XCTAssertEqual(box.identity, link.boxIdentity)
-        XCTAssertTrue(box.isSameConnection(as: link))
-        let other = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&t=tok2&n=Cloud")!
-        XCTAssertFalse(box.isSameConnection(as: other), "должны спросить «переключить?»")
-        XCTAssertNil(box.renamed(by: other), "чужое имя не присваиваем")
+    func testCloudSubscribersAreDistinguishedByName() {
+        // Облако: у всех e=cl-exit, различает n; t в удостоверение не входит.
+        let mine = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=cl-exit&n=JetBox%20%C2%B7%20ivan&t=tok1&x=0")!
+        let rebind = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&e=cl-exit&n=JetBox%20%C2%B7%20ivan&t=tok2&x=0")!
+        let other = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&e=cl-exit&n=JetBox%20%C2%B7%20petr&t=tok3&x=0")!
+        XCTAssertEqual(mine.boxIdentity, rebind.boxIdentity, "«Новая ссылка» своего абонента — без вопроса")
+        XCTAssertNotEqual(mine.boxIdentity, other.boxIdentity, "другой абонент — «переключить?»")
+        let box = registered(key: key, exit: "cl-exit", name: "JetBox · ivan")
+        XCTAssertTrue(box.isSameConnection(as: rebind))
+        XCTAssertFalse(box.isSameConnection(as: other))
+        XCTAssertEqual(JetBoxIdentity.plan(current: box, payload: rebind, configExists: true), .fresh, "но ключ новый")
     }
 
     func testReissuedBoxLinkNeedsNoConfirmationButGetsFreshKey() {

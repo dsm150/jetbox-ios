@@ -39,7 +39,7 @@ enum JetBoxIdentity {
             return known == fingerprint(of: payload.setupKey) ? .reuse : .fresh
         }
         // Запись сделана сборкой до 1.0 (9), отпечатка ключа в ней нет.
-        return current.identity == payload.boxIdentity ? .reuse : .fresh
+        return current.isSameConnection(as: payload) ? .reuse : .fresh
     }
 
     /// Отпечаток setup key: по нему отличаем «та же ссылка» от «новая ссылка»,

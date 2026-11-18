@@ -45,9 +45,9 @@ struct JetBoxLinkPayload: Equatable, Codable {
     let exitNodeName: String?
     /// Человекочитаемое имя коробки для экрана, если прислано.
     let boxName: String?
-    /// Токен приложения устройства (`t`, контракт 1.2): уникален на устройство,
-    /// Кабинет меняет его вместе с ключом. Приложение берёт его только для
-    /// удостоверения подключения — API Кабинета iOS пока не вызывает.
+    /// Токен приложения устройства (`t`, контракт 1.2): Bearer к API устройства
+    /// Кабинета. iOS API пока не вызывает и токен не хранит; в удостоверение он
+    /// не входит — меняется при «Новой ссылке» (контракт 1.3, §2.11).
     var appToken: String? = nil
     /// `x=0`: выход в интернет по умолчанию не включать (облачный тариф).
     var enablesDefaultExit: Bool = true
@@ -65,25 +65,37 @@ struct JetBoxLinkPayload: Equatable, Codable {
         return URL(string: managementURL)?.host ?? managementURL
     }
 
-    /// Удостоверение подключения (контракт 1.2, §2.10): `хост(m)|e`, без `e` —
-    /// `хост(m)|t`, без обоих — `хост(m)|n`. Решает только, спросить ли
-    /// «переключить?»; нужен ли новый ключ, решает отпечаток setup key.
+    /// Удостоверение подключения (контракт 1.3, §2.11). Решает только, спросить
+    /// ли «переключить?»; нужен ли новый ключ, решает отпечаток setup key.
     var boxIdentity: String {
-        JetBoxLinkIdentity.make(managementURL: managementURL, exitNode: exitNodeName,
-                                appTokenFingerprint: appToken.map(JetBoxIdentity.fingerprint(of:)),
-                                boxName: boxName)
+        JetBoxLinkIdentity.make(managementURL: managementURL, exitNode: exitNodeName, boxName: boxName)
     }
 }
 
-/// Одно правило удостоверения для ссылки и для сохранённой коробки.
+/// Одно правило удостоверения для ссылки и для сохранённой коробки
+/// (контракт 1.3, §2.11): `хост(m)|e|n`, без `e` — `хост(m)|n:<n>`.
+/// `n` входит потому, что у всех облачных абонентов один `e=cl-exit`, а `n`
+/// у них разный («JetBox · <абонент>») и при «Новой ссылке» не меняется.
+/// `n` — как есть после percent-decoding и обрезки пробелов, с учётом регистра.
 enum JetBoxLinkIdentity {
-    static func make(managementURL: String, exitNode: String?, appTokenFingerprint: String?,
-                     boxName: String?) -> String {
+    static func make(managementURL: String, exitNode: String?, boxName: String?) -> String {
         let host = URL(string: managementURL)?.host?.lowercased() ?? managementURL.lowercased()
-        if let exitNode, !exitNode.isEmpty { return host + "|" + exitNode }
-        if let appTokenFingerprint, !appTokenFingerprint.isEmpty { return host + "|t:" + appTokenFingerprint }
-        if let boxName, !boxName.isEmpty { return host + "|n:" + boxName }
+        let name = boxName ?? ""
+        if let exitNode, !exitNode.isEmpty { return host + "|" + exitNode + "|" + name }
+        if !name.isEmpty { return host + "|n:" + name }
         return host + "|"
+    }
+
+    /// Общий выход облака: один `e` у всех абонентов (пространство `cl-` в
+    /// NetBird, сейчас только `cl-exit`). Без `n` такой `e` абонента не
+    /// различает, поэтому сравнение «без имени» для него запрещено.
+    static func isSharedExit(_ exitNode: String) -> Bool {
+        exitNode.hasPrefix("cl-")
+    }
+
+    /// Удостоверение без `n` — для записей, где имени нет (ссылка была без `n`).
+    static func withoutName(managementURL: String, exitNode: String?) -> String {
+        make(managementURL: managementURL, exitNode: exitNode, boxName: nil)
     }
 }
 
