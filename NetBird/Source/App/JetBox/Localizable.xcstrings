@@ -460,6 +460,40 @@
         }
       }
     },
+    "jetbox.error.foreign.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This link points to a server that is not JetBox. We did not connect and left your current connection as it was. Use only links from your JetBox account or support."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эта ссылка ведёт на сервер, который не относится к JetBox. Мы не подключались, текущее подключение не тронуто. Используйте только ссылки из Личного кабинета JetBox или от поддержки."
+          }
+        }
+      }
+    },
+    "jetbox.error.foreign.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not a JetBox server"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ссылка не от JetBox"
+          }
+        }
+      }
+    },
     "jetbox.error.details": {
       "extractionState": "manual",
       "localizations": {

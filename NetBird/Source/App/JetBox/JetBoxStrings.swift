@@ -66,6 +66,8 @@ enum JBText {
 
     static var errBrokenTitle: String { t("jetbox.error.broken.title") }
     static var errBrokenBody: String { t("jetbox.error.broken.body") }
+    static var errForeignTitle: String { t("jetbox.error.foreign.title") }
+    static var errForeignBody: String { t("jetbox.error.foreign.body") }
     static var errOfflineTitle: String { t("jetbox.error.offline.title") }
     static var errOfflineBody: String { t("jetbox.error.offline.body") }
     static var errUnreachableTitle: String { t("jetbox.error.unreachable.title") }

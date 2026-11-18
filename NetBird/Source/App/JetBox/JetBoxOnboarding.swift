@@ -22,6 +22,7 @@ import NetworkExtension
 /// а не клиенту.
 enum JetBoxFailure: Equatable {
     case brokenLink
+    case foreignServer
     case offline
     case managementUnreachable(String?)
     case keyRejected(String?)
@@ -31,6 +32,7 @@ enum JetBoxFailure: Equatable {
     var title: String {
         switch self {
         case .brokenLink: return JBText.errBrokenTitle
+        case .foreignServer: return JBText.errForeignTitle
         case .offline: return JBText.errOfflineTitle
         case .managementUnreachable: return JBText.errUnreachableTitle
         case .keyRejected: return JBText.errKeyTitle
@@ -42,6 +44,7 @@ enum JetBoxFailure: Equatable {
     var message: String {
         switch self {
         case .brokenLink: return JBText.errBrokenBody
+        case .foreignServer: return JBText.errForeignBody
         case .offline: return JBText.errOfflineBody
         case .managementUnreachable: return JBText.errUnreachableBody
         case .keyRejected: return JBText.errKeyBody
@@ -56,14 +59,14 @@ enum JetBoxFailure: Equatable {
         switch self {
         case .managementUnreachable(let d), .keyRejected(let d): return d
         case .other(let d): return d
-        case .brokenLink, .offline, .tunnelFailed: return nil
+        case .brokenLink, .foreignServer, .offline, .tunnelFailed: return nil
         }
     }
 
     /// Повтор имеет смысл не всегда: испорченную ссылку повторять нечем.
     var isRetryable: Bool {
         switch self {
-        case .brokenLink: return false
+        case .brokenLink, .foreignServer: return false
         default: return true
         }
     }
@@ -130,6 +133,13 @@ final class JetBoxOnboarding: ObservableObject {
             AppLogger.shared.log("JetBox: ссылка не проходит проверку формата, в сеть не идём")
             flowTask?.cancel()
             step = .failed(.brokenLink)
+            return true
+
+        case .foreignServer:
+            // Чужой сервер: ни вопроса, ни регистрации, текущее подключение не трогаем.
+            AppLogger.shared.log("JetBox: адрес сервера в ссылке вне маски *.jet-net.net, в сеть не идём")
+            flowTask?.cancel()
+            step = .failed(.foreignServer)
             return true
 
         case .payload(let payload):

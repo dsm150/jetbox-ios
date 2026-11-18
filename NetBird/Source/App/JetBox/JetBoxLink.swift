@@ -97,6 +97,9 @@ enum JetBoxLink {
         /// Ссылка наша, но испорчена (кривой ключ, кривой management).
         /// Пользователю показываем «Ссылка повреждена», в сеть не идём.
         case broken
+        /// `m` вне маски `*.jet-net.net` (контракт 1.3, §2.3): ссылка ведёт не на
+        /// сервер JetBox. Отказ до любого вопроса, в сеть не идём.
+        case foreignServer
         /// Не наша ссылка — отдаём дальше по цепочке обработчиков.
         case notOurs
     }
@@ -116,6 +119,10 @@ enum JetBoxLink {
         guard let key = params["k"], !key.isEmpty else { return .notOurs }
         guard isValidSetupKey(key) else { return .broken }
 
+        if let rawManagement = params["m"], !rawManagement.isEmpty,
+           !allowedManagement(rawManagement) {
+            return .foreignServer
+        }
         let management = normalizedManagement(params["m"])
         guard let management else { return .broken }
 
@@ -174,6 +181,54 @@ enum JetBoxLink {
         key.count == 36 && UUID(uuidString: key) != nil
     }
 
+    /// Домен, на поддоменах которого разрешён management (решение владельца
+    /// 18.11.2026). Правило одно на все платформы: эталон —
+    /// `JetBox_Desktop/core/jetboxlink/mask.go`, общие векторы — `mgmt-mask.json`.
+    static let managementSuffix = ".jet-net.net"
+
+    /// `m` (уже без percent-encoding) разрешён маской: https, без логина, пути
+    /// (кроме «/»), query и фрагмента; хост — имя ASCII (не IP), оканчивается на
+    /// `.jet-net.net` (сам домен без поддомена — нет); порт — любой 1–65535.
+    /// Разбираем сами, а не URLComponents: тот декодирует `%2E` в хосте.
+    static func allowedManagement(_ raw: String) -> Bool {
+        let scheme = "https://"
+        guard raw.count > scheme.count, raw.lowercased().hasPrefix(scheme) else { return false }
+        let rest = raw.dropFirst(scheme.count)
+        // Логин, query, фрагмент, обратный слэш, пробелы — сразу мимо.
+        guard rest.allSatisfy({ $0.isASCII && !$0.isWhitespace && !"@?#\\".contains($0) }) else { return false }
+
+        let authority: Substring
+        if let slash = rest.firstIndex(of: "/") {
+            guard rest[slash...] == "/" else { return false }
+            authority = rest[..<slash]
+        } else {
+            authority = rest
+        }
+        guard !authority.hasPrefix("[") else { return false }   // IPv6
+
+        var host = authority
+        if let colon = authority.lastIndex(of: ":") {
+            let port = authority[authority.index(after: colon)...]
+            if !port.isEmpty {
+                guard port.allSatisfy(\.isASCIIDigit), let number = Int(port), (1...65535).contains(number) else { return false }
+            }
+            host = authority[..<colon]
+        }
+
+        var name = host.lowercased()
+        if name.hasSuffix(".") { name.removeLast() }
+        guard !name.isEmpty,
+              name.allSatisfy({ ("a"..."z").contains($0) || $0.isASCIIDigit || $0 == "-" || $0 == "." }),
+              !name.split(separator: ".", omittingEmptySubsequences: false).contains(where: \.isEmpty),
+              !isIPv4(name) else { return false }
+        return name.hasSuffix(managementSuffix) && name.count > managementSuffix.count
+    }
+
+    private static func isIPv4(_ host: String) -> Bool {
+        let parts = host.split(separator: ".", omittingEmptySubsequences: false)
+        return parts.count == 4 && parts.allSatisfy { !$0.isEmpty && $0.allSatisfy(\.isASCIIDigit) }
+    }
+
     /// Только https, обязателен хост, хвостовой слэш срезаем.
     /// Пустое значение и отсутствие параметра — берём дефолт приложения.
     private static func normalizedManagement(_ value: String?) -> String? {
@@ -190,4 +245,8 @@ enum JetBoxLink {
         }
         return normalized
     }
+}
+
+private extension Character {
+    var isASCIIDigit: Bool { isASCII && isNumber }
 }

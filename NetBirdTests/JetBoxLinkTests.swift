@@ -75,8 +75,8 @@ final class JetBoxLinkTests: XCTestCase {
     // MARK: - Своя схема
 
     func testCustomSchemeMatchesUniversalLink() {
-        let a = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=node")
-        let b = payload("https://box.jet-net.net/connect#k=\(key)&m=https://mgmt.example.net&e=node")
+        let a = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=node")
+        let b = payload("https://box.jet-net.net/connect#k=\(key)&m=https://mgmt.jet-net.net&e=node")
         XCTAssertEqual(a, b)
     }
 
@@ -95,16 +95,16 @@ final class JetBoxLinkTests: XCTestCase {
     }
 
     func testManagementNormalisation() {
-        XCTAssertEqual(payload("jetbox://connect#k=\(key)&m=https://Mgmt.Example.NET/")?.managementURL,
-                       "https://mgmt.example.net")
-        XCTAssertEqual(payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net:33073")?.managementURL,
-                       "https://mgmt.example.net:33073")
+        XCTAssertEqual(payload("jetbox://connect#k=\(key)&m=https://Mgmt.Jet-Net.NET/")?.managementURL,
+                       "https://mgmt.jet-net.net")
+        XCTAssertEqual(payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net:33073")?.managementURL,
+                       "https://mgmt.jet-net.net:33073")
     }
 
     func testParameterOrderAndUnknownParametersDoNotMatter() {
-        let p = payload("jetbox://connect#e=node&z=whatever&m=https://mgmt.example.net&k=\(key)")
+        let p = payload("jetbox://connect#e=node&z=whatever&m=https://mgmt.jet-net.net&k=\(key)")
         XCTAssertEqual(p?.exitNodeName, "node")
-        XCTAssertEqual(p?.managementURL, "https://mgmt.example.net")
+        XCTAssertEqual(p?.managementURL, "https://mgmt.jet-net.net")
     }
 
     /// Кабинет с 08.09.2026 добавляет в ссылку свой параметр `p=` («что
@@ -148,7 +148,7 @@ final class JetBoxLinkTests: XCTestCase {
     func testMissingKeyIsNotOurs() {
         // Без ключа это не ссылка подключения: экраном ошибки не пугаем,
         // для https просто откроется страница /connect.
-        XCTAssertEqual(parse("https://box.jet-net.net/connect#m=https://mgmt.example.net"), .notOurs)
+        XCTAssertEqual(parse("https://box.jet-net.net/connect#m=https://mgmt.jet-net.net"), .notOurs)
         XCTAssertEqual(parse("jetbox://connect#k="), .notOurs)
     }
 
@@ -160,10 +160,11 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertEqual(parse("jetbox://connect#k=" + String(repeating: "Z", count: 36)), .broken)
     }
 
-    func testNonHttpsManagementIsBroken() {
-        XCTAssertEqual(parse("jetbox://connect#k=\(key)&m=http://mgmt.example.net"), .broken)
-        XCTAssertEqual(parse("jetbox://connect#k=\(key)&m=mgmt.example.net"), .broken)
-        XCTAssertEqual(parse("jetbox://connect#k=\(key)&m=javascript:alert(1)"), .broken)
+    func testNonHttpsManagementIsForeign() {
+        // С ред. 1.3 всё, что не проходит маску, — «не сервер JetBox», а не «ссылка повреждена».
+        XCTAssertEqual(parse("jetbox://connect#k=\(key)&m=http://mgmt.jet-net.net"), .foreignServer)
+        XCTAssertEqual(parse("jetbox://connect#k=\(key)&m=mgmt.jet-net.net"), .foreignServer)
+        XCTAssertEqual(parse("jetbox://connect#k=\(key)&m=javascript:alert(1)"), .foreignServer)
     }
 
     func testGarbageFragmentDoesNotCrash() {
@@ -184,14 +185,14 @@ final class JetBoxLinkTests: XCTestCase {
     func testDisplayNameFallsBackFromNameToExitToHost() {
         XCTAssertEqual(payload("jetbox://connect#k=\(key)&n=Дом&e=node")?.displayName, "Дом")
         XCTAssertEqual(payload("jetbox://connect#k=\(key)&e=node")?.displayName, "node")
-        XCTAssertEqual(payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net")?.displayName,
-                       "mgmt.example.net")
+        XCTAssertEqual(payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net")?.displayName,
+                       "mgmt.jet-net.net")
     }
 
     func testBoxIdentityDistinguishesBoxes() {
-        let a = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one")
-        let b = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=two")
-        let sameAsA = payload("jetbox://connect#k=\(key)&m=https://MGMT.example.net/&e=one")
+        let a = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one")
+        let b = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=two")
+        let sameAsA = payload("jetbox://connect#k=\(key)&m=https://MGMT.jet-net.net/&e=one")
         XCTAssertNotEqual(a?.boxIdentity, b?.boxIdentity)
         XCTAssertEqual(a?.boxIdentity, sameAsA?.boxIdentity)
     }
@@ -199,25 +200,25 @@ final class JetBoxLinkTests: XCTestCase {
     // MARK: - Имя дома обновляется по ссылке того же JetBox
 
     private func stored(_ name: String?) -> JetBoxBox {
-        JetBoxBox(managementURL: "https://mgmt.example.net", exitNodeName: "one",
+        JetBoxBox(managementURL: "https://mgmt.jet-net.net", exitNodeName: "one",
                   selectedExitNode: "one", boxName: name, registeredAt: Date(timeIntervalSince1970: 0))
     }
 
     func testSameBoxLinkRenamesStoredBox() {
-        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one&n=%D0%9D%D0%BE%D0%B2%D1%8B%D0%B9")!
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one&n=%D0%9D%D0%BE%D0%B2%D1%8B%D0%B9")!
         let renamed = stored("Старый").renamed(by: link)
         XCTAssertEqual(renamed?.boxName, "Новый")
         XCTAssertEqual(renamed?.registeredAt, Date(timeIntervalSince1970: 0), "остальное не трогаем")
     }
 
     func testOtherBoxLinkDoesNotRename() {
-        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=two&n=Other")!
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=two&n=Other")!
         XCTAssertNil(stored("Старый").renamed(by: link))
     }
 
     func testLinkWithoutNameOrWithSameNameChangesNothing() {
-        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one")!))
-        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one&n=%D0%94%D0%BE%D0%BC")!))
+        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one")!))
+        XCTAssertNil(stored("Дом").renamed(by: payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one&n=%D0%94%D0%BE%D0%BC")!))
     }
 
     // MARK: - Личность устройства при замене подключения (баг 13.11.2026)
@@ -225,44 +226,44 @@ final class JetBoxLinkTests: XCTestCase {
     private let otherKey = "22222222-3333-4444-8555-666666666666"
 
     private func registered(key: String?, exit: String? = "one", name: String? = "Дом",
-                            management: String = "https://mgmt.example.net") -> JetBoxBox {
+                            management: String = "https://mgmt.jet-net.net") -> JetBoxBox {
         JetBoxBox(managementURL: management, exitNodeName: exit, selectedExitNode: exit,
                   boxName: name, registeredAt: Date(timeIntervalSince1970: 0),
                   setupKeyFingerprint: key.map(JetBoxIdentity.fingerprint(of:)))
     }
 
     func testNoConfigMeansCoreCreatesKeyAnyway() {
-        let link = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net")!
+        let link = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net")!
         XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: link, configExists: false), .reuse)
         XCTAssertEqual(JetBoxIdentity.plan(current: nil, payload: link, configExists: false), .reuse)
     }
 
     func testSameLinkReusesIdentity() {
-        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one")!
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one")!
         XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: link, configExists: true), .reuse)
     }
 
     func testOtherSetupKeyGetsFreshIdentity() {
         // Облачный абонент: тот же management, другой ключ, выхода в ссылке нет.
-        let cloud = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&n=Cloud")!
+        let cloud = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&n=Cloud")!
         XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: cloud, configExists: true), .fresh)
     }
 
     func testOtherManagementGetsFreshIdentity() {
-        let link = payload("jetbox://connect#k=\(key)&m=https://other.example.net&e=one")!
+        let link = payload("jetbox://connect#k=\(key)&m=https://other.jet-net.net&e=one")!
         XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: key), payload: link, configExists: true), .fresh)
     }
 
     func testRecordWithoutFingerprintFallsBackToBoxIdentity() {
         // Запись от сборки до 1.0 (9): ровно сценарий бага — коробка, затем облако.
-        let cloud = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&n=Cloud")!
-        let sameBox = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&e=one")!
+        let cloud = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&n=Cloud")!
+        let sameBox = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&e=one")!
         XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: nil), payload: cloud, configExists: true), .fresh)
         XCTAssertEqual(JetBoxIdentity.plan(current: registered(key: nil), payload: sameBox, configExists: true), .reuse)
     }
 
     func testForeignConfigGetsFreshIdentity() {
-        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net")!
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net")!
         XCTAssertEqual(JetBoxIdentity.plan(current: nil, payload: link, configExists: true), .fresh)
     }
 
@@ -275,24 +276,24 @@ final class JetBoxLinkTests: XCTestCase {
     }
 
     func testIdentityPrefersExitThenAppTokenThenName() {
-        let box = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&e=one&t=tok1&n=Dom")!
-        let cloudA = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&t=tok1&n=Dom")!
-        let cloudB = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&t=tok2&n=Dom")!
-        let legacyA = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&n=Dom")!
-        let legacyB = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&n=Other")!
-        XCTAssertEqual(box.boxIdentity, "mgmt.example.net|one", "старый формат удостоверения коробки не меняется")
+        let box = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=one&t=tok1&n=Dom")!
+        let cloudA = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&t=tok1&n=Dom")!
+        let cloudB = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&t=tok2&n=Dom")!
+        let legacyA = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&n=Dom")!
+        let legacyB = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&n=Other")!
+        XCTAssertEqual(box.boxIdentity, "mgmt.jet-net.net|one", "старый формат удостоверения коробки не меняется")
         XCTAssertNotEqual(cloudA.boxIdentity, cloudB.boxIdentity, "облачных абонентов различает t")
         XCTAssertFalse(cloudA.boxIdentity.contains("tok1"), "токен в удостоверении только отпечатком")
         XCTAssertNotEqual(legacyA.boxIdentity, legacyB.boxIdentity, "без e и t различает n")
     }
 
     func testStoredBoxMatchesItsOwnCloudLink() {
-        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.example.net&t=tok1&n=Cloud")!
+        let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&t=tok1&n=Cloud")!
         var box = registered(key: key, exit: nil, name: "Cloud")
         box.appTokenFingerprint = JetBoxIdentity.fingerprint(of: "tok1")
         XCTAssertEqual(box.identity, link.boxIdentity)
         XCTAssertTrue(box.isSameConnection(as: link))
-        let other = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&t=tok2&n=Cloud")!
+        let other = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&t=tok2&n=Cloud")!
         XCTAssertFalse(box.isSameConnection(as: other), "должны спросить «переключить?»")
         XCTAssertNil(box.renamed(by: other), "чужое имя не присваиваем")
     }
@@ -300,7 +301,7 @@ final class JetBoxLinkTests: XCTestCase {
     func testReissuedBoxLinkNeedsNoConfirmationButGetsFreshKey() {
         // «Новая ссылка» той же коробки: то же e, другой setup key.
         let current = registered(key: key)
-        let reissued = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.example.net&e=one")!
+        let reissued = payload("jetbox://connect#k=\(otherKey)&m=https://mgmt.jet-net.net&e=one")!
         XCTAssertTrue(current.isSameConnection(as: reissued))
         XCTAssertEqual(JetBoxIdentity.plan(current: current, payload: reissued, configExists: true), .fresh)
     }
@@ -325,5 +326,34 @@ final class JetBoxLinkTests: XCTestCase {
 
         XCTAssertEqual(try String(contentsOfFile: active, encoding: .utf8), "new")
         XCTAssertFalse(FileManager.default.fileExists(atPath: staging), "временный файл не остаётся")
+    }
+
+    // MARK: - Маска management *.jet-net.net (контракт 1.3, §2.3)
+
+    /// Общие векторы всех платформ: копия `JetBox_Desktop/core/jetboxlink/testdata/mgmt-mask.json`.
+    func testManagementMaskSharedVectors() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("mgmt-mask.json")
+        struct Vectors: Decodable { struct Case: Decodable { let m: String; let ok: Bool; let why: String }; let cases: [Case] }
+        let vectors = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: url))
+        XCTAssertGreaterThanOrEqual(vectors.cases.count, 35)
+        for c in vectors.cases {
+            XCTAssertEqual(JetBoxLink.allowedManagement(c.m), c.ok, "\(c.m) — \(c.why)")
+        }
+    }
+
+    func testForeignManagementIsRefusedBeforeAnything() {
+        let link = URL(string: "https://box.jet-net.net/connect#k=\(key)&m=https%3A%2F%2Fevil.example.com&e=one")!
+        XCTAssertEqual(JetBoxLink.parse(link), .foreignServer)
+        let ip = URL(string: "jetbox://connect#k=\(key)&m=https%3A%2F%2F100.79.0.1%3A33073")!
+        XCTAssertEqual(JetBoxLink.parse(ip), .foreignServer)
+    }
+
+    func testMaskedManagementWithPortIsAccepted() {
+        let link = payload("jetbox://connect#k=\(key)&m=https%3A%2F%2Fnetbird.jet-net.net%3A33073&e=one")
+        XCTAssertEqual(link?.managementURL, "https://netbird.jet-net.net:33073")
+    }
+
+    func testMissingManagementStillMeansDefault() {
+        XCTAssertEqual(payload("jetbox://connect#k=\(key)&e=one")?.managementURL, JetBoxConfig.defaultManagementURL)
     }
 }
