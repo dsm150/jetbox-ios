@@ -245,7 +245,11 @@ final class JetBoxOnboarding: ObservableObject {
 
         await model.loginWithSetupKey(managementServerUrl: payload.managementURL,
                                       setupKey: payload.setupKey)
-        if Task.isCancelled { return }
+        if Task.isCancelled {
+            // Обрыв до замены конфига: действующий конфиг и туннель не тронуты.
+            if plan == .fresh { try? FileManager.default.removeItem(atPath: loginConfig) }
+            return
+        }
 
         guard model.isOperationSuccessful else {
             if plan == .fresh { try? FileManager.default.removeItem(atPath: loginConfig) }
@@ -255,6 +259,7 @@ final class JetBoxOnboarding: ObservableObject {
         }
         registration = nil
         if plan == .fresh {
+            let tunnelWasUp = viewModel.vpnDisplayState != .disconnected
             do {
                 try JetBoxIdentity.install(staging: loginConfig, into: activeConfig)
             } catch {
@@ -265,9 +270,18 @@ final class JetBoxOnboarding: ObservableObject {
             // Работающий туннель держит прежнюю личность в памяти — его нужно
             // перезапустить, иначе «подключено» покажет старое подключение.
             await stopTunnel(viewModel: viewModel)
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                // Обрыв (чужая или битая ссылка, «Отмена») до фиксации замены:
+                // прежний конфиг на место, туннель — как был до сценария.
+                JetBoxIdentity.rollback(into: activeConfig)
+                if tunnelWasUp { viewModel.connect() }
+                AppLogger.shared.log("JetBox: замена прервана, прежнее подключение восстановлено")
+                return
+            }
         }
+        // Фиксация замены: дальше обрыв только прекращает ожидание туннеля.
         JetBoxStore.remember(payload)
+        if plan == .fresh { JetBoxIdentity.discardBackup(for: activeConfig) }
         AppLogger.shared.log("JetBox: устройство зарегистрировано на объекте (\(clock.lap()) мс)")
 
         // 3. Туннель.
@@ -305,13 +319,17 @@ final class JetBoxOnboarding: ObservableObject {
     /// Останавливает туннель и ждёт, пока расширение доложит `.disconnected`.
     /// Если включено «Подключать автоматически», система может поднять туннель
     /// сама — это не страшно: новый конфиг к этому моменту уже на месте.
+    /// Ждёт и при обрыве сценария: откату нужен остановленный туннель, иначе
+    /// прежний конфиг не перечитается. Поэтому пауза не через Task.sleep — та
+    /// в отменённой задаче возвращается сразу.
     private func stopTunnel(viewModel: ViewModel) async {
         guard viewModel.vpnDisplayState != .disconnected else { return }
         viewModel.performClose()
         let deadline = Date().addingTimeInterval(stopTimeout)
         while Date() < deadline {
-            if Task.isCancelled { return }
-            try? await Task.sleep(nanoseconds: 300_000_000)
+            await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { done.resume() }
+            }
             if viewModel.vpnDisplayState == .disconnected { return }
         }
         AppLogger.shared.log("JetBox: туннель не остановился за \(Int(stopTimeout)) с, подключаемся заново")

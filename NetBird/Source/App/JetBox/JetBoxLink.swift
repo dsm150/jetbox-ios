@@ -249,7 +249,11 @@ enum JetBoxLink {
               components.scheme?.lowercased() == "https",
               let host = components.host, !host.isEmpty else { return nil }
 
-        var normalized = "https://" + host.lowercased()
+        // Одна завершающая точка FQDN срезается до маски и удостоверения:
+        // `netbird.jet-net.net.` — тот же сервер (находка Android, 18.11.2026).
+        var name = host.lowercased()
+        if name.hasSuffix(".") { name.removeLast() }
+        var normalized = "https://" + name
         if let port = components.port { normalized += ":\(port)" }
         let path = components.path
         if !path.isEmpty && path != "/" {

@@ -54,16 +54,43 @@ enum JetBoxIdentity {
         configPath + ".jetbox-new"
     }
 
-    /// Ставит зарегистрированный конфиг на место действующего.
+    /// Копия прежнего конфига на время замены — для отката при обрыве сценария.
+    static func backupPath(for configPath: String) -> String {
+        configPath + ".jetbox-old"
+    }
+
+    /// Ставит зарегистрированный конфиг на место действующего, прежний
+    /// откладывает в копию до `discardBackup` или `rollback`.
     static func install(staging: String, into configPath: String) throws {
         let fm = FileManager.default
         let target = URL(fileURLWithPath: configPath)
         let source = URL(fileURLWithPath: staging)
+        let backup = backupPath(for: configPath)
+        try? fm.removeItem(atPath: backup)
         if fm.fileExists(atPath: configPath) {
+            try fm.copyItem(atPath: configPath, toPath: backup)
             _ = try fm.replaceItemAt(target, withItemAt: source)
         } else {
             try fm.moveItem(at: source, to: target)
         }
+    }
+
+    /// Обрыв до фиксации замены: возвращает прежний конфиг (правило для всех
+    /// платформ, 18.11.2026: любой обрыв — состояние до сценария).
+    static func rollback(into configPath: String) {
+        let fm = FileManager.default
+        let backup = backupPath(for: configPath)
+        guard fm.fileExists(atPath: backup) else { return }
+        if fm.fileExists(atPath: configPath) {
+            _ = try? fm.replaceItemAt(URL(fileURLWithPath: configPath), withItemAt: URL(fileURLWithPath: backup))
+        } else {
+            try? fm.moveItem(atPath: backup, toPath: configPath)
+        }
+    }
+
+    /// Замена зафиксирована — копия прежнего конфига больше не нужна.
+    static func discardBackup(for configPath: String) {
+        try? FileManager.default.removeItem(atPath: backupPath(for: configPath))
     }
 
     private static func managementHost(_ url: String) -> String {

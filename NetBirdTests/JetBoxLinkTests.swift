@@ -393,4 +393,46 @@ final class JetBoxLinkTests: XCTestCase {
     func testMissingManagementStillMeansDefault() {
         XCTAssertEqual(payload("jetbox://connect#k=\(key)&e=one")?.managementURL, JetBoxConfig.defaultManagementURL)
     }
+
+    // MARK: - Обрыв сценария замены и завершающая точка (находки Android, 18.11.2026)
+
+    func testInterruptedSwitchRollsBackToPreviousConfig() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let active = dir.appendingPathComponent("default.json").path
+        let staging = JetBoxIdentity.stagingPath(for: active)
+        try Data("old".utf8).write(to: URL(fileURLWithPath: active))
+        try Data("new".utf8).write(to: URL(fileURLWithPath: staging))
+
+        try JetBoxIdentity.install(staging: staging, into: active)
+        XCTAssertEqual(try String(contentsOfFile: active, encoding: .utf8), "new")
+        JetBoxIdentity.rollback(into: active)
+
+        XCTAssertEqual(try String(contentsOfFile: active, encoding: .utf8), "old", "обрыв — прежний конфиг на месте")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: JetBoxIdentity.backupPath(for: active)))
+    }
+
+    func testCommittedSwitchDropsBackup() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let active = dir.appendingPathComponent("default.json").path
+        let staging = JetBoxIdentity.stagingPath(for: active)
+        try Data("old".utf8).write(to: URL(fileURLWithPath: active))
+        try Data("new".utf8).write(to: URL(fileURLWithPath: staging))
+
+        try JetBoxIdentity.install(staging: staging, into: active)
+        JetBoxIdentity.discardBackup(for: active)
+        JetBoxIdentity.rollback(into: active)
+
+        XCTAssertEqual(try String(contentsOfFile: active, encoding: .utf8), "new", "после фиксации откатывать нечего")
+    }
+
+    func testTrailingDotIsStrippedFromManagement() {
+        let dotted = payload("jetbox://connect#k=\(key)&m=https%3A%2F%2Fnetbird.jet-net.net.&e=one&n=X")
+        let plain = payload("jetbox://connect#k=\(key)&m=https%3A%2F%2Fnetbird.jet-net.net&e=one&n=X")
+        XCTAssertEqual(dotted?.managementURL, "https://netbird.jet-net.net")
+        XCTAssertEqual(dotted?.boxIdentity, plain?.boxIdentity, "тот же сервер — без ложного «Другой JetBox»")
+    }
 }
