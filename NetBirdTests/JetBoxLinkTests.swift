@@ -252,6 +252,22 @@ final class JetBoxLinkTests: XCTestCase {
         }
     }
 
+    /// Раздел compare общих векторов: запись против ссылки → same / ask.
+    func testIdentityCompareSharedVectors() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("identity.json")
+        struct Stored: Decodable { let m: String; let e: String?; let n: String? }
+        struct Case: Decodable { let stored: Stored; let link: String; let expect: String; let about: String }
+        struct Vectors: Decodable { let compare: [Case] }
+        let vectors = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: url))
+        XCTAssertFalse(vectors.compare.isEmpty)
+        for c in vectors.compare {
+            let box = JetBoxBox(managementURL: c.stored.m, exitNodeName: c.stored.e, selectedExitNode: c.stored.e,
+                                boxName: c.stored.n, registeredAt: Date(timeIntervalSince1970: 0))
+            let link = try XCTUnwrap(payload(c.link), c.about)
+            XCTAssertEqual(box.isSameConnection(as: link) ? "same" : "ask", c.expect, c.about)
+        }
+    }
+
     // MARK: - Личность устройства при замене подключения (баг 13.11.2026)
 
     private let otherKey = "22222222-3333-4444-8555-666666666666"

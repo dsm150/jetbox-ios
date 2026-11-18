@@ -220,10 +220,10 @@ enum JetBoxLink {
 
         var host = authority
         if let colon = authority.lastIndex(of: ":") {
+            // Двоеточие без порта — отказ (вектор 36, найден Android 18.11.2026).
             let port = authority[authority.index(after: colon)...]
-            if !port.isEmpty {
-                guard port.allSatisfy(\.isASCIIDigit), let number = Int(port), (1...65535).contains(number) else { return false }
-            }
+            guard !port.isEmpty, port.allSatisfy(\.isASCIIDigit),
+                  let number = Int(port), (1...65535).contains(number) else { return false }
             host = authority[..<colon]
         }
 
