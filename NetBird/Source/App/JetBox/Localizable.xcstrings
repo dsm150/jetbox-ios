@@ -1465,6 +1465,23 @@
         }
       }
     },
+    "jetbox.simple.about.links": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links and license"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ссылки и лицензия"
+          }
+        }
+      }
+    },
     "jetbox.simple.about.privacy": {
       "extractionState": "manual",
       "localizations": {
@@ -1546,6 +1563,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Проверьте Wi-Fi или мобильную сеть"
+          }
+        }
+      }
+    },
+    "jetbox.simple.privacy_toggle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What data is sent"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Какие данные передаются"
           }
         }
       }

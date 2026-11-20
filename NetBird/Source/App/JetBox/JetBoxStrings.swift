@@ -159,4 +159,6 @@ enum JBText {
     static var simpleAboutGuard: String { t("jetbox.simple.about.guard") }
     static var simpleAboutApp: String { t("jetbox.simple.about.app") }
     static var simpleAboutPrivacy: String { t("jetbox.simple.about.privacy") }
+    static var simpleAboutLinks: String { t("jetbox.simple.about.links") }
+    static var simplePrivacyToggle: String { t("jetbox.simple.privacy_toggle") }
 }

@@ -3,8 +3,10 @@
 //  JetBox
 //
 //  Главный экран стиля «простое»: шестерёнка справа вверху, большой круг по
-//  центру (нажатие подключает и отключает), внизу свёрнутые «Подробности
-//  подключения». Данные и действия те же, что у «техно» (`JetBoxHomeLayout`).
+//  центру (нажатие подключает и отключает), внизу одна свёрнутая строка
+//  «Подробности подключения». Данные и действия те же, что у «техно»
+//  (`JetBoxHomeLayout`). Выбора выхода в «простом» нет (замечание Алексея
+//  21.11.2026: «только один по умолчанию») — он остаётся в «техно».
 //
 
 import SwiftUI
@@ -18,14 +20,9 @@ struct JetBoxSimpleHomeLayout: View {
     let stats: JetBoxLiveStats.Snapshot?
     let connectedSince: Date?
     let power: JetBoxPowerAction
-    /// Имя текущего выхода и признак «выходов больше одного» — тогда в
-    /// подробностях есть строка выбора выхода (как в листе «техно»).
-    let exitName: String?
-    let showsExit: Bool
     var startsExpanded = false
     let onPower: () -> Void
     let onSettings: () -> Void
-    let onExit: () -> Void
 
     @State private var expanded = false
 
@@ -127,31 +124,14 @@ struct JetBoxSimpleHomeLayout: View {
         }
     }
 
+    /// Одна сворачиваемая карточка: заголовок-пилюля, в раскрытом виде —
+    /// одна строка «12:38 в сети · 24 мс · напрямую» (замечание Алексея
+    /// 21.11.2026: «здесь должна быть одна строка, сворачиваемая»).
     private var details: some View {
-        VStack(spacing: 12) {
-            if expanded {
-                HStack(spacing: 8) {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        chip(uptimeText(at: context.date), JBText.dockUptime)
-                    }
-                    chip(stats?.latencyMs.map(JBText.milliseconds) ?? "—", JBText.dockLatency)
-                    chip(routeText, JBText.dockRoute)
-                }
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-
-                if showsExit {
-                    Button(action: onExit) {
-                        JBSimpleRow(title: JBText.settingsExit, value: exitName ?? JBText.homeExitNone, chevron: true)
-                            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(JBSimple.card))
-                    }
-                    .buttonStyle(.plain)
-                    .transition(.opacity)
-                }
-            }
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.3)) { expanded.toggle() }
-            } label: {
+        Button {
+            withAnimation(.easeInOut(duration: 0.3)) { expanded.toggle() }
+        } label: {
+            VStack(spacing: 6) {
                 HStack(spacing: 8) {
                     Text(JBText.simpleDetails)
                         .font(JBSimple.font(19, .heavy))
@@ -160,31 +140,31 @@ struct JetBoxSimpleHomeLayout: View {
                         .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
                 .foregroundColor(JBSimple.muted)
-                .padding(.horizontal, 24)
-                .frame(minHeight: 52)
-                .background(Capsule().fill(JBSimple.card))
+                if expanded {
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text(summaryLine(at: context.date))
+                            .font(JBSimple.font(19, .bold).monospacedDigit())
+                            .foregroundColor(JBSimple.ink)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .transition(.opacity)
+                }
             }
-            .buttonStyle(JBSimplePressStyle())
+            .padding(.horizontal, 24)
+            .padding(.vertical, expanded ? 14 : 0)
+            .frame(minHeight: 52)
+            .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(JBSimple.card))
         }
+        .buttonStyle(JBSimplePressStyle())
+        .accessibilityHint(JBText.simpleDetails)
     }
 
-    private func chip(_ value: String, _ caption: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value)
-                .font(JBSimple.font(21, .heavy).monospacedDigit())
-                .foregroundColor(JBSimple.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Text(caption)
-                .font(JBSimple.font(17, .semibold))
-                .foregroundColor(JBSimple.muted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 6)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(JBSimple.card))
+    private func summaryLine(at now: Date) -> String {
+        var parts = ["\(uptimeText(at: now)) \(JBText.dockUptime)"]
+        if let ms = stats?.latencyMs { parts.append(JBText.milliseconds(ms)) }
+        if stats != nil { parts.append(routeText.lowercased()) }
+        return parts.joined(separator: " · ")
     }
 
     private func uptimeText(at now: Date) -> String {
@@ -208,94 +188,6 @@ struct JetBoxSimpleHomeLayout: View {
     private func press() {
         JBHaptics.tap()
         onPower()
-    }
-}
-
-// MARK: - Выбор выхода
-
-/// Список выходов в стиле «простое». Данные приходят параметрами, чтобы тот
-/// же вид работал и с настоящими маршрутами, и в демо.
-struct JetBoxSimpleExitList: View {
-    let options: [String]
-    let selected: String?
-    let onSelect: (String?) -> Void
-    let onClose: () -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                JBSimpleHeader(title: JBText.exitPickerTitle, trailingTitle: JBText.close, onTrailing: onClose)
-                    .padding(.bottom, 6)
-
-                if options.isEmpty {
-                    Text(JBText.exitPickerEmpty)
-                        .font(JBSimple.secondary)
-                        .foregroundColor(JBSimple.muted)
-                } else {
-                    Text(JBText.exitPickerMessage)
-                        .font(JBSimple.secondary)
-                        .foregroundColor(JBSimple.muted)
-                        .padding(.bottom, 4)
-                    ForEach(options, id: \.self) { name in
-                        option(name, isSelected: name == selected) { onSelect(name) }
-                    }
-                    JBSimpleTextButton(JBText.homeExitNone, color: JBSimple.muted) { onSelect(nil) }
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
-            .padding(.bottom, 24)
-        }
-        .background(JBSimple.background.ignoresSafeArea())
-        .environment(\.colorScheme, .light)
-    }
-
-    private func option(_ name: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                JBSimpleIconTile(systemName: "house.fill", size: 48,
-                                 tint: isSelected ? .white : JBSimple.accent,
-                                 fill: isSelected ? JBSimple.accent : JBSimple.accentTint)
-                Text(name)
-                    .font(JBSimple.font(20, .bold))
-                    .foregroundColor(JBSimple.ink)
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 26, weight: .semibold))
-                        .foregroundColor(JBSimple.accent)
-                }
-            }
-            .padding(.horizontal, 16)
-            .frame(minHeight: 76)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(JBSimple.card))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(isSelected ? JBSimple.accent : Color.clear, lineWidth: 2))
-        }
-        .buttonStyle(JBSimplePressStyle())
-    }
-}
-
-/// Выбор выхода с главного экрана: те же действия, что у `JetBoxExitSheet`.
-struct JetBoxSimpleExitSheet: View {
-    @ObservedObject var routes: RoutesViewModel
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        JetBoxSimpleExitList(
-            options: routes.exitNodes.map(\.name),
-            selected: routes.selectedExitNode?.name,
-            onSelect: { name in
-                let node = name.flatMap { n in routes.exitNodes.first { $0.name == n } }
-                routes.setExitNode(node)
-                JetBoxStore.rememberExitNode(node?.name)
-                dismiss()
-            },
-            onClose: { dismiss() }
-        )
-        .onAppear { routes.getRoutes() }
     }
 }
 

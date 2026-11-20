@@ -436,3 +436,28 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertEqual(dotted?.boxIdentity, plain?.boxIdentity, "тот же сервер — без ложного «Другой JetBox»")
     }
 }
+
+// MARK: - Стиль «простое»: выбора выхода нет (замечание Алексея 21.11.2026)
+
+final class JetBoxSimpleStyleExitTests: XCTestCase {
+
+    private let payload = JetBoxLinkPayload(setupKey: "3f6c2a9e-0d41-4c7b-9a55-8e21b07c4d19",
+                                            managementURL: "https://mgmt.jet-net.net",
+                                            exitNodeName: nil,
+                                            boxName: "Дом")
+
+    func testSimpleStyleSkipsExitChoiceLikeNotNow() {
+        let step = JetBoxOnboarding.stepForAmbiguousExit(payload: payload, options: ["А", "Б"], style: .simple)
+        XCTAssertEqual(step, .protected(exitNode: nil))
+    }
+
+    func testSimpleStyleSkipsExitChoiceWhenNoExits() {
+        let step = JetBoxOnboarding.stepForAmbiguousExit(payload: payload, options: [], style: .simple)
+        XCTAssertEqual(step, .protected(exitNode: nil))
+    }
+
+    func testTechnoStyleStillAsksForExit() {
+        let step = JetBoxOnboarding.stepForAmbiguousExit(payload: payload, options: ["А", "Б"], style: .techno)
+        XCTAssertEqual(step, .chooseExit(payload, options: ["А", "Б"]))
+    }
+}

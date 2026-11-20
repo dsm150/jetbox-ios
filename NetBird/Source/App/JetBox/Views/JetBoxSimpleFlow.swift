@@ -13,6 +13,7 @@ import SwiftUI
 struct JetBoxSimpleFlowView: View {
     @EnvironmentObject var viewModel: ViewModel
     @EnvironmentObject var jetbox: JetBoxOnboarding
+    @State private var showsPrivacy = false
 
     var body: some View {
         ZStack {
@@ -99,8 +100,11 @@ struct JetBoxSimpleFlowView: View {
         case .selectingExit:
             progress(JBText.selectingExit)
 
-        case .chooseExit(_, let options):
-            JetBoxSimpleFlowExits(options: options)
+        case .chooseExit:
+            // В «простом» выбора выхода нет: сюда попадаем, только если стиль
+            // сменили посреди сценария. Ведём себя как «Пока не выбирать».
+            progress(JBText.selectingExit)
+                .onAppear { jetbox.chooseExit(nil, viewModel: viewModel) }
 
         case .protected(let exitNode):
             VStack(spacing: 14) {
@@ -163,17 +167,34 @@ struct JetBoxSimpleFlowView: View {
     }
 
     /// Что уходит на сервер — требование App Review 5.4: до любого действия,
-    /// поэтому сразу под кнопкой подключения.
+    /// поэтому сразу под кнопкой подключения. Свёрнуто в одну строку
+    /// (замечание Алексея 21.11.2026), текст тот же — по нажатию.
     private var privacyNotice: some View {
-        VStack(spacing: 4) {
-            Text(JBText.privacyNotice)
-                .font(JBSimple.font(17, .semibold))
+        VStack(spacing: 8) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) { showsPrivacy.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Text(JBText.simplePrivacyToggle)
+                        .font(JBSimple.font(18, .heavy))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .heavy))
+                        .rotationEffect(.degrees(showsPrivacy ? 180 : 0))
+                }
                 .foregroundColor(JBSimple.muted)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            Link(JBText.privacyMore, destination: JetBoxConfig.privacyPolicyURL)
-                .font(JBSimple.font(17, .heavy))
-                .foregroundColor(JBSimple.accent)
+                .frame(minHeight: 44)
+            }
+            if showsPrivacy {
+                Text(JBText.privacyNotice)
+                    .font(JBSimple.font(17, .semibold))
+                    .foregroundColor(JBSimple.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity)
+                Link(JBText.privacyMore, destination: JetBoxConfig.privacyPolicyURL)
+                    .font(JBSimple.font(17, .heavy))
+                    .foregroundColor(JBSimple.accent)
+            }
         }
         .frame(maxWidth: .infinity)
     }
@@ -239,53 +260,6 @@ struct JetBoxSimpleFailure: View {
                 .font(JBSimple.font(19, .heavy))
                 .tint(JBSimple.accent)
             }
-        }
-    }
-}
-
-// MARK: - Выбор выхода по ссылке
-
-struct JetBoxSimpleFlowExits: View {
-    let options: [String]
-    @EnvironmentObject var viewModel: ViewModel
-    @EnvironmentObject var jetbox: JetBoxOnboarding
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(JBText.exitPickerTitle)
-                .font(JBSimple.font(30, .black))
-                .foregroundColor(JBSimple.ink)
-                .padding(.top, 24)
-            Text(options.isEmpty ? JBText.exitPickerEmpty : JBText.exitPickerMessage)
-                .font(JBSimple.secondary)
-                .foregroundColor(JBSimple.muted)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.bottom, 6)
-            ForEach(options, id: \.self) { name in
-                Button {
-                    jetbox.chooseExit(name, viewModel: viewModel)
-                } label: {
-                    HStack(spacing: 14) {
-                        JBSimpleIconTile(systemName: "house.fill", size: 48)
-                        Text(name)
-                            .font(JBSimple.font(20, .bold))
-                            .foregroundColor(JBSimple.ink)
-                            .lineLimit(1)
-                        Spacer(minLength: 8)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(JBSimple.muted)
-                    }
-                    .padding(.horizontal, 16)
-                    .frame(minHeight: 76)
-                    .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(JBSimple.card))
-                }
-                .buttonStyle(JBSimplePressStyle())
-            }
-            JBSimpleTextButton(JBText.exitPickerSkip, color: JBSimple.muted) {
-                jetbox.chooseExit(nil, viewModel: viewModel)
-            }
-            .frame(maxWidth: .infinity)
         }
     }
 }

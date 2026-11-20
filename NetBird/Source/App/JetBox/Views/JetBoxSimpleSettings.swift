@@ -153,6 +153,7 @@ struct JetBoxSimpleSettingsView: View {
 
 struct JetBoxSimpleAboutView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showsLinks = false
 
     var body: some View {
         ScrollView {
@@ -186,26 +187,50 @@ struct JetBoxSimpleAboutView: View {
                 }
 
                 // Ссылки и сведения, которые требует GPL-3.0 (§5(d)), — те же,
-                // что в «О программе» стиля «техно».
+                // что в «О программе» стиля «техно», но свёрнуты в одну строку
+                // (замечание Алексея 21.11.2026): по нажатию — всё на месте.
                 JBSimpleCard {
-                    Link(destination: URL(string: "https://jet-net.net")!) {
-                        JBSimpleRow(title: JBText.aboutSite, chevron: true)
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) { showsLinks.toggle() }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Text(JBText.simpleAboutLinks)
+                                .font(JBSimple.font(20, .bold))
+                                .foregroundColor(JBSimple.ink)
+                            Spacer(minLength: 8)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(JBSimple.muted)
+                                .rotationEffect(.degrees(showsLinks ? 180 : 0))
+                        }
+                        .padding(.horizontal, 20)
+                        .frame(minHeight: 66)
+                        .contentShape(Rectangle())
                     }
-                    JBSimpleDivider()
-                    Link(destination: JetBoxConfig.sourceCodeURL) {
-                        JBSimpleRow(title: JBText.aboutSource, chevron: true)
-                    }
-                    JBSimpleDivider()
-                    Link(destination: JetBoxConfig.licenseURL) {
-                        JBSimpleRow(title: JBText.aboutLicense, chevron: true)
+                    .buttonStyle(.plain)
+                    if showsLinks {
+                        JBSimpleDivider()
+                        Link(destination: URL(string: "https://jet-net.net")!) {
+                            JBSimpleRow(title: JBText.aboutSite, chevron: true)
+                        }
+                        JBSimpleDivider()
+                        Link(destination: JetBoxConfig.sourceCodeURL) {
+                            JBSimpleRow(title: JBText.aboutSource, chevron: true)
+                        }
+                        JBSimpleDivider()
+                        Link(destination: JetBoxConfig.licenseURL) {
+                            JBSimpleRow(title: JBText.aboutLicense, chevron: true)
+                        }
+                        Text(JBText.aboutLegal(String(Calendar.current.component(.year, from: Date()))))
+                            .font(JBSimple.font(17, .semibold))
+                            .foregroundColor(JBSimple.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 18)
+                            .padding(.top, 4)
                     }
                 }
                 .padding(.top, 6)
-
-                Text(JBText.aboutLegal(String(Calendar.current.component(.year, from: Date()))))
-                    .font(JBSimple.font(17, .semibold))
-                    .foregroundColor(JBSimple.muted)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 22)
             .padding(.top, 8)

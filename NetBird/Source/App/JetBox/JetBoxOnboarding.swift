@@ -309,7 +309,11 @@ final class JetBoxOnboarding: ObservableObject {
             step = .protected(exitNode: name)
             JetBoxNotifications.requestIfNeeded()
         case .ambiguous(let options):
-            step = .chooseExit(payload, options: options)
+            step = Self.stepForAmbiguousExit(payload: payload, options: options, style: JetBoxStyle.current)
+            if case .protected = step {
+                AppLogger.shared.log("JetBox: стиль «простое» — выбор выхода не показываем, как «Пока не выбирать»")
+                JetBoxNotifications.requestIfNeeded()
+            }
         case .none:
             step = .protected(exitNode: nil)
             JetBoxNotifications.requestIfNeeded()
@@ -346,6 +350,17 @@ final class JetBoxOnboarding: ObservableObject {
             try? await Task.sleep(nanoseconds: 500_000_000)
         }
         return false
+    }
+
+    /// Выход из ссылки не определился сам. «Техно» спрашивает человека;
+    /// «простое» выбора выхода не показывает нигде (замечание Алексея
+    /// 21.11.2026) — ведёт себя как «Пока не выбирать». Сменить выход можно
+    /// только в «техно».
+    nonisolated static func stepForAmbiguousExit(payload: JetBoxLinkPayload, options: [String], style: JetBoxStyle) -> Step {
+        switch style {
+        case .simple: return .protected(exitNode: nil)
+        case .techno: return .chooseExit(payload, options: options)
+        }
     }
 
     private enum ExitOutcome {
