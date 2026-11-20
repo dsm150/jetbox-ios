@@ -21,9 +21,9 @@ enum JetBoxStyle: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static let key = "jetbox.style"
-    /// По умолчанию — прежний вид; простой включается в настройках
-    /// (решение владельца 20.11.2026: выбор по скриншотам).
-    static let fallback: JetBoxStyle = .techno
+    /// По умолчанию — «простое» (Алексей, 21.11.2026). Стиль, который
+    /// человек уже выбрал сам, хранится и не перетирается.
+    static let fallback: JetBoxStyle = .simple
 
     static var defaults: UserDefaults { JetBoxAdvancedAccess.defaults }
 

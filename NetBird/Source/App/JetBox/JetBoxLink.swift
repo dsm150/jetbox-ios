@@ -28,7 +28,11 @@ enum JetBoxConfig {
     /// Политика конфиденциальности: на неё ведёт «Подробнее» под объявлением
     /// о данных. App Review 5.4 требует объявить сбор данных на экране
     /// **до** того, как клиент нажмёт «Подключить».
-    static let privacyPolicyURL = URL(string: "https://jet-net.net/privacy")!
+    /// Юридические страницы — на сайте JetBox для США (Алексей, 21.11.2026).
+    static let privacyPolicyURL = URL(string: "https://jetbox.ai-boss.us/legal/#privacy")!
+    static let termsURL = URL(string: "https://jetbox.ai-boss.us/legal/#terms")!
+    static let eulaURL = URL(string: "https://jetbox.ai-boss.us/legal/#eula")!
+    static let siteURL = URL(string: "https://jetbox.ai-boss.us")!
     /// Исходники форка и текст лицензии — GPL-3.0 требует их доступности.
     static let sourceCodeURL = URL(string: "https://github.com/dsm150/jetbox-ios")!
     static let licenseURL = URL(string: "https://github.com/dsm150/jetbox-ios/blob/main/LICENSE")!

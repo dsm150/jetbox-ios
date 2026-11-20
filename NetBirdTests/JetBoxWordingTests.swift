@@ -17,7 +17,11 @@ final class JetBoxWordingTests: XCTestCase {
     /// Слова, которых в клиентских строках быть не должно.
     /// Ключи (`jetbox.settings.section.box`) не в счёт — их клиент не видит.
     private let forbiddenRU = ["коробк", "обход", "заблокирован"]
-    private let forbiddenEN = ["bypass", "blocked", "censorship"]
+    /// С 21.11.2026 приложение только на английском (релиз в США); к прежним
+    /// словам добавлены запреты из правил копирайта Алексея.
+    private let forbiddenEN = ["bypass", "blocked", "censorship", "vpn", "anonym",
+                               "change location", "unblock", "protection on",
+                               "protection off", "protection is off"]
 
     private func strings(_ language: String) throws -> [String: String] {
         let bundle = Bundle(for: JetBoxWordingTests.self)
@@ -44,8 +48,14 @@ final class JetBoxWordingTests: XCTestCase {
         }
     }
 
-    func testRussianStringsAvoidForbiddenWords() throws {
-        try assertNoForbiddenWords("ru", forbiddenRU)
+    /// Русский отложен до после публикации (каталоги — в `localization-ru/`):
+    /// в сборке его быть не должно, иначе русский телефон увидит русский.
+    func testRussianIsNotShipped() {
+        for bundle in [Bundle(for: JetBoxWordingTests.self), Bundle.main] {
+            XCTAssertNil(bundle.url(forResource: "Localizable", withExtension: "strings", subdirectory: "ru.lproj"),
+                         "ru.lproj/Localizable.strings попал в сборку")
+        }
+        XCTAssertFalse(Bundle.main.localizations.contains("ru"), "ru среди локализаций приложения")
     }
 
     func testEnglishStringsAvoidForbiddenWords() throws {
@@ -67,7 +77,9 @@ final class JetBoxWordingTests: XCTestCase {
     func testConnectScreenPromisesTheHomeNetwork() throws {
         // Легенда продукта — доступ к своей сети, а не «весь трафик через
         // коробку»: описание в магазине и текст на экране должны совпадать.
-        let ru = try strings("ru")["jetbox.ready.hint"]
-        XCTAssertEqual(ru, "Одно нажатие — и телефон окажется в вашей домашней сети.")
+        let en = try strings("en")
+        XCTAssertEqual(en["jetbox.ready.hint"], "One tap and the phone joins your home network.")
+        XCTAssertEqual(en["jetbox.home.connected"], "In home network")
+        XCTAssertEqual(en["jetbox.home.disconnected"], "Not in home network")
     }
 }

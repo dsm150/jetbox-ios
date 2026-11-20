@@ -1,223 +1,13 @@
 {
-  "sourceLanguage": "ru",
+  "sourceLanguage": "en",
   "strings": {
-    "Подключено": {
+    " Ваш адрес %@.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключено"
-          }
-        }
-      }
-    },
-    "Подключаем…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connecting…"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключаем…"
-          }
-        }
-      }
-    },
-    "Отключаем…": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Disconnecting…"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отключаем…"
-          }
-        }
-      }
-    },
-    "Отключено": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Disconnected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отключено"
-          }
-        }
-      }
-    },
-    "Подключение и отключение JetBox одним касанием.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect or disconnect JetBox with one tap."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключение и отключение JetBox одним касанием."
-          }
-        }
-      }
-    },
-    "Подключить JetBox": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect JetBox"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключить JetBox"
-          }
-        }
-      }
-    },
-    "Подключение и отключение JetBox из Пункта управления.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect or disconnect JetBox from Control Center."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключение и отключение JetBox из Пункта управления."
-          }
-        }
-      }
-    },
-    "Включить или выключить JetBox": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Set JetBox state"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Включить или выключить JetBox"
-          }
-        }
-      }
-    },
-    "Подключить": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключить"
-          }
-        }
-      }
-    },
-    "Переключить JetBox": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Toggle JetBox"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Переключить JetBox"
-          }
-        }
-      }
-    },
-    "Подключение и отключение JetBox.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect or disconnect JetBox."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключение и отключение JetBox."
-          }
-        }
-      }
-    },
-    "Действие": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Action"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Действие"
-          }
-        }
-      }
-    },
-    "Подключение к вашей сети JetBox.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect to your JetBox network."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключение к вашей сети JetBox."
+            "value": " Your address is %@."
           }
         }
       }
@@ -230,45 +20,16 @@
             "state": "translated",
             "value": "JetBox is not set up yet."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox ещё не настроен."
-          }
         }
       }
     },
-    "Нужно открыть приложение JetBox.": {
+    "JetBox отключён.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open the JetBox app to continue."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нужно открыть приложение JetBox."
-          }
-        }
-      }
-    },
-    "JetBox уже %@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox is already %@."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox уже %@."
+            "value": "JetBox disconnected."
           }
         }
       }
@@ -281,62 +42,16 @@
             "state": "translated",
             "value": "JetBox connected."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox подключён."
-          }
         }
       }
     },
-    "Не удалось подключить JetBox.": {
+    "JetBox уже %@.": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox failed to connect."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Не удалось подключить JetBox."
-          }
-        }
-      }
-    },
-    "Отключить JetBox": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Disconnect JetBox"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отключить JetBox"
-          }
-        }
-      }
-    },
-    "Отключение от вашей сети JetBox.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Disconnect from your JetBox network."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отключение от вашей сети JetBox."
+            "value": "JetBox is already %@."
           }
         }
       }
@@ -349,97 +64,6 @@
             "state": "translated",
             "value": "JetBox is already disconnected."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox уже отключён."
-          }
-        }
-      }
-    },
-    "JetBox отключён.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox disconnected."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox отключён."
-          }
-        }
-      }
-    },
-    "Не удалось отключить JetBox.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox failed to disconnect."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Не удалось отключить JetBox."
-          }
-        }
-      }
-    },
-    "Состояние JetBox": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox status"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Состояние JetBox"
-          }
-        }
-      }
-    },
-    "Проверка, подключён ли JetBox.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check whether JetBox is connected."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Проверка, подключён ли JetBox."
-          }
-        }
-      }
-    },
-    " Ваш адрес %@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": " Your address is %@."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": " Ваш адрес %@."
-          }
         }
       }
     },
@@ -447,12 +71,6 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox: %@.%@"
-          }
-        },
-        "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "JetBox: %@.%@"
@@ -468,11 +86,16 @@
             "state": "translated",
             "value": "On"
           }
-        },
-        "ru": {
+        }
+      }
+    },
+    "Включить или выключить JetBox": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Вкл"
+            "value": "Set JetBox state"
           }
         }
       }
@@ -485,11 +108,214 @@
             "state": "translated",
             "value": "Off"
           }
-        },
-        "ru": {
+        }
+      }
+    },
+    "Действие": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Выкл"
+            "value": "Action"
+          }
+        }
+      }
+    },
+    "Не удалось отключить JetBox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox failed to disconnect."
+          }
+        }
+      }
+    },
+    "Не удалось подключить JetBox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox failed to connect."
+          }
+        }
+      }
+    },
+    "Нужно открыть приложение JetBox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the JetBox app to continue."
+          }
+        }
+      }
+    },
+    "Отключаем…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnecting…"
+          }
+        }
+      }
+    },
+    "Отключение от вашей сети JetBox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect from your JetBox network."
+          }
+        }
+      }
+    },
+    "Отключено": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not in home network"
+          }
+        }
+      }
+    },
+    "Отключить JetBox": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect JetBox"
+          }
+        }
+      }
+    },
+    "Переключить JetBox": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle JetBox"
+          }
+        }
+      }
+    },
+    "Подключаем…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting…"
+          }
+        }
+      }
+    },
+    "Подключение и отключение JetBox из Пункта управления.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect or disconnect JetBox from Control Center."
+          }
+        }
+      }
+    },
+    "Подключение и отключение JetBox одним касанием.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect or disconnect JetBox with one tap."
+          }
+        }
+      }
+    },
+    "Подключение и отключение JetBox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect or disconnect JetBox."
+          }
+        }
+      }
+    },
+    "Подключение к вашей сети JetBox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect to your JetBox network."
+          }
+        }
+      }
+    },
+    "Подключено": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In home network"
+          }
+        }
+      }
+    },
+    "Подключить": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect"
+          }
+        }
+      }
+    },
+    "Подключить JetBox": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect JetBox"
+          }
+        }
+      }
+    },
+    "Проверка, подключён ли JetBox.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check whether JetBox is connected."
+          }
+        }
+      }
+    },
+    "Состояние JetBox": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox status"
           }
         }
       }

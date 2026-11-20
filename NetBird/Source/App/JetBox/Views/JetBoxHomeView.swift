@@ -234,7 +234,7 @@ struct JetBoxShieldDemoView: View {
     private let box = JetBoxBox(managementURL: "https://netbird.jet-net.net",
                                 exitNodeName: "home-ivanov",
                                 selectedExitNode: nil,
-                                boxName: "Дом на Озёрной",
+                                boxName: "Lakeview Home",
                                 registeredAt: Date())
 
     /// Примерные показатели — только для демо.

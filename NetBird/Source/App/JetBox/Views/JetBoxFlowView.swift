@@ -123,6 +123,12 @@ struct JetBoxFlowView: View {
                 JBGlassButton(JBText.readyButton) {
                     jetbox.connect(viewModel: viewModel)
                 }
+                // Согласие под кнопкой — App Review 5.1.1.
+                Text(LocalizedStringKey(JBText.legalConsent))
+                    .font(.footnote)
+                    .foregroundColor(JBColor.muted)
+                    .tint(JBColor.accent)
+                    .multilineTextAlignment(.center)
                 privacyNotice
             }
 

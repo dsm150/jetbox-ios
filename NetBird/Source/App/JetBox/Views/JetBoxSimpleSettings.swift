@@ -70,6 +70,21 @@ struct JetBoxSimpleSettingsView: View {
                         .buttonStyle(.plain)
                     }
 
+                    JBSimpleSectionLabel(title: JBText.legalSection)
+                    JBSimpleCard {
+                        Link(destination: JetBoxConfig.privacyPolicyURL) {
+                            JBSimpleRow(title: JBText.legalPrivacy, chevron: true)
+                        }
+                        JBSimpleDivider()
+                        Link(destination: JetBoxConfig.termsURL) {
+                            JBSimpleRow(title: JBText.legalTerms, chevron: true)
+                        }
+                        JBSimpleDivider()
+                        Link(destination: JetBoxConfig.eulaURL) {
+                            JBSimpleRow(title: JBText.legalEULA, chevron: true)
+                        }
+                    }
+
                     if advancedUnlocked {
                         JBSimpleCard {
                             Button {
@@ -210,7 +225,7 @@ struct JetBoxSimpleAboutView: View {
                     .buttonStyle(.plain)
                     if showsLinks {
                         JBSimpleDivider()
-                        Link(destination: URL(string: "https://jet-net.net")!) {
+                        Link(destination: JetBoxConfig.siteURL) {
                             JBSimpleRow(title: JBText.aboutSite, chevron: true)
                         }
                         JBSimpleDivider()

@@ -475,13 +475,13 @@ extension JetBoxOnboarding {
         let payload = JetBoxLinkPayload(setupKey: "3f6c2a9e-0d41-4c7b-9a55-8e21b07c4d19",
                                         managementURL: "https://netbird.jet-net.net",
                                         exitNodeName: "home-ivanov",
-                                        boxName: "Дом на Озёрной")
+                                        boxName: "Lakeview Home")
         switch raw {
         case "ready": step = .ready(payload)
-        case "switch": step = .confirmSwitch(payload, current: "Дача")
+        case "switch": step = .confirmSwitch(payload, current: "Country House")
         case "working": step = .connecting(payload)
-        case "exits": step = .chooseExit(payload, options: ["Дом на Озёрной", "Дача", "Офис на Тверской"])
-        case "protected": step = .protected(exitNode: "Дом на Озёрной")
+        case "exits": step = .chooseExit(payload, options: ["Lakeview Home", "Country House", "Downtown Office"])
+        case "protected": step = .protected(exitNode: "Lakeview Home")
         case "failed": step = .failed(.offline)
         default: break
         }

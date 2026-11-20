@@ -195,7 +195,14 @@ struct JetBoxSimpleFlowView: View {
                 JBSimpleTextButton(JBText.close, color: JBSimple.muted) { jetbox.dismiss() }
             }
 
-        case .ready, .confirmSwitch:
+        case .ready:
+            VStack(spacing: 4) {
+                JBSimpleTextButton(JBText.cancel, color: JBSimple.muted) { jetbox.dismiss() }
+                // Согласие внизу под кнопкой — App Review 5.1.1.
+                JBSimpleConsent()
+            }
+
+        case .confirmSwitch:
             JBSimpleTextButton(JBText.cancel, color: JBSimple.muted) { jetbox.dismiss() }
 
         case .idle, .registering, .connecting, .selectingExit, .chooseExit:

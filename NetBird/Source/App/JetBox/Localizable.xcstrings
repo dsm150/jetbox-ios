@@ -9,12 +9,6 @@
             "state": "translated",
             "value": "JetBox is the companion app for your JetBox. Based on the open-source NetBird client (GPL-3.0)."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox — приложение для вашего JetBox. Основано на открытом клиенте NetBird (лицензия GPL-3.0)."
-          }
         }
       }
     },
@@ -25,12 +19,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "© %@ JetNet. Based on the NetBird client © NetBird. Distributed under the GNU GPL v3 without any warranty."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "© %@ JetNet. Основано на клиенте NetBird © NetBird. Распространяется по лицензии GNU GPL v3 без каких-либо гарантий."
           }
         }
       }
@@ -43,12 +31,6 @@
             "state": "translated",
             "value": "GPL-3.0 license"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Лицензия GPL-3.0"
-          }
         }
       }
     },
@@ -58,13 +40,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "jet-net.net"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "jet-net.net"
+            "value": "jetbox.ai-boss.us"
           }
         }
       }
@@ -77,12 +53,6 @@
             "state": "translated",
             "value": "Source code"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Исходный код"
-          }
         }
       }
     },
@@ -93,12 +63,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "About"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "О программе"
           }
         }
       }
@@ -111,12 +75,6 @@
             "state": "translated",
             "value": "Cancel"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отмена"
-          }
         }
       }
     },
@@ -127,12 +85,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Close"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Закрыть"
           }
         }
       }
@@ -145,12 +97,6 @@
             "state": "translated",
             "value": "Done"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Готово"
-          }
         }
       }
     },
@@ -161,12 +107,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Try again"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Попробовать снова"
           }
         }
       }
@@ -179,12 +119,6 @@
             "state": "translated",
             "value": "Ping to home"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "До дома"
-          }
         }
       }
     },
@@ -195,12 +129,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Via relay"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Через ретранслятор"
           }
         }
       }
@@ -213,12 +141,6 @@
             "state": "translated",
             "value": "Connection"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Соединение"
-          }
         }
       }
     },
@@ -229,12 +151,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Received / sent"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Получено / отправлено"
           }
         }
       }
@@ -247,12 +163,6 @@
             "state": "translated",
             "value": "Online for"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "В сети"
-          }
         }
       }
     },
@@ -263,12 +173,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connecting to your home…"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключаемся к дому…"
           }
         }
       }
@@ -281,12 +185,6 @@
             "state": "translated",
             "value": "Direct"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Напрямую"
-          }
         }
       }
     },
@@ -297,12 +195,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "to home"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "до дома"
           }
         }
       }
@@ -315,12 +207,6 @@
             "state": "translated",
             "value": "%@ ms"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ мс"
-          }
         }
       }
     },
@@ -331,12 +217,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Not connected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Не подключено"
           }
         }
       }
@@ -349,12 +229,6 @@
             "state": "translated",
             "value": "No internet"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нет интернета"
-          }
         }
       }
     },
@@ -364,13 +238,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Home network · protected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вы дома · защищено"
+            "value": "In home network"
           }
         }
       }
@@ -383,12 +251,6 @@
             "state": "translated",
             "value": "Relay"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ретранслятор"
-          }
         }
       }
     },
@@ -399,12 +261,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "connection"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "соединение"
           }
         }
       }
@@ -417,12 +273,6 @@
             "state": "translated",
             "value": "online"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "в сети"
-          }
         }
       }
     },
@@ -433,12 +283,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "This link cannot be used to connect. Ask JetBox support for a new one."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Эта ссылка не подходит для подключения. Запросите новую ссылку у поддержки JetBox."
           }
         }
       }
@@ -451,12 +295,6 @@
             "state": "translated",
             "value": "The link is damaged"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ссылка повреждена"
-          }
         }
       }
     },
@@ -467,12 +305,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Details"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подробности"
           }
         }
       }
@@ -485,12 +317,6 @@
             "state": "translated",
             "value": "This link points to a server that is not JetBox. We did not connect and left your current connection as it was. Use only links from your JetBox account or support."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Эта ссылка ведёт на сервер, который не относится к JetBox. Мы не подключались, текущее подключение не тронуто. Используйте только ссылки из Личного кабинета JetBox или от поддержки."
-          }
         }
       }
     },
@@ -501,12 +327,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Not a JetBox server"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ссылка не от JetBox"
           }
         }
       }
@@ -519,12 +339,6 @@
             "state": "translated",
             "value": "Try again. If it keeps happening, show the details to JetBox support."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Попробуйте ещё раз. Если повторяется — покажите подробности поддержке JetBox."
-          }
         }
       }
     },
@@ -535,12 +349,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Something went wrong"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Что-то пошло не так"
           }
         }
       }
@@ -553,12 +361,6 @@
             "state": "translated",
             "value": "The key in the link was rejected: it may already be used or expired. Ask for a new connection link."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ключ из ссылки отклонён: он мог быть уже использован или просрочен. Запросите новую ссылку подключения."
-          }
         }
       }
     },
@@ -569,12 +371,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "The link is no longer valid"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ссылка больше не действует"
           }
         }
       }
@@ -587,12 +383,6 @@
             "state": "translated",
             "value": "Connect to Wi-Fi or mobile data and try again."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключитесь к Wi-Fi или мобильной сети и попробуйте снова."
-          }
         }
       }
     },
@@ -604,12 +394,6 @@
             "state": "translated",
             "value": "No internet"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нет интернета"
-          }
         }
       }
     },
@@ -619,13 +403,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow JetBox to set up a VPN — protection cannot start without it. If you already allowed it, try again."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Разрешите JetBox настроить VPN — без этого защита не включится. Если разрешение уже дано, попробуйте ещё раз."
+            "value": "Allow JetBox to add its connection settings — the phone cannot connect without them. If you already allowed it, try again."
           }
         }
       }
@@ -636,13 +414,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not turn protection on"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Не удалось включить защиту"
+            "value": "Could not connect"
           }
         }
       }
@@ -655,12 +427,6 @@
             "state": "translated",
             "value": "Cannot reach the JetBox server. Check your internet; if that doesn’t help, contact support."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Не удаётся связаться с сервером JetBox. Проверьте интернет; если не помогло — свяжитесь с поддержкой."
-          }
         }
       }
     },
@@ -672,12 +438,6 @@
             "state": "translated",
             "value": "JetBox is not responding"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox не отвечает"
-          }
         }
       }
     },
@@ -687,13 +447,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No exits found. The JetBox at your site may be powered off — contact support."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ни одного выхода не найдено. Возможно, объект выключен — свяжитесь с поддержкой."
+            "value": "No JetBox found. It may be powered off — contact support."
           }
         }
       }
@@ -704,13 +458,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Which JetBox should carry this phone’s internet traffic?"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Через какой JetBox выпускать интернет с этого телефона?"
+            "value": "Which JetBox should this phone use?"
           }
         }
       }
@@ -723,12 +471,6 @@
             "state": "translated",
             "value": "Not now"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пока не выбирать"
-          }
         }
       }
     },
@@ -738,13 +480,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose an exit"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выберите выход"
+            "value": "Choose a JetBox"
           }
         }
       }
@@ -757,12 +493,6 @@
             "state": "translated",
             "value": "Change"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сменить"
-          }
         }
       }
     },
@@ -772,13 +502,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn protection on"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Включить защиту"
+            "value": "Connect"
           }
         }
       }
@@ -789,13 +513,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Protected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Под защитой"
+            "value": "In home network"
           }
         }
       }
@@ -808,12 +526,6 @@
             "state": "translated",
             "value": "Connecting…"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключаем…"
-          }
         }
       }
     },
@@ -823,13 +535,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn off"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выключить"
+            "value": "Disconnect"
           }
         }
       }
@@ -840,13 +546,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Protection is off"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Защита выключена"
+            "value": "Not in home network"
           }
         }
       }
@@ -859,12 +559,6 @@
             "state": "translated",
             "value": "Disconnecting…"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отключаем…"
-          }
         }
       }
     },
@@ -874,13 +568,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Exit: %@"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выход: %@"
+            "value": "JetBox: %@"
           }
         }
       }
@@ -891,13 +579,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No exit selected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выход не выбран"
+            "value": "None selected"
           }
         }
       }
@@ -910,12 +592,6 @@
             "state": "translated",
             "value": "Open the link from your JetBox email — the phone will set itself up."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Откройте ссылку из письма JetBox — телефон настроится сам."
-          }
         }
       }
     },
@@ -926,12 +602,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "No JetBox connected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox не подключён"
           }
         }
       }
@@ -944,11 +614,60 @@
             "state": "translated",
             "value": "No internet"
           }
-        },
-        "ru": {
+        }
+      }
+    },
+    "jetbox.legal.consent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Нет интернета"
+            "value": "By continuing, you agree to the [Terms of Use](https://jetbox.ai-boss.us/legal/#terms) and [Privacy Policy](https://jetbox.ai-boss.us/legal/#privacy)."
+          }
+        }
+      }
+    },
+    "jetbox.legal.eula": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App EULA"
+          }
+        }
+      }
+    },
+    "jetbox.legal.privacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        }
+      }
+    },
+    "jetbox.legal.section": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legal"
+          }
+        }
+      }
+    },
+    "jetbox.legal.terms": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms of Use"
           }
         }
       }
@@ -961,12 +680,6 @@
             "state": "translated",
             "value": "Learn more"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подробнее"
-          }
         }
       }
     },
@@ -976,13 +689,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox sends only technical connection data to the JetNet server: device name, app version and network addresses — your network needs them to recognise this device. Traffic content is not collected or stored. Data is not shared with third parties."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Приложение передаёт на сервер JetNet только служебные данные подключения: имя устройства, версию приложения и сетевые адреса — они нужны, чтобы ваша сеть узнала это устройство. Содержимое трафика не собирается и не хранится. Данные не передаются третьим лицам."
+            "value": "JetBox sends only technical connection data to the JetBox server: device name, app version and network addresses — your home network needs them to recognise this device. The content of your traffic is not collected or stored. Data is not shared with third parties."
           }
         }
       }
@@ -995,12 +702,6 @@
             "state": "translated",
             "value": "Connecting…"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключаем…"
-          }
         }
       }
     },
@@ -1012,12 +713,6 @@
             "state": "translated",
             "value": "Registering this device…"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Регистрируем устройство…"
-          }
         }
       }
     },
@@ -1027,13 +722,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setting up the internet exit…"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Настраиваем выход в интернет…"
+            "value": "Finishing setup…"
           }
         }
       }
@@ -1044,13 +733,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Internet goes through “%@”"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Интернет идёт через «%@»"
+            "value": "Connected to “%@”."
           }
         }
       }
@@ -1061,13 +744,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The secure network is up. Internet still goes through your usual provider."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Защищённая сеть подключена. Интернет идёт как обычно, через вашего провайдера."
+            "value": "This phone is now in your home network."
           }
         }
       }
@@ -1078,13 +755,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You are protected by JetBox"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вы под защитой JetBox"
+            "value": "In home network"
           }
         }
       }
@@ -1097,12 +768,6 @@
             "state": "translated",
             "value": "Connect"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключить"
-          }
         }
       }
     },
@@ -1113,12 +778,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your JetBox"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ваш JetBox"
           }
         }
       }
@@ -1131,12 +790,6 @@
             "state": "translated",
             "value": "One tap and the phone joins your home network."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Одно нажатие — и телефон окажется в вашей домашней сети."
-          }
         }
       }
     },
@@ -1147,12 +800,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Key"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ключ"
           }
         }
       }
@@ -1165,12 +812,6 @@
             "state": "translated",
             "value": "Advanced settings"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Расширенные настройки"
-          }
         }
       }
     },
@@ -1182,12 +823,6 @@
             "state": "translated",
             "value": "Advanced settings are already unlocked"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Расширенные настройки уже открыты"
-          }
         }
       }
     },
@@ -1198,12 +833,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "NetBird service screens: peers, resources, troubleshooting and server change. Not needed for normal use."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Служебные экраны NetBird: пиры, ресурсы, отладка и смена сервера. Для обычной работы не нужны."
           }
         }
       }
@@ -1228,36 +857,6 @@
               }
             }
           }
-        },
-        "ru": {
-          "variations": {
-            "plural": {
-              "few": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Ещё %lld нажатия…"
-                }
-              },
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Ещё %lld нажатий…"
-                }
-              },
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Ещё %lld нажатие…"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Ещё %lld нажатия…"
-                }
-              }
-            }
-          }
         }
       }
     },
@@ -1268,12 +867,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Turn off advanced settings"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выключить расширенные настройки"
           }
         }
       }
@@ -1286,12 +879,6 @@
             "state": "translated",
             "value": "The service screens will close. To open them again, tap the version row in JetBox settings seven times."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Служебные экраны закроются. Чтобы открыть их снова, семь раз нажмите на строку версии в настройках JetBox."
-          }
         }
       }
     },
@@ -1303,12 +890,6 @@
             "state": "translated",
             "value": "Advanced settings unlocked"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Расширенные настройки открыты"
-          }
         }
       }
     },
@@ -1318,13 +899,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Exit"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Выход"
+            "value": "JetBox"
           }
         }
       }
@@ -1337,12 +912,6 @@
             "state": "translated",
             "value": "Name"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Имя"
-          }
         }
       }
     },
@@ -1353,12 +922,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "No JetBox connected yet"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox ещё не подключён"
           }
         }
       }
@@ -1371,12 +934,6 @@
             "state": "translated",
             "value": "Application"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Приложение"
-          }
         }
       }
     },
@@ -1384,12 +941,6 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox"
-          }
-        },
-        "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "JetBox"
@@ -1405,12 +956,6 @@
             "state": "translated",
             "value": "Settings"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Настройки"
-          }
         }
       }
     },
@@ -1421,12 +966,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Version"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Версия"
           }
         }
       }
@@ -1439,12 +978,6 @@
             "state": "translated",
             "value": "This app connects your phone to your home network when you are away."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Это приложение подключает телефон к домашней сети, когда вы не дома."
-          }
         }
       }
     },
@@ -1455,12 +988,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "It blocks attacks from the internet before they reach your devices."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Он останавливает атаки из интернета, пока они не добрались до ваших устройств."
           }
         }
       }
@@ -1473,12 +1000,6 @@
             "state": "translated",
             "value": "Links and license"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ссылки и лицензия"
-          }
         }
       }
     },
@@ -1489,12 +1010,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "The app does not collect or store the content of your traffic."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Содержимое трафика приложение не собирает и не хранит."
           }
         }
       }
@@ -1507,12 +1022,6 @@
             "state": "translated",
             "value": "JetBox is a router installed between your internet cable and your home network."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox — роутер, который стоит между кабелем провайдера и вашей домашней сетью."
-          }
         }
       }
     },
@@ -1523,12 +1032,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "What JetBox is"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Что такое JetBox"
           }
         }
       }
@@ -1541,12 +1044,6 @@
             "state": "translated",
             "value": "Connection details"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подробности подключения"
-          }
         }
       }
     },
@@ -1557,12 +1054,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Check Wi-Fi or mobile data"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Проверьте Wi-Fi или мобильную сеть"
           }
         }
       }
@@ -1575,12 +1066,6 @@
             "state": "translated",
             "value": "What data is sent"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Какие данные передаются"
-          }
         }
       }
     },
@@ -1591,12 +1076,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tap the circle to connect"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нажмите на круг, чтобы подключиться"
           }
         }
       }
@@ -1609,12 +1088,6 @@
             "state": "translated",
             "value": "Just a second"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пару секунд"
-          }
         }
       }
     },
@@ -1625,12 +1098,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Simple"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Простое"
           }
         }
       }
@@ -1643,12 +1110,6 @@
             "state": "translated",
             "value": "Techno"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Техно"
-          }
         }
       }
     },
@@ -1659,12 +1120,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Appearance"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Оформление"
           }
         }
       }
@@ -1677,12 +1132,6 @@
             "state": "translated",
             "value": "Switch"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Переключить"
-          }
         }
       }
     },
@@ -1692,13 +1141,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This phone is registered with “%1$@”, but the link points to “%2$@”. Switch? The previous connection will be replaced."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сейчас телефон привязан к «%1$@», а ссылка ведёт на «%2$@». Переключить? Прежнее подключение будет заменено."
+            "value": "This phone is set up for “%1$@”, but the link is for “%2$@”. Switch? The previous connection will be replaced."
           }
         }
       }
@@ -1711,12 +1154,6 @@
             "state": "translated",
             "value": "A different JetBox"
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Другой JetBox"
-          }
         }
       }
     },
@@ -1728,12 +1165,6 @@
             "state": "translated",
             "value": "The connection to your home was lost. Open your connection link again."
           }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Связь с домом прервана. Откройте ссылку подключения ещё раз."
-          }
         }
       }
     },
@@ -1744,12 +1175,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "JetBox disconnected"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox отключён"
           }
         }
       }

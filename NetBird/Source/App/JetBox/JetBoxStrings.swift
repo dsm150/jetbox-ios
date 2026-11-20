@@ -161,4 +161,13 @@ enum JBText {
     static var simpleAboutPrivacy: String { t("jetbox.simple.about.privacy") }
     static var simpleAboutLinks: String { t("jetbox.simple.about.links") }
     static var simplePrivacyToggle: String { t("jetbox.simple.privacy_toggle") }
+
+    // MARK: Соглашения
+
+    static var legalSection: String { t("jetbox.legal.section") }
+    static var legalPrivacy: String { t("jetbox.legal.privacy") }
+    static var legalTerms: String { t("jetbox.legal.terms") }
+    static var legalEULA: String { t("jetbox.legal.eula") }
+    /// Строка согласия с Markdown-ссылками на Terms и Privacy (App Review 5.1.1).
+    static var legalConsent: String { t("jetbox.legal.consent") }
 }

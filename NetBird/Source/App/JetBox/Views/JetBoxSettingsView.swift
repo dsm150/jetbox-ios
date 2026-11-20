@@ -75,6 +75,12 @@ struct JetBoxSettingsView: View {
                     Text(JBText.settingsSectionApp)
                 }
 
+                Section(JBText.legalSection) {
+                    Link(JBText.legalPrivacy, destination: JetBoxConfig.privacyPolicyURL)
+                    Link(JBText.legalTerms, destination: JetBoxConfig.termsURL)
+                    Link(JBText.legalEULA, destination: JetBoxConfig.eulaURL)
+                }
+
                 if advancedUnlocked {
                     Section {
                         Button(JBText.settingsAdvanced) {
@@ -155,7 +161,7 @@ struct JetBoxAboutView: View {
                     Text(JBText.aboutBody)
                         .font(.subheadline)
                         .foregroundColor(JBColor.muted)
-                    Link(JBText.aboutSite, destination: URL(string: "https://jet-net.net")!)
+                    Link(JBText.aboutSite, destination: JetBoxConfig.siteURL)
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(JBColor.accent)
                     // GPL-3.0 обязывает открыть исходники форка — ссылка

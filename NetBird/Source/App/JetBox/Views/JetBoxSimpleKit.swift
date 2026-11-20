@@ -492,4 +492,19 @@ private struct JBSimpleSheetHeight: PreferenceKey {
     }
 }
 
+// MARK: - Согласие с условиями
+
+/// «By continuing, you agree to the Terms of Use and Privacy Policy.» —
+/// 17 / 600 / приглушённый, ссылки акцентом (App Review 5.1.1).
+struct JBSimpleConsent: View {
+    var body: some View {
+        Text(LocalizedStringKey(JBText.legalConsent))
+            .font(JBSimple.font(17, .semibold))
+            .foregroundColor(JBSimple.muted)
+            .tint(JBSimple.accent)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
 #endif

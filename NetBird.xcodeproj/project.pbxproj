@@ -921,11 +921,10 @@
 			};
 			buildConfigurationList = 50A891122A792A15007C48FC /* Build configuration list for PBXProject "NetBird" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = ru;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
-				ru,
 				Base,
 			);
 			mainGroup = 50A8910E2A792A15007C48FC;
