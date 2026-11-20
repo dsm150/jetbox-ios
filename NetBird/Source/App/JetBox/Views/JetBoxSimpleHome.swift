@@ -20,11 +20,12 @@ struct JetBoxSimpleHomeLayout: View {
     let stats: JetBoxLiveStats.Snapshot?
     let connectedSince: Date?
     let power: JetBoxPowerAction
-    var startsExpanded = false
+    /// Демо для съёмки: сразу открыть лист подробностей.
+    var startsWithDetails = false
     let onPower: () -> Void
     let onSettings: () -> Void
 
-    @State private var expanded = false
+    @State private var showsDetails = false
 
     var body: some View {
         ZStack {
@@ -51,7 +52,16 @@ struct JetBoxSimpleHomeLayout: View {
             .padding(.horizontal, 24)
         }
         .environment(\.colorScheme, .light)
-        .onAppear { expanded = startsExpanded }
+        .onAppear { if startsWithDetails { showsDetails = true } }
+        .sheet(isPresented: $showsDetails) {
+            JBSimpleInfoSheet(title: JBText.errDetails) {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    JBSimpleInfoRow(title: JBText.detailsUptime, value: uptimeText(at: context.date))
+                }
+                JBSimpleInfoRow(title: JBText.detailsLatency, value: stats?.latencyMs.map(JBText.milliseconds) ?? "—")
+                JBSimpleInfoRow(title: JBText.detailsRoute, value: routeText)
+            }
+        }
     }
 
     private var header: some View {
@@ -82,11 +92,18 @@ struct JetBoxSimpleHomeLayout: View {
                 JBSimpleTrafficLine()
             }
             if !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(JBSimple.secondary)
-                    .foregroundColor(JBSimple.muted)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
+                HStack(spacing: 8) {
+                    Text(subtitle)
+                        .font(JBSimple.secondary)
+                        .foregroundColor(JBSimple.muted)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                    // Подробности подключения — за значком (замечание Алексея
+                    // 21.11.2026: под кругом ничего лишнего).
+                    if box != nil && (phase == .on || phase == .offline) {
+                        JBSimpleInfoButton(label: JBText.simpleDetails) { showsDetails = true }
+                    }
+                }
             }
         }
         .animation(.easeInOut(duration: 0.3), value: phase)
@@ -116,55 +133,10 @@ struct JetBoxSimpleHomeLayout: View {
             .padding(22)
             .frame(maxWidth: .infinity)
             .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(JBSimple.card))
-        } else if phase == .on || phase == .offline {
-            details
         } else {
-            // Место под подробности держим, чтобы круг не прыгал.
+            // Под кругом ничего нет; место держим, чтобы круг стоял ровно.
             Color.clear.frame(height: 52)
         }
-    }
-
-    /// Одна сворачиваемая карточка: заголовок-пилюля, в раскрытом виде —
-    /// одна строка «12:38 в сети · 24 мс · напрямую» (замечание Алексея
-    /// 21.11.2026: «здесь должна быть одна строка, сворачиваемая»).
-    private var details: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.3)) { expanded.toggle() }
-        } label: {
-            VStack(spacing: 6) {
-                HStack(spacing: 8) {
-                    Text(JBText.simpleDetails)
-                        .font(JBSimple.font(19, .heavy))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 15, weight: .heavy))
-                        .rotationEffect(.degrees(expanded ? 180 : 0))
-                }
-                .foregroundColor(JBSimple.muted)
-                if expanded {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        Text(summaryLine(at: context.date))
-                            .font(JBSimple.font(19, .bold).monospacedDigit())
-                            .foregroundColor(JBSimple.ink)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
-                    .transition(.opacity)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, expanded ? 14 : 0)
-            .frame(minHeight: 52)
-            .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(JBSimple.card))
-        }
-        .buttonStyle(JBSimplePressStyle())
-        .accessibilityHint(JBText.simpleDetails)
-    }
-
-    private func summaryLine(at now: Date) -> String {
-        var parts = ["\(uptimeText(at: now)) \(JBText.dockUptime)"]
-        if let ms = stats?.latencyMs { parts.append(JBText.milliseconds(ms)) }
-        if stats != nil { parts.append(routeText.lowercased()) }
-        return parts.joined(separator: " · ")
     }
 
     private func uptimeText(at now: Date) -> String {

@@ -251,7 +251,7 @@ struct JetBoxShieldDemoView: View {
                 stats: state == .connected ? sample : nil,
                 connectedSince: state == .connected ? since : nil,
                 power: power,
-                startsExpanded: screen == "details",
+                startsWithDetails: screen == "details",
                 onPower: { run(power) },
                 onSettings: { showsSettings = true }
             )

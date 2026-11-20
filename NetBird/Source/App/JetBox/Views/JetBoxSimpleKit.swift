@@ -410,4 +410,86 @@ struct JBSimpleStylePicker: View {
     }
 }
 
+// MARK: - Значок (i) и лист с подробностями
+
+/// Небольшой значок «подробнее» рядом с текстом: второстепенное — за ним.
+struct JBSimpleInfoButton: View {
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundColor(JBSimple.accent)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(label)
+    }
+}
+
+/// Компактный лист по высоте содержимого: заголовок, «Закрыть», строки.
+struct JBSimpleInfoSheet<Content: View>: View {
+    let title: String
+    @ViewBuilder var content: Content
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var height: CGFloat = 300
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 12) {
+                Text(title)
+                    .font(JBSimple.font(22, .black))
+                    .foregroundColor(JBSimple.ink)
+                    .lineLimit(2)
+                Spacer(minLength: 8)
+                JBSimpleCapsuleButton(title: JBText.close) { dismiss() }
+            }
+            VStack(alignment: .leading, spacing: 12) { content }
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 18)
+        .padding(.bottom, 24)
+        .background(GeometryReader { proxy in
+            Color.clear.preference(key: JBSimpleSheetHeight.self, value: proxy.size.height)
+        })
+        .onPreferenceChange(JBSimpleSheetHeight.self) { height = $0 }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(JBSimple.background.ignoresSafeArea())
+        .environment(\.colorScheme, .light)
+        .jbFittedSheet(height: height)
+    }
+}
+
+/// Строка листа: подпись слева, значение справа.
+struct JBSimpleInfoRow: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(JBSimple.font(19, .semibold))
+                .foregroundColor(JBSimple.muted)
+            Spacer(minLength: 8)
+            Text(value)
+                .font(JBSimple.font(20, .heavy).monospacedDigit())
+                .foregroundColor(JBSimple.ink)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 20)
+        .frame(minHeight: 58)
+        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(JBSimple.card))
+    }
+}
+
+private struct JBSimpleSheetHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 #endif

@@ -13,7 +13,7 @@ import SwiftUI
 struct JetBoxSimpleFlowView: View {
     @EnvironmentObject var viewModel: ViewModel
     @EnvironmentObject var jetbox: JetBoxOnboarding
-    @State private var showsPrivacy = false
+    @State private var showsInfo = false
 
     var body: some View {
         ZStack {
@@ -58,28 +58,25 @@ struct JetBoxSimpleFlowView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
                     .accessibilityHidden(true)
                 JetBoxLogo(markHeight: 30)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(JBText.readyCaption)
-                        .font(JBSimple.secondary)
-                        .foregroundColor(JBSimple.muted)
+                // Ключ и текст о данных — за значком (замечание Алексея
+                // 21.11.2026): на экране только имя и одна кнопка.
+                HStack(spacing: 6) {
                     Text(payload.displayName)
                         .font(JBSimple.font(30, .black))
                         .foregroundColor(JBSimple.ink)
                         .lineLimit(2)
-                }
-                Text(JBText.readyHint)
-                    .font(JBSimple.secondary)
-                    .foregroundColor(JBSimple.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                JBSimpleCard {
-                    // Ключ целиком не показываем: только хвост для сверки с поддержкой.
-                    JBSimpleRow(title: JBText.readyKeyLabel, value: payload.maskedKey)
+                    JBSimpleInfoButton(label: JBText.simpleDetails) { showsInfo = true }
                 }
                 JBSimplePrimaryButton(JBText.readyButton) {
                     jetbox.connect(viewModel: viewModel)
                 }
-                .padding(.top, 2)
-                privacyNotice
+                .padding(.top, 6)
+            }
+            .sheet(isPresented: $showsInfo) { linkInfo(payload) }
+            .onAppear {
+                #if DEBUG
+                if UserDefaults.standard.bool(forKey: "JetBoxFlowDemoInfo") { showsInfo = true }
+                #endif
             }
 
         case .confirmSwitch(let payload, let current):
@@ -166,37 +163,20 @@ struct JetBoxSimpleFlowView: View {
         }
     }
 
-    /// Что уходит на сервер — требование App Review 5.4: до любого действия,
-    /// поэтому сразу под кнопкой подключения. Свёрнуто в одну строку
-    /// (замечание Алексея 21.11.2026), текст тот же — по нажатию.
-    private var privacyNotice: some View {
-        VStack(spacing: 8) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) { showsPrivacy.toggle() }
-            } label: {
-                HStack(spacing: 6) {
-                    Text(JBText.simplePrivacyToggle)
-                        .font(JBSimple.font(18, .heavy))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .heavy))
-                        .rotationEffect(.degrees(showsPrivacy ? 180 : 0))
-                }
+    /// Лист по значку (i): хвост ключа и что уходит на сервер (App Review 5.4).
+    private func linkInfo(_ payload: JetBoxLinkPayload) -> some View {
+        JBSimpleInfoSheet(title: JBText.errDetails) {
+            // Ключ целиком не показываем: только хвост для сверки с поддержкой.
+            JBSimpleInfoRow(title: JBText.readyKeyLabel, value: payload.maskedKey)
+            Text(JBText.privacyNotice)
+                .font(JBSimple.font(17, .semibold))
                 .foregroundColor(JBSimple.muted)
-                .frame(minHeight: 44)
-            }
-            if showsPrivacy {
-                Text(JBText.privacyNotice)
-                    .font(JBSimple.font(17, .semibold))
-                    .foregroundColor(JBSimple.muted)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-                Link(JBText.privacyMore, destination: JetBoxConfig.privacyPolicyURL)
-                    .font(JBSimple.font(17, .heavy))
-                    .foregroundColor(JBSimple.accent)
-            }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+            Link(JBText.privacyMore, destination: JetBoxConfig.privacyPolicyURL)
+                .font(JBSimple.font(18, .heavy))
+                .foregroundColor(JBSimple.accent)
         }
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Низ экрана
