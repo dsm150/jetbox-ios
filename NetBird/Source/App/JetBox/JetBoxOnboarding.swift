@@ -451,6 +451,29 @@ final class JetBoxOnboarding: ObservableObject {
     }
 }
 
+#if DEBUG
+extension JetBoxOnboarding {
+    /// Только для съёмки в симуляторе: экран по ссылке на нужном шаге без сети.
+    /// `-JetBoxFlowDemo ready|switch|working|exits|protected|failed`.
+    func showDemoIfRequested() {
+        guard let raw = UserDefaults.standard.string(forKey: "JetBoxFlowDemo") else { return }
+        let payload = JetBoxLinkPayload(setupKey: "3f6c2a9e-0d41-4c7b-9a55-8e21b07c4d19",
+                                        managementURL: "https://netbird.jet-net.net",
+                                        exitNodeName: "home-ivanov",
+                                        boxName: "Дом на Озёрной")
+        switch raw {
+        case "ready": step = .ready(payload)
+        case "switch": step = .confirmSwitch(payload, current: "Дача")
+        case "working": step = .connecting(payload)
+        case "exits": step = .chooseExit(payload, options: ["Дом на Озёрной", "Дача", "Офис на Тверской"])
+        case "protected": step = .protected(exitNode: "Дом на Озёрной")
+        case "failed": step = .failed(.offline)
+        default: break
+        }
+    }
+}
+#endif
+
 #endif
 
 /// Время этапов подключения — для журнала: клиент жалуется «подключается

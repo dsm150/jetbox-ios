@@ -144,4 +144,19 @@ enum JBText {
     static var detailsRoute: String { t("jetbox.details.route") }
     static var detailsRelayed: String { t("jetbox.details.relayed") }
     static var detailsTraffic: String { t("jetbox.details.traffic") }
+
+    // MARK: Стиль оформления и стиль «простое»
+
+    static var styleTitle: String { t("jetbox.style.title") }
+    static var styleSimple: String { t("jetbox.style.simple") }
+    static var styleTechno: String { t("jetbox.style.techno") }
+    static var simpleTapToConnect: String { t("jetbox.simple.tap_to_connect") }
+    static var simpleWait: String { t("jetbox.simple.wait") }
+    static var simpleOfflineHint: String { t("jetbox.simple.offline_hint") }
+    static var simpleDetails: String { t("jetbox.simple.details") }
+    static var simpleAboutTitle: String { t("jetbox.simple.about.title") }
+    static var simpleAboutRouter: String { t("jetbox.simple.about.router") }
+    static var simpleAboutGuard: String { t("jetbox.simple.about.guard") }
+    static var simpleAboutApp: String { t("jetbox.simple.about.app") }
+    static var simpleAboutPrivacy: String { t("jetbox.simple.about.privacy") }
 }

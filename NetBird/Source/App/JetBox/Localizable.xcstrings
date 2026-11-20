@@ -460,6 +460,23 @@
         }
       }
     },
+    "jetbox.error.details": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробности"
+          }
+        }
+      }
+    },
     "jetbox.error.foreign.body": {
       "extractionState": "manual",
       "localizations": {
@@ -490,23 +507,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ссылка не от JetBox"
-          }
-        }
-      }
-    },
-    "jetbox.error.details": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Details"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подробности"
           }
         }
       }
@@ -1232,12 +1232,6 @@
         "ru": {
           "variations": {
             "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Ещё %lld нажатие…"
-                }
-              },
               "few": {
                 "stringUnit": {
                   "state": "translated",
@@ -1248,6 +1242,12 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "Ещё %lld нажатий…"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ещё %lld нажатие…"
                 }
               },
               "other": {
@@ -1427,6 +1427,210 @@
           "stringUnit": {
             "state": "translated",
             "value": "Версия"
+          }
+        }
+      }
+    },
+    "jetbox.simple.about.app": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This app connects your phone to your home network when you are away."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Это приложение подключает телефон к домашней сети, когда вы не дома."
+          }
+        }
+      }
+    },
+    "jetbox.simple.about.guard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It blocks attacks from the internet before they reach your devices."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Он останавливает атаки из интернета, пока они не добрались до ваших устройств."
+          }
+        }
+      }
+    },
+    "jetbox.simple.about.privacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app does not collect or store the content of your traffic."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Содержимое трафика приложение не собирает и не хранит."
+          }
+        }
+      }
+    },
+    "jetbox.simple.about.router": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox is a router installed between your internet cable and your home network."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox — роутер, который стоит между кабелем провайдера и вашей домашней сетью."
+          }
+        }
+      }
+    },
+    "jetbox.simple.about.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What JetBox is"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что такое JetBox"
+          }
+        }
+      }
+    },
+    "jetbox.simple.details": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection details"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подробности подключения"
+          }
+        }
+      }
+    },
+    "jetbox.simple.offline_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Wi-Fi or mobile data"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверьте Wi-Fi или мобильную сеть"
+          }
+        }
+      }
+    },
+    "jetbox.simple.tap_to_connect": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the circle to connect"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нажмите на круг, чтобы подключиться"
+          }
+        }
+      }
+    },
+    "jetbox.simple.wait": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just a second"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пару секунд"
+          }
+        }
+      }
+    },
+    "jetbox.style.simple": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simple"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Простое"
+          }
+        }
+      }
+    },
+    "jetbox.style.techno": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Techno"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Техно"
+          }
+        }
+      }
+    },
+    "jetbox.style.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оформление"
           }
         }
       }

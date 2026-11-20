@@ -21,8 +21,15 @@ struct JetBoxHomeView: View {
     @ObservedObject private var stats = JetBoxLiveStats.shared
     @State private var showsSettings = false
     @State private var showsDetails = false
+    @State private var showsExits = false
+    @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
+    private var styleRaw = JetBoxStyle.fallback.rawValue
+    #if DEBUG
+    @EnvironmentObject private var jetbox: JetBoxOnboarding
+    #endif
 
     private var box: JetBoxBox? { JetBoxStore.currentBox }
+    private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
 
     var body: some View {
         #if DEBUG
@@ -36,23 +43,53 @@ struct JetBoxHomeView: View {
         #endif
     }
 
+    @ViewBuilder
+    private func layout(power: JetBoxPowerAction, state: VPNDisplayState) -> some View {
+        let phase = JetBoxShieldPhase(state: state, isInternetConnected: viewModel.isInternetConnected)
+        let status = Self.statusText(for: state, online: viewModel.isInternetConnected)
+        if isSimple {
+            JetBoxSimpleHomeLayout(
+                phase: phase,
+                statusText: status,
+                box: box,
+                stats: stats.box,
+                connectedSince: stats.connectedSince,
+                power: power,
+                exitName: routes.selectedExitNode?.name,
+                showsExit: state == .connected && routes.exitNodes.count > 1,
+                onPower: { perform(power) },
+                onSettings: { showsSettings = true },
+                onExit: { showsExits = true }
+            )
+        } else {
+            JetBoxHomeLayout(
+                phase: phase,
+                statusText: status,
+                box: box,
+                stats: stats.box,
+                connectedSince: stats.connectedSince,
+                power: power,
+                onPower: { perform(power) },
+                onSettings: { showsSettings = true },
+                onOpenDetails: { showsDetails = true }
+            )
+        }
+    }
+
     private var live: some View {
         let state = viewModel.vpnDisplayState
         let power = JetBoxPowerAction.action(for: state, hasBox: box != nil)
-        return JetBoxHomeLayout(
-            phase: JetBoxShieldPhase(state: state, isInternetConnected: viewModel.isInternetConnected),
-            statusText: Self.statusText(for: state, online: viewModel.isInternetConnected),
-            box: box,
-            stats: stats.box,
-            connectedSince: stats.connectedSince,
-            power: power,
-            onPower: { perform(power) },
-            onSettings: { showsSettings = true },
-            onOpenDetails: { showsDetails = true }
-        )
+        return layout(power: power, state: state)
         .sheet(isPresented: $showsSettings) {
-            JetBoxSettingsView()
-                .environmentObject(viewModel)
+            if isSimple {
+                JetBoxSimpleSettingsView()
+            } else {
+                JetBoxSettingsView()
+                    .environmentObject(viewModel)
+            }
+        }
+        .sheet(isPresented: $showsExits) {
+            JetBoxSimpleExitSheet(routes: routes)
         }
         .sheet(isPresented: $showsDetails) {
             if let box {
@@ -65,6 +102,13 @@ struct JetBoxHomeView: View {
             // а не при запуске: тогда понятно, о чём будут уведомления.
             if state == .connected { JetBoxNotifications.requestIfNeeded() }
         }
+        .onChange(of: viewModel.vpnDisplayState) { state in
+            // Выход с главного экрана «простого» стиля нужен списку маршрутов.
+            if state == .connected && isSimple { routes.getRoutes() }
+        }
+        #if DEBUG
+        .onAppear { jetbox.showDemoIfRequested() }
+        #endif
     }
 
     private func perform(_ action: JetBoxPowerAction) {
@@ -188,6 +232,18 @@ struct JetBoxShieldDemoView: View {
     @State private var state: VPNDisplayState = JetBoxShieldDemo.initialState
     @State private var since = Date().addingTimeInterval(-754)
     @State private var showsDetails = false
+    @State private var showsSettings = false
+    @State private var showsExits = false
+    @State private var exit: String? = "Дом на Озёрной"
+    @EnvironmentObject private var viewModel: ViewModel
+    @EnvironmentObject private var jetbox: JetBoxOnboarding
+    @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
+    private var styleRaw = JetBoxStyle.fallback.rawValue
+
+    private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
+    /// `-JetBoxDemoScreen settings|about|details|exits` — сразу открыть нужный лист.
+    private var screen: String { UserDefaults.standard.string(forKey: "JetBoxDemoScreen") ?? "" }
+    private let demoExits = ["Дом на Озёрной", "Дача", "Офис на Тверской"]
 
     private let box = JetBoxBox(managementURL: "https://netbird.jet-net.net",
                                 exitNodeName: "home-ivanov",
@@ -199,19 +255,55 @@ struct JetBoxShieldDemoView: View {
     private let sample = JetBoxLiveStats.Snapshot(latencyMs: 24, relayed: false,
                                                   bytesRx: 48_200_000, bytesTx: 6_100_000)
 
+    @ViewBuilder
+    private func layout(_ power: JetBoxPowerAction) -> some View {
+        if isSimple {
+            JetBoxSimpleHomeLayout(
+                phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
+                statusText: JetBoxHomeView.statusText(for: state, online: true),
+                box: box,
+                stats: state == .connected ? sample : nil,
+                connectedSince: state == .connected ? since : nil,
+                power: power,
+                exitName: exit,
+                showsExit: state == .connected,
+                startsExpanded: screen == "details",
+                onPower: { run(power) },
+                onSettings: { showsSettings = true },
+                onExit: { showsExits = true }
+            )
+        } else {
+            JetBoxHomeLayout(
+                phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
+                statusText: JetBoxHomeView.statusText(for: state, online: true),
+                box: box,
+                stats: state == .connected ? sample : nil,
+                connectedSince: state == .connected ? since : nil,
+                power: power,
+                onPower: { run(power) },
+                onSettings: { showsSettings = true },
+                onOpenDetails: { showsDetails = true }
+            )
+        }
+    }
+
     var body: some View {
         let power = JetBoxPowerAction.action(for: state, hasBox: true)
-        JetBoxHomeLayout(
-            phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
-            statusText: JetBoxHomeView.statusText(for: state, online: true),
-            box: box,
-            stats: state == .connected ? sample : nil,
-            connectedSince: state == .connected ? since : nil,
-            power: power,
-            onPower: { run(power) },
-            onSettings: {},
-            onOpenDetails: { showsDetails = true }
-        )
+        layout(power)
+        .sheet(isPresented: $showsSettings) {
+            if isSimple {
+                JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about")
+            } else if screen == "about" {
+                NavigationView { JetBoxAboutView() }
+            } else {
+                JetBoxSettingsView().environmentObject(viewModel)
+            }
+        }
+        .sheet(isPresented: $showsExits) {
+            JetBoxSimpleExitList(options: demoExits, selected: exit,
+                                 onSelect: { exit = $0; showsExits = false },
+                                 onClose: { showsExits = false })
+        }
         .sheet(isPresented: $showsDetails) {
             JetBoxConnectionSheet(routes: routes, stats: JetBoxLiveStats.shared, box: box,
                                   isConnected: state == .connected,
@@ -224,6 +316,13 @@ struct JetBoxShieldDemoView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) { connected() }
             }
             if UserDefaults.standard.bool(forKey: "JetBoxShieldDemoDetails") { showsDetails = true }
+            switch screen {
+            case "settings", "about": showsSettings = true
+            case "details": if !isSimple { showsDetails = true }
+            case "exits": showsExits = true
+            default: break
+            }
+            jetbox.showDemoIfRequested()
         }
     }
 

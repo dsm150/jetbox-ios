@@ -112,5 +112,8 @@ enum JetBoxStartup {
     static func run() {
         JetBoxAdvancedAccess.migrateLegacyFlagIfNeeded()
         JetBoxConnectionDefaults.applyDirectByDefaultIfNeeded()
+        #if DEBUG && os(iOS)
+        JetBoxStyle.applyLaunchOverride()
+        #endif
     }
 }

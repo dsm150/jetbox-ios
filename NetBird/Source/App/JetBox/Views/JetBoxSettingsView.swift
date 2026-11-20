@@ -21,6 +21,8 @@ struct JetBoxSettingsView: View {
     private var advancedUnlocked = false
     @AppStorage(JetBoxAdvancedAccess.modeKey, store: JetBoxAdvancedAccess.defaults)
     private var advancedMode = false
+    @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
+    private var styleRaw = JetBoxStyle.fallback.rawValue
 
     /// Счётчик нажатий по строке версии живёт ровно столько, сколько открыт
     /// экран: ушёл и вернулся — считаем заново.
@@ -41,6 +43,16 @@ struct JetBoxSettingsView: View {
                             .font(.subheadline)
                             .foregroundColor(JBColor.muted)
                     }
+                }
+
+                Section(JBText.styleTitle) {
+                    Picker(JBText.styleTitle, selection: Binding(
+                        get: { JetBoxStyle(rawValue: styleRaw) ?? JetBoxStyle.fallback },
+                        set: { styleRaw = $0.rawValue; JetBoxStyle.styleDidChange() }
+                    )) {
+                        ForEach(JetBoxStyle.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
                 }
 
                 Section {

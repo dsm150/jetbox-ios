@@ -15,8 +15,18 @@ import SwiftUI
 struct JetBoxFlowView: View {
     @EnvironmentObject var viewModel: ViewModel
     @EnvironmentObject var jetbox: JetBoxOnboarding
+    @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
+    private var styleRaw = JetBoxStyle.fallback.rawValue
 
     var body: some View {
+        if JetBoxStyle(rawValue: styleRaw) == .simple {
+            JetBoxSimpleFlowView()
+        } else {
+            techno
+        }
+    }
+
+    private var techno: some View {
         ZStack {
             JetBoxBackdrop(phase: shieldPhase)
 
