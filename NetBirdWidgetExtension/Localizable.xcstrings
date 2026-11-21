@@ -7,7 +7,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": " Your address is %@."
+            "value": " Your IP address is %@."
           }
         },
         "ru": {
@@ -109,7 +109,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox is already %@."
+            "value": "Nothing to change: %@."
           }
         },
         "ru": {
@@ -194,7 +194,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Set JetBox state"
+            "value": "Connect or disconnect JetBox"
           }
         },
         "ru": {
@@ -245,7 +245,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox failed to disconnect."
+            "value": "JetBox couldn’t disconnect."
           }
         },
         "ru": {
@@ -262,7 +262,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox failed to connect."
+            "value": "JetBox couldn’t connect."
           }
         },
         "ru": {
@@ -313,7 +313,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disconnect from your JetBox network."
+            "value": "Disconnect from your home network."
           }
         },
         "ru": {
@@ -449,7 +449,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connect to your JetBox network."
+            "value": "Connect to your home network."
           }
         },
         "ru": {

@@ -21,7 +21,9 @@ final class JetBoxWordingTests: XCTestCase {
     /// словам добавлены запреты из правил копирайта Алексея.
     private let forbiddenEN = ["bypass", "blocked", "censorship", "vpn", "anonym",
                                "change location", "unblock", "protection on",
-                               "protection off", "protection is off"]
+                               "protection off", "protection is off",
+                               // Российский контекст не для американского пользователя (21.11.2026).
+                               "roskomnadzor", "rkn", "restricted site", "russia"]
 
     private func strings(_ language: String) throws -> [String: String] {
         let bundle = Bundle(for: JetBoxWordingTests.self)
@@ -122,7 +124,7 @@ final class JetBoxWordingTests: XCTestCase {
         // Легенда продукта — доступ к своей сети, а не «весь трафик через
         // коробку»: описание в магазине и текст на экране должны совпадать.
         let en = try strings("en")
-        XCTAssertEqual(en["jetbox.ready.hint"], "One tap and the phone joins your home network.")
+        XCTAssertEqual(en["jetbox.ready.hint"], "One tap and your phone joins your home network.")
         XCTAssertEqual(en["jetbox.home.connected"], "In home network")
         XCTAssertEqual(en["jetbox.home.disconnected"], "Not in home network")
     }

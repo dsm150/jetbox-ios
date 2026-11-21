@@ -7,7 +7,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox is the companion app for your JetBox. Based on the open-source NetBird client (GPL-3.0)."
+            "value": "The JetBox app connects your iPhone to your home network behind your JetBox. Built on the open-source NetBird client (GPL-3.0)."
           }
         },
         "ru": {
@@ -24,7 +24,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "© %@ JetNet. Based on the NetBird client © NetBird. Distributed under the GNU GPL v3 without any warranty."
+            "value": "© %@ JetNet. Based on the NetBird client © NetBird. Distributed under the GNU GPL v3, without any warranty."
           }
         },
         "ru": {
@@ -262,7 +262,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecting to your home…"
+            "value": "Connecting to home…"
           }
         },
         "ru": {
@@ -432,7 +432,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This link cannot be used to connect. Ask JetBox support for a new one."
+            "value": "This link can’t be used to connect. Ask JetBox support for a new one."
           }
         },
         "ru": {
@@ -449,7 +449,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The link is damaged"
+            "value": "This link doesn’t work"
           }
         },
         "ru": {
@@ -483,7 +483,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This link points to a server that is not JetBox. We did not connect and left your current connection as it was. Use only links from your JetBox account or support."
+            "value": "This link leads to a server that isn’t part of JetBox, so we didn’t connect. Your current connection wasn’t changed. Only use links from your JetBox account or JetBox support."
           }
         },
         "ru": {
@@ -500,7 +500,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not a JetBox server"
+            "value": "Not a JetBox link"
           }
         },
         "ru": {
@@ -517,7 +517,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Try again. If it keeps happening, show the details to JetBox support."
+            "value": "Please try again. If it keeps happening, send the details to JetBox support."
           }
         },
         "ru": {
@@ -551,7 +551,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The key in the link was rejected: it may already be used or expired. Ask for a new connection link."
+            "value": "The key in this link has already been used or has expired. Request a new connection link."
           }
         },
         "ru": {
@@ -568,7 +568,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The link is no longer valid"
+            "value": "This link has expired"
           }
         },
         "ru": {
@@ -585,7 +585,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connect to Wi-Fi or mobile data and try again."
+            "value": "Connect to Wi-Fi or cellular data and try again."
           }
         },
         "ru": {
@@ -619,7 +619,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow JetBox to add its connection settings — the phone cannot connect without them. If you already allowed it, try again."
+            "value": "JetBox needs permission to add its connection settings. Tap Connect again and choose Allow."
           }
         },
         "ru": {
@@ -636,7 +636,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not connect"
+            "value": "Couldn’t connect"
           }
         },
         "ru": {
@@ -653,7 +653,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cannot reach the JetBox server. Check your internet; if that doesn’t help, contact support."
+            "value": "Can’t reach the JetBox server. Check your internet connection. If that doesn’t help, contact support."
           }
         },
         "ru": {
@@ -670,7 +670,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox is not responding"
+            "value": "JetBox isn’t responding"
           }
         },
         "ru": {
@@ -687,7 +687,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No exit locations found. Your JetBox may be powered off — contact support."
+            "value": "No exit locations found. Your JetBox may be turned off — contact support."
           }
         },
         "ru": {
@@ -908,7 +908,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open the link from your JetBox email — the phone will set itself up."
+            "value": "Open the link in your JetBox welcome email — your phone will set itself up."
           }
         },
         "ru": {
@@ -1061,7 +1061,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox sends only technical connection data to the JetBox server: device name, app version and network addresses — your home network needs them to recognise this device. The content of your traffic is not collected or stored. Data is not shared with third parties."
+            "value": "JetBox sends only the technical details needed to connect: device name, app version, and network addresses, so your home network can recognize this device. We don’t collect or store your traffic, and we don’t share data with third parties."
           }
         },
         "ru": {
@@ -1146,7 +1146,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This phone is now in your home network."
+            "value": "This phone is now on your home network."
           }
         },
         "ru": {
@@ -1214,7 +1214,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One tap and the phone joins your home network."
+            "value": "One tap and your phone joins your home network."
           }
         },
         "ru": {
@@ -1454,7 +1454,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Application"
+            "value": "App"
           }
         },
         "ru": {
@@ -1522,7 +1522,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This app connects your phone to your home network when you are away."
+            "value": "When you’re away, this app connects your phone to your home network."
           }
         },
         "ru": {
@@ -1539,7 +1539,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "It blocks attacks from the internet before they reach your devices."
+            "value": "It stops attacks from the internet before they reach your devices."
           }
         },
         "ru": {
@@ -1573,7 +1573,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The app does not collect or store the content of your traffic."
+            "value": "The app doesn’t collect or store your traffic."
           }
         },
         "ru": {
@@ -1590,7 +1590,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "JetBox is a router installed between your internet cable and your home network."
+            "value": "JetBox is a router that sits between your internet line and your home network."
           }
         },
         "ru": {
@@ -1607,7 +1607,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What JetBox is"
+            "value": "What is JetBox?"
           }
         },
         "ru": {
@@ -1641,7 +1641,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Check Wi-Fi or mobile data"
+            "value": "Check your Wi-Fi or cellular connection"
           }
         },
         "ru": {
@@ -1692,7 +1692,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Just a second"
+            "value": "Just a moment"
           }
         },
         "ru": {
@@ -1777,7 +1777,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This device is set up for “%1$@”, but the link is for “%2$@”. Switch? The previous connection will be replaced."
+            "value": "This device is set up for “%1$@”, but this link is for “%2$@”. If you switch, the previous connection will be replaced."
           }
         },
         "ru": {
@@ -1794,7 +1794,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A different JetBox"
+            "value": "Switch to another JetBox?"
           }
         },
         "ru": {
@@ -1811,7 +1811,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The connection to your home was lost. Open your connection link again."
+            "value": "Your home connection was lost. Open your JetBox link again to reconnect."
           }
         },
         "ru": {
