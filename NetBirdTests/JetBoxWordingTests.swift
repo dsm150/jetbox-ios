@@ -48,14 +48,58 @@ final class JetBoxWordingTests: XCTestCase {
         }
     }
 
-    /// Русский отложен до после публикации (каталоги — в `localization-ru/`):
-    /// в сборке его быть не должно, иначе русский телефон увидит русский.
-    func testRussianIsNotShipped() {
-        for bundle in [Bundle(for: JetBoxWordingTests.self), Bundle.main] {
-            XCTAssertNil(bundle.url(forResource: "Localizable", withExtension: "strings", subdirectory: "ru.lproj"),
-                         "ru.lproj/Localizable.strings попал в сборку")
+    func testRussianStringsAvoidForbiddenWords() throws {
+        try assertNoForbiddenWords("ru", forbiddenRU)
+    }
+
+    // MARK: - Английская локаль (21.11.2026, сборка для США)
+    //
+    // Язык — по языку устройства: английский iPhone видит всё по-английски,
+    // русский — по-русски. Английский — язык разработки (запасной для всех
+    // остальных языков), поэтому кириллицы в en быть не должно нигде:
+    // ни в приложении, ни в виджете.
+
+    private let cyrillic = try! NSRegularExpression(pattern: "[А-Яа-яЁё]")
+
+    private func table(_ bundle: Bundle, _ language: String, _ name: String = "Localizable") -> [String: String]? {
+        guard let url = bundle.url(forResource: name, withExtension: "strings", subdirectory: "\(language).lproj"),
+              let data = try? Data(contentsOf: url),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) else { return nil }
+        return plist as? [String: String]
+    }
+
+    private var widgetBundle: Bundle? {
+        guard let plugins = Bundle.main.builtInPlugInsURL,
+              let items = try? FileManager.default.contentsOfDirectory(at: plugins, includingPropertiesForKeys: nil)
+        else { return nil }
+        return items.first { $0.lastPathComponent.hasPrefix("NetBirdWidget") }.flatMap(Bundle.init(url:))
+    }
+
+    private func assertNoCyrillic(_ table: [String: String], _ what: String) {
+        for (key, value) in table {
+            let range = NSRange(value.startIndex..., in: value)
+            XCTAssertNil(cyrillic.firstMatch(in: value, range: range), "\(what): непереведено «\(key)» = \(value)")
         }
-        XCTAssertFalse(Bundle.main.localizations.contains("ru"), "ru среди локализаций приложения")
+    }
+
+    func testEnglishAppStringsHaveNoCyrillic() throws {
+        let en = try strings("en")
+        assertNoCyrillic(en, "приложение en")
+    }
+
+    func testEnglishWidgetStringsHaveNoCyrillic() throws {
+        let widget = try XCTUnwrap(widgetBundle, "виджет не найден в PlugIns")
+        let en = try XCTUnwrap(table(widget, "en"), "нет en.lproj/Localizable.strings у виджета")
+        XCTAssertGreaterThan(en.count, 20)
+        assertNoCyrillic(en, "виджет en")
+    }
+
+    func testEnglishIsDevelopmentLanguageAndRussianShipped() throws {
+        XCTAssertEqual(Bundle.main.developmentLocalization, "en")
+        XCTAssertTrue(Bundle.main.localizations.contains("ru"), "русский должен остаться для русских телефонов")
+        let en = try strings("en"), ru = try strings("ru")
+        let missing = Set(en.keys.filter { $0.hasPrefix("jetbox.") }).subtracting(ru.keys)
+        XCTAssertTrue(missing.isEmpty, "нет русского перевода: \(missing.sorted())")
     }
 
     func testEnglishStringsAvoidForbiddenWords() throws {

@@ -1,0 +1,10 @@
+/* Фразы Siri и Команд по-русски (виджет нацелен на iOS < 17, поэтому .strings, а не .xcstrings). */
+"${applicationName} status" = "Состояние ${applicationName}";
+"Check ${applicationName}" = "Проверить ${applicationName}";
+"Connect ${applicationName}" = "Подключить ${applicationName}";
+"Connect to home with ${applicationName}" = "Соединение ${applicationName}";
+"Disconnect ${applicationName}" = "Отключить ${applicationName}";
+"Disconnect from home with ${applicationName}" = "Разорвать соединение ${applicationName}";
+"Is ${applicationName} connected" = "${applicationName} подключён";
+"Turn off ${applicationName}" = "Выключить ${applicationName}";
+"Turn on ${applicationName}" = "Включить ${applicationName}";
