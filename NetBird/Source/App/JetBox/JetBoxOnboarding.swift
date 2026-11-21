@@ -27,6 +27,12 @@ enum JetBoxFailure: Equatable {
     case managementUnreachable(String?)
     case keyRejected(String?)
     case tunnelFailed
+    /// Ссылка входа из письма просрочена или уже использована (410).
+    case loginExpired
+    /// У JetBox клиента уже предельное число устройств (409 device_limit).
+    case deviceLimit
+    /// Кабинет ограничил частоту подтверждений (429).
+    case loginRateLimited
     case other(String)
 
     var title: String {
@@ -37,6 +43,9 @@ enum JetBoxFailure: Equatable {
         case .managementUnreachable: return JBText.errUnreachableTitle
         case .keyRejected: return JBText.errKeyTitle
         case .tunnelFailed: return JBText.errTunnelTitle
+        case .loginExpired: return JBText.errLoginExpiredTitle
+        case .deviceLimit: return JBText.errDeviceLimitTitle
+        case .loginRateLimited: return JBText.errLoginRateTitle
         case .other: return JBText.errGenericTitle
         }
     }
@@ -49,6 +58,9 @@ enum JetBoxFailure: Equatable {
         case .managementUnreachable: return JBText.errUnreachableBody
         case .keyRejected: return JBText.errKeyBody
         case .tunnelFailed: return JBText.errTunnelBody
+        case .loginExpired: return JBText.errLoginExpiredBody
+        case .deviceLimit: return JBText.errDeviceLimitBody
+        case .loginRateLimited: return JBText.errLoginRateBody
         case .other: return JBText.errGenericBody
         }
     }
@@ -59,14 +71,19 @@ enum JetBoxFailure: Equatable {
         switch self {
         case .managementUnreachable(let d), .keyRejected(let d): return d
         case .other(let d): return d
-        case .brokenLink, .foreignServer, .offline, .tunnelFailed: return nil
+        case .brokenLink, .foreignServer, .offline, .tunnelFailed,
+             .loginExpired, .deviceLimit, .loginRateLimited: return nil
         }
     }
+
+    /// Ссылку входа повторять бесполезно — нужна новая: вместо «Повторить»
+    /// кнопка ведёт на экран email.
+    var asksForNewLoginLink: Bool { self == .loginExpired }
 
     /// Повтор имеет смысл не всегда: испорченную ссылку повторять нечем.
     var isRetryable: Bool {
         switch self {
-        case .brokenLink, .foreignServer: return false
+        case .brokenLink, .foreignServer, .loginExpired, .deviceLimit: return false
         default: return true
         }
     }
@@ -80,6 +97,8 @@ final class JetBoxOnboarding: ObservableObject {
     enum Step: Equatable {
         /// Экрана нет, приложение живёт обычной жизнью.
         case idle
+        /// Ссылка входа из письма: меняем токен на параметры подключения.
+        case signingIn
         /// Ссылка разобрана, ждём нажатия единственной кнопки.
         case ready(JetBoxLinkPayload)
         /// Ссылка ведёт на другую коробку — спрашиваем подтверждение.
@@ -108,6 +127,11 @@ final class JetBoxOnboarding: ObservableObject {
     /// в `.failed` шаг полезной нагрузки уже не несёт, а «Попробовать снова»
     /// обязано повторить именно её.
     private var lastPayload: JetBoxLinkPayload?
+    /// Токен ссылки входа, пока он не обменян: нужен «Повторить» после обрыва
+    /// сети. Только в памяти, в журнал не пишется.
+    private var lastLoginToken: String?
+    /// API входа по email; в тестах подменяется.
+    var loginAPI = JetBoxLoginAPI()
 
     /// Сколько ждём туннель после успешной регистрации. За это время
     /// укладывается и запрос разрешения на VPN-профиль, и холодный старт ядра.
@@ -125,6 +149,23 @@ final class JetBoxOnboarding: ObservableObject {
     /// Возвращает true, если ссылка наша и обработана.
     @discardableResult
     func handle(_ url: URL) -> Bool {
+        switch JetBoxLoginLink.parse(url) {
+        case .token(let token):
+            if step == .signingIn, token == lastLoginToken { return true }
+            AppLogger.shared.log("JetBox: ссылка входа из письма принята")
+            JetBoxStore.skipUpstreamOnboarding()
+            startLogin(token: token)
+            return true
+        case .broken:
+            AppLogger.shared.log("JetBox: ссылка входа без токена или с испорченным токеном, в сеть не идём")
+            flowTask?.cancel()
+            lastLoginToken = nil
+            step = .failed(.brokenLink)
+            return true
+        case .notOurs:
+            break
+        }
+
         switch JetBoxLink.parse(url) {
         case .notOurs:
             return false
@@ -180,6 +221,10 @@ final class JetBoxOnboarding: ObservableObject {
     }
 
     func retry(viewModel: ViewModel) {
+        if lastPayload == nil, let token = lastLoginToken {
+            startLogin(token: token)
+            return
+        }
         guard let payload = lastPayload else {
             dismiss()
             return
@@ -208,7 +253,46 @@ final class JetBoxOnboarding: ObservableObject {
         flowTask = nil
         registration = nil
         lastPayload = nil
+        lastLoginToken = nil
         step = .idle
+    }
+
+    // MARK: - Вход по ссылке из письма
+
+    private func startLogin(token: String) {
+        flowTask?.cancel()
+        lastPayload = nil
+        lastLoginToken = token
+        step = .signingIn
+        let api = loginAPI
+        flowTask = Task { @MainActor in
+            let outcome = await api.verify(token: token, deviceName: Device.getName())
+            if Task.isCancelled { return }
+            finishLogin(outcome)
+        }
+    }
+
+    private func finishLogin(_ outcome: JetBoxLoginAPI.VerifyOutcome) {
+        switch outcome {
+        case .connect(let url):
+            // Токен израсходован: дальше обычный путь ссылки /connect —
+            // маска сервера, проверка ключа, «переключить?», одна кнопка.
+            lastLoginToken = nil
+            flowTask = nil
+            if !handle(url) { step = .failed(.brokenLink) }
+        case .expired:
+            lastLoginToken = nil
+            step = .failed(.loginExpired)
+        case .deviceLimit:
+            lastLoginToken = nil
+            step = .failed(.deviceLimit)
+        case .rateLimited:
+            step = .failed(.loginRateLimited)
+        case .offline:
+            step = .failed(.offline)
+        case .unavailable:
+            step = .failed(.managementUnreachable(nil))
+        }
     }
 
     // MARK: - Сценарий целиком
@@ -436,7 +520,7 @@ final class JetBoxOnboarding: ObservableObject {
         case .ready(let p), .confirmSwitch(let p, _), .registering(let p),
              .connecting(let p), .selectingExit(let p), .chooseExit(let p, _):
             return p
-        case .idle, .protected, .failed:
+        case .idle, .signingIn, .protected, .failed:
             return nil
         }
     }
@@ -446,7 +530,7 @@ final class JetBoxOnboarding: ObservableObject {
     private var isRestartable: Bool {
         switch step {
         case .ready, .confirmSwitch, .failed, .idle, .protected: return true
-        case .registering, .connecting, .selectingExit, .chooseExit: return false
+        case .signingIn, .registering, .connecting, .selectingExit, .chooseExit: return false
         }
     }
 
@@ -497,6 +581,8 @@ extension JetBoxOnboarding {
                                                       style: JetBoxStyle.current, homeOnly: JetBoxEdition.homeOnly)
         case "protected": step = .protected(exitNode: "Lakeview Home")
         case "failed": step = .failed(.offline)
+        case "signing": step = .signingIn
+        case "expired": step = .failed(.loginExpired)
         default: break
         }
     }

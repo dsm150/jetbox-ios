@@ -5,6 +5,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:box.jet-net.net</string>
+		<string>applinks:jetbox.ai-boss.us</string>
 	</array>
 	<key>com.apple.developer.networking.networkextension</key>
 	<array>

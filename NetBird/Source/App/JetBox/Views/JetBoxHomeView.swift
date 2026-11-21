@@ -21,6 +21,7 @@ struct JetBoxHomeView: View {
     @ObservedObject private var stats = JetBoxLiveStats.shared
     @State private var showsSettings = false
     @State private var showsDetails = false
+    @StateObject private var login = JetBoxLoginModel()
     @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
     private var styleRaw = JetBoxStyle.fallback.rawValue
     #if DEBUG
@@ -28,6 +29,13 @@ struct JetBoxHomeView: View {
     #endif
 
     private var box: JetBoxBox? { JetBoxStore.currentBox }
+    /// Сборка США без подключения: вместо пустого состояния — вход по email.
+    private var showsEmailLogin: Bool {
+        #if DEBUG
+        if JetBoxLoginModel.demoRequested { return true }
+        #endif
+        return JetBoxEdition.homeOnly && box == nil
+    }
     private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
 
     var body: some View {
@@ -75,7 +83,13 @@ struct JetBoxHomeView: View {
     private var live: some View {
         let state = viewModel.vpnDisplayState
         let power = JetBoxPowerAction.action(for: state, hasBox: box != nil)
-        return layout(power: power, state: state)
+        return Group {
+            if showsEmailLogin {
+                JetBoxEmailLoginView(model: login, onSettings: { showsSettings = true })
+            } else {
+                layout(power: power, state: state)
+            }
+        }
         .sheet(isPresented: $showsSettings) {
             if isSimple {
                 JetBoxSimpleSettingsView()
@@ -103,7 +117,10 @@ struct JetBoxHomeView: View {
             }
         }
         #if DEBUG
-        .onAppear { jetbox.showDemoIfRequested() }
+        .onAppear {
+            jetbox.showDemoIfRequested()
+            login.applyDemoIfRequested()
+        }
         #endif
     }
 

@@ -561,3 +561,303 @@ final class JetBoxExtensionHomeOnlyTests: XCTestCase {
         XCTAssertTrue(NetworkChangeListener.parseJetBoxHomeOnly("$(JETBOX_HOME_ONLY)"))
     }
 }
+
+// MARK: - Вход по email (сборка США, схема 22.11.2026)
+
+/// Подменный транспорт: отвечает заданным кодом и телом, запоминает запросы.
+private final class JetBoxLoginStub: @unchecked Sendable {
+    var replies: [String: (Int, String)] = [:]
+    var error: Error?
+    private(set) var requests: [URLRequest] = []
+    private(set) var logs: [String] = []
+
+    func api() -> JetBoxLoginAPI {
+        var api = JetBoxLoginAPI()
+        api.transport = { [unowned self] request in
+            self.requests.append(request)
+            if let error = self.error { throw error }
+            let path = request.url?.lastPathComponent ?? ""
+            let (code, body) = self.replies[path] ?? (500, "")
+            let response = HTTPURLResponse(url: request.url!, statusCode: code, httpVersion: nil, headerFields: nil)!
+            return (Data(body.utf8), response)
+        }
+        api.log = { [unowned self] in self.logs.append($0) }
+        return api
+    }
+
+    func body(_ index: Int) -> [String: String] {
+        guard requests.indices.contains(index), let data = requests[index].httpBody,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: String] else { return [:] }
+        return json
+    }
+}
+
+final class JetBoxLoginLinkTests: XCTestCase {
+    private let token = "Zq3vX9_kL2-mN8pR4tW6yA0bC5dE7fG1hJ"
+
+    func testVerifyLinkGivesToken() {
+        let url = URL(string: "https://jetbox.ai-boss.us/auth/verify#t=\(token)")!
+        XCTAssertEqual(JetBoxLoginLink.parse(url), .token(token))
+    }
+
+    func testHostAndPathAreCaseInsensitiveAndTrailingSlashOK() {
+        let url = URL(string: "https://JetBox.AI-Boss.us/auth/verify/#t=\(token)")!
+        XCTAssertEqual(JetBoxLoginLink.parse(url), .token(token))
+    }
+
+    func testTokenInQueryIsNotAccepted() {
+        // Токен обязан быть во фрагменте: в query он ушёл бы в логи сайта.
+        let url = URL(string: "https://jetbox.ai-boss.us/auth/verify?t=\(token)")!
+        XCTAssertEqual(JetBoxLoginLink.parse(url), .broken)
+    }
+
+    func testOtherHostsAndPathsAreNotOurs() {
+        for raw in ["https://jetbox.ai-boss.us/auth/login#t=\(token)",
+                    "https://jetbox.ai-boss.us/#t=\(token)",
+                    "https://evil.example/auth/verify#t=\(token)",
+                    "http://jetbox.ai-boss.us/auth/verify#t=\(token)",
+                    "https://box.jet-net.net/connect#k=11111111-2222-4333-8444-555555555555"] {
+            XCTAssertEqual(JetBoxLoginLink.parse(URL(string: raw)!), .notOurs, raw)
+        }
+    }
+
+    func testDamagedTokenIsBroken() {
+        for raw in ["https://jetbox.ai-boss.us/auth/verify",
+                    "https://jetbox.ai-boss.us/auth/verify#t=",
+                    "https://jetbox.ai-boss.us/auth/verify#t=short",
+                    "https://jetbox.ai-boss.us/auth/verify#t=abc%20def%3Cscript%3E1234567890",
+                    "https://jetbox.ai-boss.us/auth/verify#x=\(token)"] {
+            XCTAssertEqual(JetBoxLoginLink.parse(URL(string: raw)!), .broken, raw)
+        }
+    }
+
+    func testEmailValidation() {
+        XCTAssertTrue(JetBoxEmail.isValid("alex@example.com"))
+        XCTAssertTrue(JetBoxEmail.isValid("  a.b+c@mail.co.uk "))
+        for bad in ["", "alex", "alex@", "alex@example", "@example.com", "a b@example.com", "alex@example.c"] {
+            XCTAssertFalse(JetBoxEmail.isValid(bad), bad)
+        }
+    }
+
+    func testMailLanguage() {
+        XCTAssertEqual(JetBoxLoginAPI.mailLanguage(homeOnly: true, preferred: ["ru-RU"]), "en")
+        XCTAssertEqual(JetBoxLoginAPI.mailLanguage(homeOnly: false, preferred: ["ru-RU"]), "ru")
+        XCTAssertEqual(JetBoxLoginAPI.mailLanguage(homeOnly: false, preferred: ["en-US"]), "en")
+    }
+}
+
+final class JetBoxLoginAPITests: XCTestCase {
+    private let token = "Zq3vX9_kL2-mN8pR4tW6yA0bC5dE7fG1hJ"
+    private let key = "11111111-2222-4333-8444-555555555555"
+
+    private var okBody: String {
+        #"{"setup_key":"\#(key)","management_url":"https://netbird.jet-net.net","exit_node":"home-1","site_name":"Lakeview Home","connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&e=home-1&n=Lakeview%20Home"}"#
+    }
+
+    func testRequestSendsEmailLanguageAndPlatform() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["request"] = (202, #"{"ok":true}"#)
+        let outcome = await stub.api().requestLink(email: " alex@example.com ", language: "en")
+        XCTAssertEqual(outcome, .sent)
+        XCTAssertEqual(stub.requests.first?.httpMethod, "POST")
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "https://box.jet-net.net/api/app/v1/login/request")
+        XCTAssertEqual(stub.body(0), ["email": "alex@example.com", "lang": "en", "platform": "ios"])
+    }
+
+    func testRequestOutcomes() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["request"] = (429, "")
+        let limited = await stub.api().requestLink(email: "a@b.co", language: "en")
+        XCTAssertEqual(limited, .rateLimited)
+        stub.replies["request"] = (503, "")
+        let down = await stub.api().requestLink(email: "a@b.co", language: "en")
+        XCTAssertEqual(down, .unavailable)
+        stub.error = URLError(.notConnectedToInternet)
+        let offline = await stub.api().requestLink(email: "a@b.co", language: "en")
+        XCTAssertEqual(offline, .offline)
+    }
+
+    func testVerifySendsTokenAndDeviceAndReturnsConnectURL() async throws {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, okBody)
+        let outcome = await stub.api().verify(token: token, deviceName: "Alex’s iPhone")
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "https://box.jet-net.net/api/app/v1/login/verify")
+        XCTAssertEqual(stub.body(0), ["token": token, "device_name": "Alex’s iPhone", "platform": "ios"])
+        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
+            return XCTFail("ожидали ссылку подключения, получили \(outcome)")
+        }
+        XCTAssertEqual(payload.setupKey, key)
+        XCTAssertEqual(payload.boxName, "Lakeview Home")
+        XCTAssertEqual(payload.exitNodeName, "home-1")
+    }
+
+    func testVerifyWithoutConnectURLBuildsLinkFromFields() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, #"{"setup_key":"\#(key)","management_url":"https://netbird.jet-net.net","site_name":"Дом & сад"}"#)
+        let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
+        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
+            return XCTFail("ожидали ссылку подключения, получили \(outcome)")
+        }
+        XCTAssertEqual(payload.managementURL, "https://netbird.jet-net.net")
+        XCTAssertEqual(payload.boxName, "Дом & сад")
+    }
+
+    func testVerifyResponseWithForeignServerIsNotTrusted() async {
+        // Ответ всё равно проходит маску *.jet-net.net: ключ на чужой сервер не уйдёт.
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fevil.example"}"#)
+        let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
+        XCTAssertEqual(outcome, .unavailable)
+    }
+
+    func testVerifyOutcomes() async {
+        let stub = JetBoxLoginStub()
+        let cases: [(Int, String, JetBoxLoginAPI.VerifyOutcome)] = [
+            (410, "", .expired),
+            (409, #"{"error":"device_limit"}"#, .deviceLimit),
+            (409, #"{"error":"other"}"#, .unavailable),
+            (429, "", .rateLimited),
+            (500, "", .unavailable),
+            (200, "not json", .unavailable),
+        ]
+        for (code, body, expected) in cases {
+            stub.replies["verify"] = (code, body)
+            let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
+            XCTAssertEqual(outcome, expected, "\(code) \(body)")
+        }
+    }
+
+    func testJournalNeverContainsTokenOrKey() async {
+        let stub = JetBoxLoginStub()
+        for (code, body) in [(200, okBody), (410, ""), (409, #"{"error":"device_limit"}"#), (429, ""), (500, okBody)] {
+            stub.replies["verify"] = (code, body)
+            _ = await stub.api().verify(token: token, deviceName: "iPhone")
+        }
+        stub.replies["request"] = (202, "")
+        _ = await stub.api().requestLink(email: "alex@example.com", language: "en")
+        XCTAssertFalse(stub.logs.isEmpty)
+        for line in stub.logs {
+            XCTAssertFalse(line.contains(token), line)
+            XCTAssertFalse(line.contains(key), line)
+            XCTAssertFalse(line.contains("alex@example.com"), line)
+        }
+    }
+}
+
+@MainActor
+final class JetBoxLoginModelTests: XCTestCase {
+    func testInvalidEmailDoesNotGoToNetwork() async {
+        let stub = JetBoxLoginStub()
+        let model = JetBoxLoginModel()
+        model.api = stub.api()
+        model.email = "alex@"
+        await model.submit()
+        XCTAssertEqual(model.phase, .enter)
+        XCTAssertEqual(model.message, JBText.loginInvalidEmail)
+        XCTAssertTrue(stub.requests.isEmpty)
+    }
+
+    func testSentThenResendOncePerMinute() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["request"] = (202, "")
+        var clock = Date(timeIntervalSince1970: 1_000_000)
+        let model = JetBoxLoginModel()
+        model.api = stub.api()
+        model.now = { clock }
+        model.email = "alex@example.com"
+        await model.submit()
+        XCTAssertEqual(model.phase, .sent(email: "alex@example.com"))
+        XCTAssertEqual(model.resendWait(at: clock), 60)
+
+        clock = clock.addingTimeInterval(30)
+        await model.resend()
+        XCTAssertEqual(stub.requests.count, 1, "раньше минуты повторно не шлём")
+        XCTAssertEqual(model.resendWait(at: clock), 30)
+
+        clock = clock.addingTimeInterval(31)
+        await model.resend()
+        XCTAssertEqual(stub.requests.count, 2)
+        XCTAssertEqual(model.resendWait(at: clock), 60)
+        XCTAssertTrue(model.resentNote)
+    }
+
+    func testRateLimitShowsClearText() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["request"] = (429, "")
+        let model = JetBoxLoginModel()
+        model.api = stub.api()
+        model.email = "alex@example.com"
+        await model.submit()
+        XCTAssertEqual(model.phase, .enter)
+        XCTAssertEqual(model.message, JBText.loginRateLimited)
+    }
+}
+
+@MainActor
+final class JetBoxLoginOnboardingTests: XCTestCase {
+    private let token = "Zq3vX9_kL2-mN8pR4tW6yA0bC5dE7fG1hJ"
+    private let key = "11111111-2222-4333-8444-555555555555"
+    private var savedBox: JetBoxBox?
+
+    override func setUp() async throws {
+        savedBox = JetBoxStore.currentBox
+        JetBoxStore.currentBox = nil
+    }
+
+    override func tearDown() async throws {
+        JetBoxStore.currentBox = savedBox
+    }
+
+    private func settle(_ flow: JetBoxOnboarding) async {
+        for _ in 0..<100 where flow.step == .signingIn {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+    }
+
+    private var link: URL { URL(string: "https://jetbox.ai-boss.us/auth/verify#t=\(token)")! }
+
+    func testLoginLinkLeadsToTheConnectScreen() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&n=Lakeview%20Home"}"#)
+        let flow = JetBoxOnboarding()
+        flow.loginAPI = stub.api()
+        XCTAssertTrue(flow.handle(link))
+        XCTAssertEqual(flow.step, .signingIn)
+        await settle(flow)
+        guard case .ready(let payload) = flow.step else { return XCTFail("шаг \(flow.step)") }
+        XCTAssertEqual(payload.setupKey, key)
+        XCTAssertEqual(payload.boxName, "Lakeview Home")
+    }
+
+    func testExpiredLinkAsksForANewOne() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (410, "")
+        let flow = JetBoxOnboarding()
+        flow.loginAPI = stub.api()
+        flow.handle(link)
+        await settle(flow)
+        XCTAssertEqual(flow.step, .failed(.loginExpired))
+        XCTAssertTrue(JetBoxFailure.loginExpired.asksForNewLoginLink)
+        XCTAssertFalse(JetBoxFailure.loginExpired.isRetryable)
+    }
+
+    func testDeviceLimitHasItsOwnText() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (409, #"{"error":"device_limit"}"#)
+        let flow = JetBoxOnboarding()
+        flow.loginAPI = stub.api()
+        flow.handle(link)
+        await settle(flow)
+        XCTAssertEqual(flow.step, .failed(.deviceLimit))
+        XCTAssertEqual(JetBoxFailure.deviceLimit.title, JBText.errDeviceLimitTitle)
+    }
+
+    func testDamagedLoginLinkDoesNotGoToNetwork() {
+        let stub = JetBoxLoginStub()
+        let flow = JetBoxOnboarding()
+        flow.loginAPI = stub.api()
+        XCTAssertTrue(flow.handle(URL(string: "https://jetbox.ai-boss.us/auth/verify#t=bad")!))
+        XCTAssertEqual(flow.step, .failed(.brokenLink))
+        XCTAssertTrue(stub.requests.isEmpty)
+    }
+}

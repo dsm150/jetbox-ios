@@ -60,14 +60,14 @@ struct JetBoxFlowView: View {
 
     private var showsShield: Bool {
         switch jetbox.step {
-        case .registering, .connecting, .selectingExit, .protected: return true
+        case .signingIn, .registering, .connecting, .selectingExit, .protected: return true
         default: return false
         }
     }
 
     private var shieldPhase: JetBoxShieldPhase {
         switch jetbox.step {
-        case .registering, .connecting, .selectingExit: return .working(reverse: false)
+        case .signingIn, .registering, .connecting, .selectingExit: return .working(reverse: false)
         case .protected: return .on
         case .failed: return .offline
         default: return .off
@@ -76,6 +76,7 @@ struct JetBoxFlowView: View {
 
     private var stepTitle: String {
         switch jetbox.step {
+        case .signingIn: return JBText.loginSigningIn
         case .registering: return JBText.registering
         case .connecting: return JBText.connecting
         case .selectingExit: return JBText.selectingExit
@@ -149,6 +150,9 @@ struct JetBoxFlowView: View {
                 }
             }
 
+        case .signingIn:
+            stepText(JBText.loginSigningIn)
+
         case .registering:
             stepText(JBText.registering)
 
@@ -212,7 +216,9 @@ struct JetBoxFlowView: View {
 
         case .failed(let failure):
             VStack(spacing: 10) {
-                if failure.isRetryable {
+                if failure.asksForNewLoginLink {
+                    JBGlassButton(JBText.errLoginExpiredAction) { jetbox.dismiss() }
+                } else if failure.isRetryable {
                     JBGlassButton(JBText.retry) { jetbox.retry(viewModel: viewModel) }
                 }
                 Button(JBText.close) { jetbox.dismiss() }
@@ -225,7 +231,7 @@ struct JetBoxFlowView: View {
                 .font(.subheadline)
                 .foregroundColor(JBColor.muted)
 
-        case .idle, .registering, .connecting, .selectingExit, .chooseExit:
+        case .idle, .signingIn, .registering, .connecting, .selectingExit, .chooseExit:
             EmptyView()
         }
     }

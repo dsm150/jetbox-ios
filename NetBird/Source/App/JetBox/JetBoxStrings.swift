@@ -51,6 +51,33 @@ enum JBText {
     static var connecting: String { t("jetbox.progress.connecting") }
     static var selectingExit: String { t("jetbox.progress.selecting_exit") }
 
+    // MARK: Вход по email (сборка США)
+
+    static var loginTitle: String { t("jetbox.login.title") }
+    static var loginField: String { t("jetbox.login.field") }
+    static var loginSend: String { t("jetbox.login.send") }
+    static var loginSending: String { t("jetbox.login.sending") }
+    static var loginInvalidEmail: String { t("jetbox.login.invalid_email") }
+    static var loginSentTitle: String { t("jetbox.login.sent.title") }
+    static func loginSentBody(_ email: String) -> String { t("jetbox.login.sent.body", email) }
+    static var loginSentNote: String { t("jetbox.login.sent.note") }
+    static var loginOpenMail: String { t("jetbox.login.open_mail") }
+    static var loginResend: String { t("jetbox.login.resend") }
+    static func loginResendWait(_ seconds: Int) -> String { t("jetbox.login.resend_wait", String(seconds)) }
+    static var loginSentAgain: String { t("jetbox.login.sent_again") }
+    static var loginAnother: String { t("jetbox.login.another") }
+    static var loginRateLimited: String { t("jetbox.login.rate_limited") }
+    static var loginOffline: String { t("jetbox.login.offline") }
+    static var loginUnavailable: String { t("jetbox.login.unavailable") }
+    static var loginSigningIn: String { t("jetbox.login.signing_in") }
+    static var errLoginExpiredTitle: String { t("jetbox.error.login_expired.title") }
+    static var errLoginExpiredBody: String { t("jetbox.error.login_expired.body") }
+    static var errLoginExpiredAction: String { t("jetbox.error.login_expired.action") }
+    static var errDeviceLimitTitle: String { t("jetbox.error.device_limit.title") }
+    static var errDeviceLimitBody: String { t("jetbox.error.device_limit.body") }
+    static var errLoginRateTitle: String { t("jetbox.error.login_rate.title") }
+    static var errLoginRateBody: String { t("jetbox.error.login_rate.body") }
+
     static var protectedTitle: String { t("jetbox.protected.title") }
     static func protectedExit(_ name: String) -> String { t("jetbox.protected.exit", name) }
     static var protectedNoExit: String { t("jetbox.protected.no_exit") }

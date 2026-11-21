@@ -88,6 +88,9 @@ struct JetBoxSimpleFlowView: View {
                 }
             }
 
+        case .signingIn:
+            progress(JBText.loginSigningIn)
+
         case .registering:
             progress(JBText.registering)
 
@@ -189,7 +192,10 @@ struct JetBoxSimpleFlowView: View {
 
         case .failed(let failure):
             VStack(spacing: 6) {
-                if failure.isRetryable {
+                if failure.asksForNewLoginLink {
+                    // Экран email — на главном, куда ведёт закрытие сценария.
+                    JBSimplePrimaryButton(JBText.errLoginExpiredAction) { jetbox.dismiss() }
+                } else if failure.isRetryable {
                     JBSimplePrimaryButton(JBText.retry) { jetbox.retry(viewModel: viewModel) }
                 }
                 JBSimpleTextButton(JBText.close, color: JBSimple.muted) { jetbox.dismiss() }
@@ -205,7 +211,7 @@ struct JetBoxSimpleFlowView: View {
         case .confirmSwitch:
             JBSimpleTextButton(JBText.cancel, color: JBSimple.muted) { jetbox.dismiss() }
 
-        case .idle, .registering, .connecting, .selectingExit, .chooseExit:
+        case .idle, .signingIn, .registering, .connecting, .selectingExit, .chooseExit:
             EmptyView()
         }
     }
