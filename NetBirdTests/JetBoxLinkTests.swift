@@ -506,8 +506,14 @@ final class JetBoxHomeOnlyTests: XCTestCase {
         XCTAssertTrue(JetBoxEdition.parse("$(JETBOX_HOME_ONLY)"), "не подставилось — «только дом»")
     }
 
-    func testThisBuildIsHomeOnly() {
-        XCTAssertTrue(JetBoxEdition.homeOnly, "английская сборка по умолчанию — «только дом»")
+    /// По умолчанию проект собирается как сборка США; русская — явным
+    /// `JETBOX_HOME_ONLY=NO`. Проверяем сам проект, а не текущую сборку.
+    func testProjectDefaultIsHomeOnly() throws {
+        let project = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("NetBird.xcodeproj/project.pbxproj")
+        let text = try String(contentsOf: project, encoding: .utf8)
+        XCTAssertEqual(text.components(separatedBy: "JETBOX_HOME_ONLY = YES;").count - 1, 2, "Debug и Release проекта")
+        XCTAssertFalse(text.contains("JETBOX_HOME_ONLY = NO;"))
     }
 }
 

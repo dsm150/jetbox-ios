@@ -838,6 +838,7 @@
 				50A891132A792A15007C48FC /* Sources */,
 				50A891142A792A15007C48FC /* Frameworks */,
 				50A891152A792A15007C48FC /* Resources */,
+				JB0000012026112100000020 /* JetBox: убрать ru в сборке США */,
 				50245A602A80431C0034792B /* Embed Foundation Extensions */,
 				44DCF5B12EDF46140026078E /* Embed Frameworks */,
 			);
@@ -862,6 +863,7 @@
 				55D8657F2F70982000A2EFF8 /* Sources */,
 				55D865802F70982000A2EFF8 /* Frameworks */,
 				55D865812F70982000A2EFF8 /* Resources */,
+				JB0000012026112100000021 /* JetBox: убрать ru в сборке США */,
 			);
 			buildRules = (
 			);
@@ -1017,6 +1019,50 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		JB0000012026112100000020 /* JetBox: убрать ru в сборке США */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/ru.lproj/Localizable.strings",
+			);
+			name = "JetBox: убрать ru в сборке США";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# JetBox: сборка США (JETBOX_HOME_ONLY=YES) — только английский на любом iPhone\n# (решение владельца 21.11.2026). Русская сборка (NO) оставляет ru.lproj.\nif [ \"${JETBOX_HOME_ONLY}\" != \"NO\" ]; then\n  rm -rf \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ru.lproj\"\n  echo \"JetBox: ru.lproj убран (сборка США)\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		JB0000012026112100000021 /* JetBox: убрать ru в сборке США */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/ru.lproj/Localizable.strings",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/ru.lproj/AppShortcuts.strings",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Metadata.appintents",
+			);
+			name = "JetBox: убрать ru в сборке США";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# JetBox: сборка США (JETBOX_HOME_ONLY=YES) — только английский на любом iPhone\n# (решение владельца 21.11.2026). Русская сборка (NO) оставляет ru.lproj.\nif [ \"${JETBOX_HOME_ONLY}\" != \"NO\" ]; then\n  rm -rf \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ru.lproj\"\n  echo \"JetBox: ru.lproj убран (сборка США)\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -1498,6 +1544,7 @@
 		50A891232A792A16007C48FC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				JETBOX_HOME_ONLY = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1560,6 +1607,7 @@
 		50A891242A792A16007C48FC /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				JETBOX_HOME_ONLY = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1629,7 +1677,6 @@
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/**";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBird/Info.plist;
-				JETBOX_HOME_ONLY = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -1677,7 +1724,6 @@
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/**";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBird/Info.plist;
-				JETBOX_HOME_ONLY = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -1720,7 +1766,7 @@
 				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBirdWidgetExtension/Info.plist;
@@ -1758,7 +1804,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 9;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetBirdWidgetExtension/Info.plist;

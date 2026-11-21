@@ -50,8 +50,37 @@ final class JetBoxWordingTests: XCTestCase {
         }
     }
 
+    /// Русские тексты проверяются по исходному каталогу: в сборке США
+    /// (JETBOX_HOME_ONLY=YES) ru.lproj нет, а каталог должен оставаться
+    /// полным и чистым для русской сборки.
+    private func sourceCatalog() throws -> [String: Any] {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("NetBird/Source/App/JetBox/Localizable.xcstrings")
+        let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+        return try XCTUnwrap(json?["strings"] as? [String: Any])
+    }
+
+    private func russianValues() throws -> [String: String] {
+        var result: [String: String] = [:]
+        for (key, entry) in try sourceCatalog() {
+            let ru = ((entry as? [String: Any])?["localizations"] as? [String: Any])?["ru"] as? [String: Any]
+            if let unit = ru?["stringUnit"] as? [String: Any], let value = unit["value"] as? String {
+                result[key] = value
+            } else if let plural = (ru?["variations"] as? [String: Any])?["plural"] as? [String: Any] {
+                result[key] = plural.values.compactMap { (($0 as? [String: Any])?["stringUnit"] as? [String: Any])?["value"] as? String }
+                    .joined(separator: " | ")
+            }
+        }
+        return result
+    }
+
     func testRussianStringsAvoidForbiddenWords() throws {
-        try assertNoForbiddenWords("ru", forbiddenRU)
+        for (key, value) in try russianValues() where key.hasPrefix("jetbox.") {
+            for word in forbiddenRU {
+                XCTAssertFalse(value.lowercased().contains(word), "«\(word)» в русской строке \(key): \(value)")
+            }
+        }
     }
 
     // MARK: - Английская локаль (21.11.2026, сборка для США)
@@ -96,12 +125,32 @@ final class JetBoxWordingTests: XCTestCase {
         assertNoCyrillic(en, "виджет en")
     }
 
-    func testEnglishIsDevelopmentLanguageAndRussianShipped() throws {
+    func testEnglishIsDevelopmentLanguage() {
         XCTAssertEqual(Bundle.main.developmentLocalization, "en")
-        XCTAssertTrue(Bundle.main.localizations.contains("ru"), "русский должен остаться для русских телефонов")
-        let en = try strings("en"), ru = try strings("ru")
+    }
+
+    /// Русский каталог полон — для русской сборки (JETBOX_HOME_ONLY=NO).
+    func testRussianCatalogIsComplete() throws {
+        let en = try strings("en"), ru = try russianValues()
         let missing = Set(en.keys.filter { $0.hasPrefix("jetbox.") }).subtracting(ru.keys)
         XCTAssertTrue(missing.isEmpty, "нет русского перевода: \(missing.sorted())")
+    }
+
+    /// Решение владельца 21.11.2026: сборка США — только английский на любом
+    /// iPhone (ru.lproj убирает шаг сборки), русская сборка — с русским.
+    func testRussianShippedOnlyInRussianBuild() throws {
+        let widget = try XCTUnwrap(widgetBundle, "виджет не найден в PlugIns")
+        for (name, bundle) in [("приложение", Bundle.main), ("виджет", widget)] {
+            let ru = bundle.url(forResource: "Localizable", withExtension: "strings", subdirectory: "ru.lproj")
+            if JetBoxEdition.homeOnly {
+                XCTAssertNil(ru, "\(name): ru.lproj в сборке США")
+                XCTAssertFalse(bundle.localizations.contains("ru"), "\(name): ru среди локализаций сборки США")
+                XCTAssertEqual(Bundle.preferredLocalizations(from: bundle.localizations, forPreferences: ["ru-RU"]).first, "en",
+                               "\(name): русский iPhone должен получить английский")
+            } else {
+                XCTAssertNotNil(ru, "\(name): нет ru.lproj в русской сборке")
+            }
+        }
     }
 
     func testEnglishStringsAvoidForbiddenWords() throws {
