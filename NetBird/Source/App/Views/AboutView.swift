@@ -67,7 +67,7 @@ struct AboutView: View {
             Section {
                 HStack {
                     Spacer()
-                    Text("\u{00A9} \(String(Calendar.current.component(.year, from: Date()))) JetNet")
+                    Text("\u{00A9} \(String(Calendar.current.component(.year, from: Date()))) \(JetBoxEdition.copyrightHolder())")
                         .font(.footnote)
                         .foregroundColor(Color("TextSecondary"))
                     Spacer()

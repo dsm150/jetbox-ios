@@ -174,7 +174,20 @@ final class JetBoxWordingTests: XCTestCase {
         // коробку»: описание в магазине и текст на экране должны совпадать.
         let en = try strings("en")
         XCTAssertEqual(en["jetbox.ready.hint"], "One tap and your phone joins your home network.")
-        XCTAssertEqual(en["jetbox.home.connected"], "In home network")
-        XCTAssertEqual(en["jetbox.home.disconnected"], "Not in home network")
+        XCTAssertEqual(en["jetbox.home.connected"], "On your home network")
+        XCTAssertEqual(en["jetbox.home.disconnected"], "Not on your home network")
+    }
+
+    func testCopyrightHolderFollowsEdition() throws {
+        // Решение Алексея 21.11.2026: в американской сборке правообладатель —
+        // INSTASHOP Corporation, в русской — JetNet, как было.
+        let en = try strings("en")
+        let us = try XCTUnwrap(en[JetBoxEdition.aboutLegalKey(homeOnly: true)])
+        XCTAssertTrue(us.contains("INSTASHOP Corporation"), us)
+        XCTAssertFalse(us.contains("JetNet"), us)
+        let ru = try XCTUnwrap(en[JetBoxEdition.aboutLegalKey(homeOnly: false)])
+        XCTAssertTrue(ru.contains("JetNet"), ru)
+        XCTAssertEqual(JetBoxEdition.copyrightHolder(homeOnly: true), "INSTASHOP Corporation")
+        XCTAssertEqual(JetBoxEdition.copyrightHolder(homeOnly: false), "JetNet")
     }
 }

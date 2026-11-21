@@ -35,6 +35,23 @@
         }
       }
     },
+    "jetbox.about.legal.us": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© %@ INSTASHOP Corporation. Based on the NetBird client © NetBird. Distributed under the GNU GPL v3, without any warranty."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© %@ INSTASHOP Corporation. Основано на клиенте NetBird © NetBird. Распространяется по лицензии GNU GPL v3 без каких-либо гарантий."
+          }
+        }
+      }
+    },
     "jetbox.about.license": {
       "extractionState": "manual",
       "localizations": {
@@ -364,7 +381,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In home network"
+            "value": "On your home network"
           }
         },
         "ru": {
@@ -789,7 +806,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In home network"
+            "value": "On your home network"
           }
         },
         "ru": {
@@ -840,7 +857,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not in home network"
+            "value": "Not on your home network"
           }
         },
         "ru": {
@@ -1163,7 +1180,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In home network"
+            "value": "On your home network"
           }
         },
         "ru": {

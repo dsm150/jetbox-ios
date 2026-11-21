@@ -14,7 +14,7 @@ struct StatusIndicator: View {
                 .font(.system(size: fontSize, weight: .medium))
                 .foregroundColor(.primary)
                 .lineLimit(1)
-                // Английское «Not in home network» длиннее прежних подписей.
+                // Английское «Not on your home network» длиннее прежних подписей.
                 .minimumScaleFactor(0.7)
         }
     }

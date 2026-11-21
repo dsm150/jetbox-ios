@@ -35,4 +35,15 @@ enum JetBoxEdition {
     static func appliesExit(payload: JetBoxLinkPayload, homeOnly: Bool) -> Bool {
         !homeOnly && payload.enablesDefaultExit
     }
+
+    /// Правообладатель в «О программе» (решение Алексея 21.11.2026):
+    /// американская сборка — INSTASHOP Corporation, русская — JetNet, как было.
+    static func copyrightHolder(homeOnly: Bool = homeOnly) -> String {
+        homeOnly ? "INSTASHOP Corporation" : "JetNet"
+    }
+
+    /// Ключ строки о лицензии с правообладателем этой редакции.
+    static func aboutLegalKey(homeOnly: Bool = homeOnly) -> String {
+        homeOnly ? "jetbox.about.legal.us" : "jetbox.about.legal"
+    }
 }

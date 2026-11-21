@@ -124,7 +124,10 @@ enum JBText {
     static var aboutBody: String { t("jetbox.about.body") }
     static var aboutSite: String { t("jetbox.about.site") }
     static var aboutSource: String { t("jetbox.about.source") }
-    static func aboutLegal(_ year: String) -> String { t("jetbox.about.legal", year) }
+    /// Правообладатель зависит от редакции: см. `JetBoxEdition.aboutLegalKey`.
+    static func aboutLegal(_ year: String) -> String {
+        JetBoxEdition.homeOnly ? t("jetbox.about.legal.us", year) : t("jetbox.about.legal", year)
+    }
     static var aboutLicense: String { t("jetbox.about.license") }
 
     // MARK: Нижняя панель и подробности подключения

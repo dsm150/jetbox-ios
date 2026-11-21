@@ -330,7 +330,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not in home network"
+            "value": "Not on your home network"
           }
         },
         "ru": {
@@ -466,7 +466,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In home network"
+            "value": "On your home network"
           }
         },
         "ru": {
