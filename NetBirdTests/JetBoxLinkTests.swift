@@ -531,3 +531,33 @@ final class JetBoxHomeOnlyGuardTests: XCTestCase {
         XCTAssertNil(JetBoxHomeOnlyGuard.exitToDeselect(selectedExit: "cl-exit", homeOnly: false))
     }
 }
+
+/// Страховка «только дом» в сетевом расширении: маршрут выхода в туннель не
+/// ставится, даже если ядро его включило (подключение с виджета, расширенный режим).
+final class JetBoxExtensionHomeOnlyTests: XCTestCase {
+
+    func testStripsIPv4AndIPv6ExitRoutes() {
+        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes("100.64.0.0/16,0.0.0.0/0,192.168.60.0/24,::/0")
+        XCTAssertTrue(hadExit)
+        XCTAssertEqual(kept, "100.64.0.0/16,192.168.60.0/24")
+    }
+
+    func testKeepsHomeRoutesWhenNoExit() {
+        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes("100.64.0.0/16,192.168.60.0/24")
+        XCTAssertFalse(hadExit)
+        XCTAssertEqual(kept, "100.64.0.0/16,192.168.60.0/24")
+    }
+
+    func testEmptyRoutes() {
+        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes("")
+        XCTAssertFalse(hadExit)
+        XCTAssertEqual(kept, "")
+    }
+
+    func testExtensionFlagParsing() {
+        XCTAssertTrue(NetworkChangeListener.parseJetBoxHomeOnly("YES"))
+        XCTAssertFalse(NetworkChangeListener.parseJetBoxHomeOnly("NO"))
+        XCTAssertTrue(NetworkChangeListener.parseJetBoxHomeOnly(nil), "на iOS без ключа — «только дом»")
+        XCTAssertTrue(NetworkChangeListener.parseJetBoxHomeOnly("$(JETBOX_HOME_ONLY)"))
+    }
+}

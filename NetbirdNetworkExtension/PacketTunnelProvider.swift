@@ -1084,6 +1084,19 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
 
+    /// JetBox «только дом»: снять в ядре все выбранные маршруты выхода. Снятие
+    /// ядро сохраняет в файл состояния — после перезапуска выход не вернётся.
+    func deselectExitRoutes() {
+        guard let adapter = adapter,
+              let details = try? adapter.client.getRoutesSelectionDetails() else { return }
+        for index in 0..<details.size() {
+            guard let route = details.get(index), route.selected,
+                  route.network == "0.0.0.0/0" || route.network == "::/0" else { continue }
+            AppLogger.shared.log("JetBox: «только дом» — снимаю выход \(route.id_) в расширении")
+            deselectRoute(id: route.id_)
+        }
+    }
+
     func deselectRoute(id: String) {
         guard let adapter = adapter else { return }
         do {

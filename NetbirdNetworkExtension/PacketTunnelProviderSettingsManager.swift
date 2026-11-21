@@ -30,6 +30,20 @@ class PacketTunnelProviderSettingsManager {
         self.packetTunnelProvider = packetTunnelProvider
     }
 
+    /// JetBox «только дом»: ядро прислало маршрут выхода (сервер включил его
+    /// автоматически или его выбрали в расширенном режиме). Снимаем в ядре —
+    /// асинхронно: мы внутри обратного вызова Go, синхронный вызов в ядро
+    /// отсюда может зависнуть.
+    func homeOnlyExitBlocked() {
+        // Файл общий с tvOS-расширением, где свой PacketTunnelProvider без
+        // этого метода; «только дом» там и не включается.
+        #if os(iOS)
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            self?.packetTunnelProvider?.deselectExitRoutes()
+        }
+        #endif
+    }
+
     func setRoutes(v4Routes: [NEIPv4Route], v6Routes: [NEIPv6Route], containsDefault: Bool) {
             self.needFallbackNS = containsDefault
             self.containsDefaultRoute = containsDefault

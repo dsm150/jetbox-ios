@@ -122,7 +122,8 @@ struct iOSConnectionView: View {
                         // installs none, so the selector would be a control
                         // that cannot do anything - drop it rather than show
                         // it dead.
-                        if !viewModel.mdmRestrictions.mdm.disableClientRoutes {
+                        // JetBox: в сборке «только дом» выхода нет и в расширенном режиме.
+                        if !viewModel.mdmRestrictions.mdm.disableClientRoutes && !JetBoxEdition.homeOnly {
                             ExitNodeSelectorCard(routeViewModel: viewModel.routeViewModel)
                                 .padding(.horizontal, 16)
                         }

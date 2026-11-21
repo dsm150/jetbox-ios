@@ -376,9 +376,12 @@ final class JetBoxOnboarding: ObservableObject {
         case none
     }
 
-    /// Выход в интернет клиент включает НЕ сам: политики на management только
-    /// разрешают маршрут, а выбирает его клиент. Имя маршрута приходит в
-    /// ссылке (`e=`); если его нет или он не нашёлся — работает фолбэк.
+    /// Выбор выхода в интернет. Ядро NetBird само включает выход, у которого
+    /// на сервере `skipAutoApply=false` (routemanager/manager.go,
+    /// pickPreferredExitNode); при `skipAutoApply=true` выход только разрешён,
+    /// и выбирает его клиент — здесь. Имя маршрута приходит в ссылке (`e=`);
+    /// если его нет или он не нашёлся — работает фолбэк. В «только дом» сюда
+    /// не заходим, а выход снимают JetBoxHomeOnlyGuard и сетевое расширение.
     private func resolveExitNode(payload: JetBoxLinkPayload, viewModel: ViewModel) async -> ExitOutcome {
         let routes = viewModel.routeViewModel
         let deadline = Date().addingTimeInterval(routesTimeout)

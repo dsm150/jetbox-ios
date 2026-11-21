@@ -54,13 +54,51 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
             guard self.isValid, let tunnelManager = self.tunnelManager else {
                 return
             }
-            let routesString = p0 ?? ""
+            var routesString = p0 ?? ""
+            // JetBox «только дом» (сборка США): маршрут выхода в туннель не
+            // ставим, а в ядре его снимаем — и при подключении с виджета или
+            // из Пункта управления, когда приложение не открыто.
+            if Self.jetBoxHomeOnly {
+                let (kept, hadExit) = Self.stripExitRoutes(routesString)
+                if hadExit {
+                    routesString = kept
+                    tunnelManager.homeOnlyExitBlocked()
+                }
+            }
             let (v4Routes, v6Routes, containsDefault) = parseRoutesToNESettings(routesString: routesString)
             if v4Routes.isEmpty && v6Routes.isEmpty && self.interfaceIP == nil {
                 return
             }
             tunnelManager.setRoutes(v4Routes: v4Routes, v6Routes: v6Routes, containsDefault: containsDefault)
         }
+    }
+
+    // MARK: - JetBox «только дом»
+
+    /// Флаг редакции из Info.plist расширения (`JetBoxHomeOnly`, настройка
+    /// сборки `JETBOX_HOME_ONLY`). Нет ключа — на iOS «только дом» (безопаснее
+    /// не выпустить трафик лишний раз), на tvOS — нет: там ключа и не бывает.
+    static let jetBoxHomeOnly: Bool = parseJetBoxHomeOnly(Bundle.main.object(forInfoDictionaryKey: "JetBoxHomeOnly"))
+
+    static func parseJetBoxHomeOnly(_ raw: Any?) -> Bool {
+        if let flag = raw as? Bool { return flag }
+        guard let text = (raw as? String)?.trimmingCharacters(in: .whitespaces).uppercased(),
+              !text.isEmpty, !text.hasPrefix("$(") else {
+            #if os(tvOS)
+            return false
+            #else
+            return true
+            #endif
+        }
+        return !["NO", "FALSE", "0"].contains(text)
+    }
+
+    /// Убирает из списка маршрутов ядра (CIDR через запятую) маршруты выхода
+    /// 0.0.0.0/0 и ::/0. Возвращает остаток и был ли выход.
+    static func stripExitRoutes(_ routes: String) -> (String, Bool) {
+        let all = routes.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        let kept = all.filter { $0 != "0.0.0.0/0" && $0 != "::/0" }
+        return (kept.joined(separator: ","), kept.count != all.count)
     }
 
     func setInterfaceIP(_ p0: String?) {

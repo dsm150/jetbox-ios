@@ -9,5 +9,9 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).PacketTunnelProvider</string>
 	</dict>
+	<!-- JetBox: «только дом» (сборка США) — расширение само срезает маршрут
+	     выхода и снимает его в ядре. Значение — настройка сборки JETBOX_HOME_ONLY. -->
+	<key>JetBoxHomeOnly</key>
+	<string>$(JETBOX_HOME_ONLY)</string>
 </dict>
 </plist>
