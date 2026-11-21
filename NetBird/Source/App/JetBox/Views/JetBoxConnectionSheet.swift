@@ -30,7 +30,8 @@ struct JetBoxConnectionSheet: View {
 
     private var snapshot: JetBoxLiveStats.Snapshot? { demo ?? stats.box }
     private var since: Date? { demoSince ?? stats.connectedSince }
-    private var showsExit: Bool { isConnected && routes.exitNodes.count > 1 }
+    /// «Только дом» (JetBoxEdition): выбора выхода нет.
+    private var showsExit: Bool { !JetBoxEdition.homeOnly && isConnected && routes.exitNodes.count > 1 }
 
     var body: some View {
         VStack(spacing: 18) {

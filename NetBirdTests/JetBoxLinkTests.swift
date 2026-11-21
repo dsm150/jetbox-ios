@@ -461,3 +461,52 @@ final class JetBoxSimpleStyleExitTests: XCTestCase {
         XCTAssertEqual(step, .chooseExit(payload, options: ["А", "Б"]))
     }
 }
+
+// MARK: - «Только дом»: выходы скрыты (английская сборка, 21.11.2026)
+
+final class JetBoxHomeOnlyTests: XCTestCase {
+
+    private func payload(x: Bool = true) -> JetBoxLinkPayload {
+        JetBoxLinkPayload(setupKey: "3f6c2a9e-0d41-4c7b-9a55-8e21b07c4d19",
+                          managementURL: "https://mgmt.jet-net.net",
+                          exitNodeName: "cl-exit",
+                          boxName: "Home",
+                          enablesDefaultExit: x)
+    }
+
+    func testHomeOnlyNeverAppliesExitFromLink() {
+        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(), homeOnly: true))
+        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(x: false), homeOnly: true))
+    }
+
+    func testWithoutFlagExitFromLinkAppliesAsBefore() {
+        XCTAssertTrue(JetBoxEdition.appliesExit(payload: payload(), homeOnly: false))
+        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(x: false), homeOnly: false))
+    }
+
+    func testHomeOnlyNeverShowsExitChoiceInEitherStyle() {
+        for style in JetBoxStyle.allCases {
+            XCTAssertEqual(JetBoxOnboarding.stepForAmbiguousExit(payload: payload(), options: ["A", "B"],
+                                                                 style: style, homeOnly: true),
+                           .protected(exitNode: nil), "\(style)")
+        }
+    }
+
+    func testWithoutFlagTechnoStillShowsExitChoice() {
+        XCTAssertEqual(JetBoxOnboarding.stepForAmbiguousExit(payload: payload(), options: ["A", "B"],
+                                                             style: .techno, homeOnly: false),
+                       .chooseExit(payload(), options: ["A", "B"]))
+    }
+
+    func testFlagParsing() {
+        XCTAssertTrue(JetBoxEdition.parse("YES"))
+        XCTAssertFalse(JetBoxEdition.parse("NO"))
+        XCTAssertFalse(JetBoxEdition.parse(false))
+        XCTAssertTrue(JetBoxEdition.parse(nil), "нет ключа — безопасный «только дом»")
+        XCTAssertTrue(JetBoxEdition.parse("$(JETBOX_HOME_ONLY)"), "не подставилось — «только дом»")
+    }
+
+    func testThisBuildIsHomeOnly() {
+        XCTAssertTrue(JetBoxEdition.homeOnly, "английская сборка по умолчанию — «только дом»")
+    }
+}

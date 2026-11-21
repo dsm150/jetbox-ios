@@ -105,7 +105,9 @@ enum JetBoxStore {
             managementURL: payload.managementURL,
             exitNodeName: payload.exitNodeName,
             // `x=0`: выход из ссылки только разрешён, не включён (контракт 1.2, §2.10).
-            selectedExitNode: payload.enablesDefaultExit ? payload.exitNodeName : nil,
+            // «Только дом»: выход не включается (JetBoxEdition).
+            selectedExitNode: JetBoxEdition.appliesExit(payload: payload, homeOnly: JetBoxEdition.homeOnly)
+                ? payload.exitNodeName : nil,
             boxName: payload.boxName,
             registeredAt: Date(),
             setupKeyFingerprint: JetBoxIdentity.fingerprint(of: payload.setupKey)

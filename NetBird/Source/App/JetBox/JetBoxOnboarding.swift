@@ -297,11 +297,15 @@ final class JetBoxOnboarding: ObservableObject {
         AppLogger.shared.log("JetBox: туннель поднят (\(clock.lap()) мс)")
 
         // 4. Выход в интернет.
-        step = .selectingExit(payload)
         // `x=0` (облако): выход по умолчанию не включаем, клиент включит сам.
-        let exitOutcome: ExitOutcome = payload.enablesDefaultExit
-            ? await resolveExitNode(payload: payload, viewModel: viewModel)
-            : .none
+        // «Только дом»: выход не включаем вовсе (JetBoxEdition).
+        let exitOutcome: ExitOutcome
+        if JetBoxEdition.appliesExit(payload: payload, homeOnly: JetBoxEdition.homeOnly) {
+            step = .selectingExit(payload)
+            exitOutcome = await resolveExitNode(payload: payload, viewModel: viewModel)
+        } else {
+            exitOutcome = .none
+        }
         AppLogger.shared.log("JetBox: выход определён (\(clock.lap()) мс), всего \(clock.total()) мс")
         switch exitOutcome {
         case .selected(let name):
@@ -309,9 +313,10 @@ final class JetBoxOnboarding: ObservableObject {
             step = .protected(exitNode: name)
             JetBoxNotifications.requestIfNeeded()
         case .ambiguous(let options):
-            step = Self.stepForAmbiguousExit(payload: payload, options: options, style: JetBoxStyle.current)
+            step = Self.stepForAmbiguousExit(payload: payload, options: options, style: JetBoxStyle.current,
+                                             homeOnly: JetBoxEdition.homeOnly)
             if case .protected = step {
-                AppLogger.shared.log("JetBox: стиль «простое» — выбор выхода не показываем, как «Пока не выбирать»")
+                AppLogger.shared.log("JetBox: выбор выхода не показываем (стиль «простое» или «только дом»), как «Пока не выбирать»")
                 JetBoxNotifications.requestIfNeeded()
             }
         case .none:
@@ -356,7 +361,9 @@ final class JetBoxOnboarding: ObservableObject {
     /// «простое» выбора выхода не показывает нигде (замечание Алексея
     /// 21.11.2026) — ведёт себя как «Пока не выбирать». Сменить выход можно
     /// только в «техно».
-    nonisolated static func stepForAmbiguousExit(payload: JetBoxLinkPayload, options: [String], style: JetBoxStyle) -> Step {
+    nonisolated static func stepForAmbiguousExit(payload: JetBoxLinkPayload, options: [String], style: JetBoxStyle,
+                                                 homeOnly: Bool = false) -> Step {
+        if homeOnly { return .protected(exitNode: nil) }
         switch style {
         case .simple: return .protected(exitNode: nil)
         case .techno: return .chooseExit(payload, options: options)

@@ -39,5 +39,10 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- JetBox: «только дом» — выходы и облако скрыты (английская сборка для
+	     App Store США, решение владельца 21.11.2026). Значение — из настройки
+	     сборки JETBOX_HOME_ONLY (YES/NO): русская сборка ставит NO. -->
+	<key>JetBoxHomeOnly</key>
+	<string>$(JETBOX_HOME_ONLY)</string>
 </dict>
 </plist>
