@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		JB0000012026112100000011 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = JB0000012026112100000010 /* PrivacyInfo.xcprivacy */; };
 		0C71C019350D42AB8F110336 /* iOSSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F8A4B98A775451786C5DDF8 /* iOSSettingsView.swift */; };
 		1C4E6A81CD33FF6D2DEFF8D5 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 91FA1F06D3375864C74EAB3B /* Foundation.framework */; };
 		AA000C012F22000C00000001 /* NetBirdSDK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50D402932BD9143900D4AC5B /* NetBirdSDK.xcframework */; };
@@ -291,6 +292,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		JB0000012026112100000010 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2F8A4B98A775451786C5DDF8 /* iOSSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSSettingsView.swift; sourceTree = "<group>"; };
 		3E054D83063E440DAD0C52FA /* GlobalConstantsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalConstantsTests.swift; sourceTree = "<group>"; };
 		AA0011002F22001100000001 /* MDMBridgeIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDMBridgeIntegrationTests.swift; sourceTree = "<group>"; };
@@ -558,6 +560,7 @@
 			children = (
 				50C727EB2A824812006E898D /* NetBirdAdapter.swift */,
 				50245A562A80431C0034792B /* PacketTunnelProvider.swift */,
+				JB0000012026112100000010 /* PrivacyInfo.xcprivacy */,
 				50245A582A80431C0034792B /* Info.plist */,
 				50245A592A80431C0034792B /* NetbirdNetworkExtension.entitlements */,
 				50CD814E2AD0355000CF830B /* PacketTunnelProviderSettingsManager.swift */,
@@ -963,6 +966,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				JB0000012026112100000011 /* PrivacyInfo.xcprivacy in Resources */,
 				501B0DCE2AE04DDE004BE7A7 /* button-disconnecting.json in Resources */,
 				501B0DD22AE04DDE004BE7A7 /* logo_NetBird.json in Resources */,
 				501B0DDC2AE04DDE004BE7A7 /* button-connected.json in Resources */,

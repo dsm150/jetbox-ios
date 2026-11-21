@@ -487,7 +487,11 @@ extension JetBoxOnboarding {
         case "ready": step = .ready(payload)
         case "switch": step = .confirmSwitch(payload, current: "Country House")
         case "working": step = .connecting(payload)
-        case "exits": step = .chooseExit(payload, options: ["Lakeview Home", "Country House", "Downtown Office"])
+        // Через то же правило, что и настоящий сценарий: в «только дом» и в
+        // «простом» выбора нет — покажется «подключено».
+        case "exits": step = Self.stepForAmbiguousExit(payload: payload,
+                                                      options: ["Lakeview Home", "Country House", "Downtown Office"],
+                                                      style: JetBoxStyle.current, homeOnly: JetBoxEdition.homeOnly)
         case "protected": step = .protected(exitNode: "Lakeview Home")
         case "failed": step = .failed(.offline)
         default: break

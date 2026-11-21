@@ -94,6 +94,13 @@ struct JetBoxHomeView: View {
             // Разрешение на уведомления — когда защита впервые включилась,
             // а не при запуске: тогда понятно, о чём будут уведомления.
             if state == .connected { JetBoxNotifications.requestIfNeeded() }
+            // «Только дом»: выход, оставшийся с прежней сборки, снимаем.
+            if state == .connected { Task { await JetBoxHomeOnlyGuard.enforce(routes: routes) } }
+        }
+        .onAppear {
+            if viewModel.vpnDisplayState == .connected {
+                Task { await JetBoxHomeOnlyGuard.enforce(routes: routes) }
+            }
         }
         #if DEBUG
         .onAppear { jetbox.showDemoIfRequested() }

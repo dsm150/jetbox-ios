@@ -510,3 +510,18 @@ final class JetBoxHomeOnlyTests: XCTestCase {
         XCTAssertTrue(JetBoxEdition.homeOnly, "английская сборка по умолчанию — «только дом»")
     }
 }
+
+final class JetBoxHomeOnlyGuardTests: XCTestCase {
+
+    func testHomeOnlyDeselectsPreviouslyEnabledExit() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.exitToDeselect(selectedExit: "cl-exit", homeOnly: true), "cl-exit")
+    }
+
+    func testHomeOnlyWithoutExitDoesNothing() {
+        XCTAssertNil(JetBoxHomeOnlyGuard.exitToDeselect(selectedExit: nil, homeOnly: true))
+    }
+
+    func testWithoutFlagExitStays() {
+        XCTAssertNil(JetBoxHomeOnlyGuard.exitToDeselect(selectedExit: "cl-exit", homeOnly: false))
+    }
+}
