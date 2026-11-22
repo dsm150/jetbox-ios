@@ -308,6 +308,43 @@ xcodebuild -project NetBird.xcodeproj -scheme NetBird … archive JETBOX_HOME_ON
 Код выходов не удалён. Нет ключа или не подставилось значение — приложение считает себя
 «только дом» (безопаснее не включить выход). Стиль по умолчанию — «простое» (`JetBoxStyle.fallback`).
 
+### 5c. Конфиг редакции: адреса и состав бинарника (сборка 1.0 (18), 22.11.2026)
+
+Всё, что зависит от редакции, — в одном файле **`Config/JetBoxEdition.xcconfig`** (базовая
+конфигурация проекта). Значения выбираются по имени `X_$(JETBOX_HOME_ONLY)`:
+
+| Что | США (`YES`) | Русская (`NO`) |
+|---|---|---|
+| management (`JETBOX_MANAGEMENT_HOST`) | `net.jetbox.ai-boss.us` (заглушка до сервера в США) | `netbird.jet-net.net` |
+| маска `m` в ссылке | `.jetbox.ai-boss.us` | `.jet-net.net` |
+| API входа и удаления | `api.jetbox.ai-boss.us/api/app/v1/` (заглушка) | `box.jet-net.net/api/app/v1/` |
+| универсальная ссылка `/connect` | `api.jetbox.ai-boss.us` (заглушка) | `box.jet-net.net` |
+| ссылка входа из письма | `jetbox.ai-boss.us` | `jetbox.ai-boss.us` |
+| Info.plist приложения | `NetBird/Info-US.plist` (без схемы `netbird://`) | `NetBird/Info.plist` |
+| условие Swift | `JETBOX_US` | `JETBOX_RU` |
+
+Адреса доходят до кода через Info.plist (`JetBoxManagementURL`, `JetBoxAPIBaseURL`, …) и
+`JetBoxServers` (`NetbirdKit/GlobalConstants.swift`); associated domains в
+`NetBird/NetBird.entitlements` — через те же настройки. В Swift-коде адресов нет.
+
+В сборке США **не компилируются** экраны апстрима (`EXCLUDED_SOURCE_FILE_NAMES` в том же
+xcconfig): ручной выбор сервера, профили, расширенный режим (7 нажатий) со всеми вкладками.
+Принудительного relay нет (`EnvVarPackager`, `#if JETBOX_US`): сначала P2P, relay — запасной.
+Перед первым входом — экран согласия «какие данные собираем» (`JetBoxDataConsent.swift`).
+Журнал приложения — по-английски в обеих редакциях: в бинарнике США нет кириллицы.
+
+Проверка готовой сборки США (должно быть пусто, кроме ядра Go — см. ниже):
+
+```bash
+APP=build/Build/Products/Debug-iphonesimulator/NetBird.app
+strings -a $APP/NetBird.debug.dylib | grep -E "jet-net|xn--80aswg|api\.netbird\.io"
+find $APP -name ru.lproj
+```
+
+⚠️ Ядро Go (`NetBirdSDK`) несёт свои строки по умолчанию `https://api.netbird.io:443` и
+`https://app.netbird.io:443`. Они срабатывают, только если в конфиге нет адреса сервера, а
+JetBox его всегда задаёт. Убрать их можно только патчем ядра.
+
 ## 6. Как не отставать от апстрима
 
 Форк живёт поверх `netbirdio/ios-client`. Апстрим выпускает тег примерно раз

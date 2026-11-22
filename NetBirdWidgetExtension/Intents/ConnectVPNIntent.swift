@@ -4,24 +4,24 @@ import WidgetKit
 
 @available(iOS 16.0, *)
 struct ConnectVPNIntent: AppIntent {
-    static var title: LocalizedStringResource = "Подключить JetBox"
-    static var description: IntentDescription = "Подключение к вашей сети JetBox."
+    static var title: LocalizedStringResource = "Connect JetBox"
+    static var description: IntentDescription = "Connect to your home network."
     static var openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard let manager = try await VPNIntentHelpers.loadManager() else {
             WidgetCenter.shared.reloadAllTimelines()
-            return .result(dialog: "JetBox ещё не настроен.")
+            return .result(dialog: "JetBox is not set up yet.")
         }
 
         guard !VPNIntentHelpers.isLoginRequired else {
             WidgetCenter.shared.reloadAllTimelines()
-            return .result(dialog: "Нужно открыть приложение JetBox.")
+            return .result(dialog: "Open the JetBox app to continue.")
         }
 
         let status = manager.connection.status
         guard status == .disconnected || status == .invalid else {
-            return .result(dialog: "JetBox уже \(WidgetVPNStatus(neStatus: status).displayText.lowercased()).")
+            return .result(dialog: "Nothing to change: \(WidgetVPNStatus(neStatus: status).displayText.lowercased()).")
         }
 
         VPNIntentHelpers.defaults?.set(WidgetVPNStatus.connecting.rawValue, forKey: WidgetConstants.keyVPNStatus)
@@ -37,11 +37,11 @@ struct ConnectVPNIntent: AppIntent {
 
         let final = await VPNIntentHelpers.waitForStableState(manager: manager)
         if final == .connected {
-            return .result(dialog: "JetBox подключён.")
+            return .result(dialog: "JetBox connected.")
         } else if VPNIntentHelpers.isLoginRequired {
-            return .result(dialog: "Нужно открыть приложение JetBox.")
+            return .result(dialog: "Open the JetBox app to continue.")
         } else {
-            return .result(dialog: "Не удалось подключить JetBox.")
+            return .result(dialog: "JetBox couldn’t connect.")
         }
     }
 }

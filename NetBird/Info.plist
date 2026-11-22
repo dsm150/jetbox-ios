@@ -44,5 +44,18 @@
 	     сборки JETBOX_HOME_ONLY (YES/NO): русская сборка ставит NO. -->
 	<key>JetBoxHomeOnly</key>
 	<string>$(JETBOX_HOME_ONLY)</string>
+	<!-- JetBox: адреса серверов — из Config/JetBoxEdition.xcconfig (по редакции). -->
+	<key>JetBoxManagementURL</key>
+	<string>https://$(JETBOX_MANAGEMENT_HOST)</string>
+	<key>JetBoxManagementSuffix</key>
+	<string>$(JETBOX_MANAGEMENT_SUFFIX)</string>
+	<key>JetBoxAPIBaseURL</key>
+	<string>https://$(JETBOX_API_HOST)$(JETBOX_API_PATH)</string>
+	<key>JetBoxConnectLinkHost</key>
+	<string>$(JETBOX_CONNECT_LINK_HOST)</string>
+	<key>JetBoxLoginLinkHost</key>
+	<string>$(JETBOX_LOGIN_LINK_HOST)</string>
+	<key>JetBoxProbeName</key>
+	<string>$(JETBOX_PROBE_NAME)</string>
 </dict>
 </plist>

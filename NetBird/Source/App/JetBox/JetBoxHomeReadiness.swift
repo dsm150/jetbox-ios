@@ -59,7 +59,7 @@ final class JetBoxHomeReadiness: ObservableObject {
         let adapter = viewModel.networkExtensionAdapter
         task = Task { [weak self] in
             let started = Date()
-            var reason = "потолок"
+            var reason = "timeout"
             while !Task.isCancelled {
                 let peers = await Self.fetchPeers(adapter)
                 if Task.isCancelled { return }
@@ -67,19 +67,19 @@ final class JetBoxHomeReadiness: ObservableObject {
                 let exitOK = Self.exitReady(expected: JetBoxStore.allInternetHome,
                                             inTunnel: JetBoxTunnelState.defaultRouteInTunnel())
                 if exitOK, let peer = Self.homePeer(in: peers) {
-                    if Self.isConnected(peer) { reason = "пир коробки Connected"; break }
+                    if Self.isConnected(peer) { reason = "box peer Connected"; break }
                     let ip = JetBoxHomeProbe.bareIP(peer.ip)
-                    if !ip.isEmpty, await Self.dnsAnswers(ip) { reason = "ответ DNS коробки"; break }
+                    if !ip.isEmpty, await Self.dnsAnswers(ip) { reason = "box DNS answered"; break }
                 }
                 if Date().timeIntervalSince(started) >= Self.timeout { break }
                 try? await Task.sleep(nanoseconds: Self.pollInterval)
             }
             guard !Task.isCancelled, let self else { return }
             let seconds = Int(Date().timeIntervalSince(started))
-            if reason == "потолок" {
-                AppLogger.shared.log("JetBox: дом не ответил за \(seconds) с — показываем «подключено» по туннелю; маршрут по умолчанию в туннеле: \(JetBoxTunnelState.defaultRouteInTunnel() ? "да" : "нет")")
+            if reason == "timeout" {
+                AppLogger.shared.log("JetBox: home did not answer in \(seconds) s — showing connected by tunnel state; default route in tunnel: \(JetBoxTunnelState.defaultRouteInTunnel() ? "yes" : "no")")
             } else {
-                AppLogger.shared.log("JetBox: дом отвечает через \(seconds) с после туннеля (\(reason))")
+                AppLogger.shared.log("JetBox: home answers \(seconds) s after tunnel up (\(reason))")
             }
             self.finish()
         }

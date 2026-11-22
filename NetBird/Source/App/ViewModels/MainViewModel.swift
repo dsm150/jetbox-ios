@@ -1202,6 +1202,10 @@ class ViewModel: ObservableObject {
     }
     
     func getForcedRelayConnectionEnabled() -> Bool {
+        #if JETBOX_US
+        // JetBox, сборка США: принудительного relay нет (EnvVarPackager).
+        return false
+        #else
         let userDefaults = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
         #if os(iOS)
         userDefaults?.register(defaults: [GlobalConstants.keyForceRelayConnection: true])
@@ -1210,6 +1214,7 @@ class ViewModel: ObservableObject {
         // forced relay battery optimization not need on Apple Tv
         userDefaults?.register(defaults: [GlobalConstants.keyForceRelayConnection: false])
         return userDefaults?.bool(forKey: GlobalConstants.keyForceRelayConnection) ?? false
+        #endif
         #endif
     }
     

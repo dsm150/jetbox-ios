@@ -4,8 +4,8 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:box.jet-net.net</string>
-		<string>applinks:jetbox.ai-boss.us</string>
+		<string>applinks:$(JETBOX_CONNECT_LINK_HOST)</string>
+		<string>applinks:$(JETBOX_LOGIN_LINK_HOST)</string>
 	</array>
 	<key>com.apple.developer.networking.networkextension</key>
 	<array>

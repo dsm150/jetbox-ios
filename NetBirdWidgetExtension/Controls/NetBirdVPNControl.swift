@@ -15,11 +15,11 @@ struct NetBirdVPNControl: ControlWidget {
                 isOn: state.isActive,
                 action: SetVPNStateIntent()
             ) { 
-                Label("Подключить JetBox", image: "jetbox-mark")
+                Label("Connect JetBox", image: "jetbox-mark")
             }
             .tint(.jetboxBlue)
         }
         .displayName("JetBox")
-        .description("Подключение и отключение JetBox из Пункта управления.")
+        .description("Connect or disconnect JetBox from Control Center.")
     }
 }

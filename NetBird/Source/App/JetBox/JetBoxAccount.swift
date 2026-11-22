@@ -38,7 +38,7 @@ enum JetBoxAppToken {
         item[kSecValueData as String] = Data(token.utf8)
         item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         let status = SecItemAdd(item as CFDictionary, nil)
-        if status != errSecSuccess { AppLogger.shared.log("JetBox: токен приложения не сохранён (\(status))") }
+        if status != errSecSuccess { AppLogger.shared.log("JetBox: app token not saved (\(status))") }
         return status == errSecSuccess
     }
 
@@ -74,14 +74,14 @@ extension JetBoxLoginAPI {
         do {
             let (_, response) = try await transport(request)
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
-            log("JetBox: удаление аккаунта — Кабинет ответил \(code)")
+            log("JetBox: account deletion — server answered \(code)")
             switch code {
             case 200: return .deleted
             case 401: return .unauthorized
             default: return .failed
             }
         } catch {
-            log("JetBox: удаление аккаунта — запрос не выполнен")
+            log("JetBox: account deletion — request failed")
             return .failed
         }
     }

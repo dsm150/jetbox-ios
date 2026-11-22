@@ -188,6 +188,193 @@
         }
       }
     },
+    "jetbox.consent.accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agree and continue"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Принять и продолжить"
+          }
+        }
+      }
+    },
+    "jetbox.consent.device.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device name and model, app and iOS version, so your JetBox can recognize this iPhone."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Имя и модель устройства, версии приложения и iOS — чтобы ваш JetBox узнал этот iPhone."
+          }
+        }
+      }
+    },
+    "jetbox.consent.device.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device details"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сведения об устройстве"
+          }
+        }
+      }
+    },
+    "jetbox.consent.email.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To send your login link and recognize your account."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы прислать ссылку для входа и узнать ваш аккаунт."
+          }
+        }
+      }
+    },
+    "jetbox.consent.email.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email address"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email"
+          }
+        }
+      }
+    },
+    "jetbox.consent.intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you log in and connect, here’s what the app sends to JetBox and why."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прежде чем вы войдёте и подключитесь — что приложение передаёт JetBox и зачем."
+          }
+        }
+      }
+    },
+    "jetbox.consent.network.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To set up the encrypted connection between this iPhone and your JetBox. If a direct connection isn’t possible, it passes through our relay server, which can’t read it."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы установить зашифрованное соединение между этим iPhone и вашим JetBox. Если напрямую не получается, соединение идёт через наш промежуточный сервер — прочитать его он не может."
+          }
+        }
+      }
+    },
+    "jetbox.consent.network.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network addresses and connection key"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сетевые адреса и ключ подключения"
+          }
+        }
+      }
+    },
+    "jetbox.consent.never": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We never collect the content of your traffic or your browsing history. No ads, no analytics, no tracking, and we don’t sell your data."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Содержимое трафика и историю браузера мы не собираем никогда. Без рекламы, аналитики и слежки, данные не продаём."
+          }
+        }
+      }
+    },
+    "jetbox.consent.read_policy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the Privacy Policy"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Политика конфиденциальности"
+          }
+        }
+      }
+    },
+    "jetbox.consent.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What JetBox collects"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Какие данные собирает JetBox"
+          }
+        }
+      }
+    },
     "jetbox.details.latency": {
       "extractionState": "manual",
       "localizations": {
@@ -1996,7 +2183,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "NetBird service screens: peers, resources, troubleshooting and server change. Not needed for normal use."
+            "value": "Service screens: peers, resources, troubleshooting and server change. Not needed for normal use."
           }
         },
         "ru": {
@@ -2134,13 +2321,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "All your devices lose access to your JetBox. To get access back, contact JetBox support."
+            "value": "All your devices lose access to your JetBox, and logging in with your email is turned off. We keep your order and payment records because the law requires it for accounting and taxes. To get access back, contact JetBox support."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Все ваши устройства потеряют доступ к JetBox. Чтобы вернуть доступ, свяжитесь с поддержкой JetBox."
+            "value": "Все ваши устройства потеряют доступ к JetBox, вход по вашему email будет закрыт. Заказ и платежи мы храним: этого требует закон об учёте и налогах. Чтобы вернуть доступ, напишите в поддержку JetBox."
           }
         }
       }

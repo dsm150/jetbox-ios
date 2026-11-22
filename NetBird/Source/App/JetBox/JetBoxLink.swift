@@ -16,15 +16,16 @@ import Foundation
 // MARK: - Константы контракта
 
 enum JetBoxConfig {
-    /// Домен Кабинета, на котором лежит apple-app-site-association.
-    static let universalLinkHost = "box.jet-net.net"
+    /// Домен Кабинета, на котором лежит apple-app-site-association
+    /// (Config/JetBoxEdition.xcconfig → Info.plist).
+    static var universalLinkHost: String { JetBoxServers.connectLinkHost }
     /// Путь, который матчится в AASA (`/connect` и `/connect/*`).
     static let universalLinkPath = "/connect"
     /// Запасной вход: QR со старых материалов и кнопка на странице /connect.
     static let customScheme = "jetbox"
     /// Management по умолчанию — страховка для старых ссылок.
     /// Кабинет по контракту всегда кладёт `m=` явно.
-    static let defaultManagementURL = "https://netbird.jet-net.net"
+    static var defaultManagementURL: String { JetBoxServers.managementURL }
     /// Политика конфиденциальности: на неё ведёт «Подробнее» под объявлением
     /// о данных. App Review 5.4 требует объявить сбор данных на экране
     /// **до** того, как клиент нажмёт «Подключить».
@@ -105,6 +106,20 @@ enum JetBoxLinkIdentity {
 
 // MARK: - Разбор
 
+/// Хосты, по которым разбирается ссылка подключения. В приложении — всегда
+/// `.current` (адреса редакции из Info.plist); тесты подставляют свои.
+struct JetBoxLinkRules: Equatable {
+    var connectHost: String
+    var managementSuffix: String
+    var defaultManagementURL: String
+
+    static var current: JetBoxLinkRules {
+        JetBoxLinkRules(connectHost: JetBoxServers.connectLinkHost.lowercased(),
+                        managementSuffix: JetBoxServers.managementSuffix.lowercased(),
+                        defaultManagementURL: JetBoxServers.managementURL)
+    }
+}
+
 enum JetBoxLink {
 
     enum Outcome: Equatable {
@@ -113,15 +128,15 @@ enum JetBoxLink {
         /// Ссылка наша, но испорчена (кривой ключ, кривой management).
         /// Пользователю показываем «Ссылка повреждена», в сеть не идём.
         case broken
-        /// `m` вне маски `*.jet-net.net` (контракт 1.3, §2.3): ссылка ведёт не на
+        /// `m` вне маски сервера редакции (контракт 1.3, §2.3): ссылка ведёт не на
         /// сервер JetBox. Отказ до любого вопроса, в сеть не идём.
         case foreignServer
         /// Не наша ссылка — отдаём дальше по цепочке обработчиков.
         case notOurs
     }
 
-    static func parse(_ url: URL) -> Outcome {
-        guard isJetBoxURL(url) else { return .notOurs }
+    static func parse(_ url: URL, rules: JetBoxLinkRules = .current) -> Outcome {
+        guard isJetBoxURL(url, rules: rules) else { return .notOurs }
 
         // percentEncodedFragment, а не fragment: последний уже декодирован, и
         // повторное декодирование съело бы значения вида %2520 в `n=`.
@@ -136,10 +151,10 @@ enum JetBoxLink {
         guard isValidSetupKey(key) else { return .broken }
 
         if let rawManagement = params["m"], !rawManagement.isEmpty,
-           !allowedManagement(rawManagement) {
+           !allowedManagement(rawManagement, suffix: rules.managementSuffix) {
             return .foreignServer
         }
-        let management = normalizedManagement(params["m"])
+        let management = normalizedManagement(params["m"], fallback: rules.defaultManagementURL)
         guard let management else { return .broken }
 
         return .payload(JetBoxLinkPayload(
@@ -153,7 +168,7 @@ enum JetBoxLink {
     }
 
     /// Универсальная ссылка Кабинета либо своя схема.
-    static func isJetBoxURL(_ url: URL) -> Bool {
+    static func isJetBoxURL(_ url: URL, rules: JetBoxLinkRules = .current) -> Bool {
         let scheme = url.scheme?.lowercased()
 
         if scheme == JetBoxConfig.customScheme {
@@ -161,7 +176,7 @@ enum JetBoxLink {
         }
 
         if scheme == "https" {
-            guard url.host?.lowercased() == JetBoxConfig.universalLinkHost else { return false }
+            guard !rules.connectHost.isEmpty, url.host?.lowercased() == rules.connectHost else { return false }
             // AASA матчит `/connect` и `/connect/*` — принимаем то же самое.
             let path = url.path.lowercased()
             return path == JetBoxConfig.universalLinkPath
@@ -198,15 +213,16 @@ enum JetBoxLink {
     }
 
     /// Домен, на поддоменах которого разрешён management (решение владельца
-    /// 18.11.2026). Правило одно на все платформы: эталон —
-    /// `JetBox_Desktop/core/jetboxlink/mask.go`, общие векторы — `mgmt-mask.json`.
-    static let managementSuffix = ".jet-net.net"
+    /// 18.11.2026; домен — по редакции, Config/JetBoxEdition.xcconfig). Правило
+    /// одно на все платформы: эталон — `JetBox_Desktop/core/jetboxlink/mask.go`,
+    /// общие векторы — `mgmt-mask.json`.
+    static var managementSuffix: String { JetBoxServers.managementSuffix }
 
     /// `m` (уже без percent-encoding) разрешён маской: https, без логина, пути
     /// (кроме «/»), query и фрагмента; хост — имя ASCII (не IP), оканчивается на
-    /// `.jet-net.net` (сам домен без поддомена — нет); порт — любой 1–65535.
+    /// маску `suffix` (сам домен без поддомена — нет); порт — любой 1–65535.
     /// Разбираем сами, а не URLComponents: тот декодирует `%2E` в хосте.
-    static func allowedManagement(_ raw: String) -> Bool {
+    static func allowedManagement(_ raw: String, suffix: String = managementSuffix) -> Bool {
         let scheme = "https://"
         guard raw.count > scheme.count, raw.lowercased().hasPrefix(scheme) else { return false }
         let rest = raw.dropFirst(scheme.count)
@@ -237,7 +253,8 @@ enum JetBoxLink {
               name.allSatisfy({ ("a"..."z").contains($0) || $0.isASCIIDigit || $0 == "-" || $0 == "." }),
               !name.split(separator: ".", omittingEmptySubsequences: false).contains(where: \.isEmpty),
               !isIPv4(name) else { return false }
-        return name.hasSuffix(managementSuffix) && name.count > managementSuffix.count
+        guard suffix.hasPrefix("."), suffix.count > 1 else { return false }
+        return name.hasSuffix(suffix) && name.count > suffix.count
     }
 
     private static func isIPv4(_ host: String) -> Bool {
@@ -247,14 +264,14 @@ enum JetBoxLink {
 
     /// Только https, обязателен хост, хвостовой слэш срезаем.
     /// Пустое значение и отсутствие параметра — берём дефолт приложения.
-    private static func normalizedManagement(_ value: String?) -> String? {
-        guard let value, !value.isEmpty else { return JetBoxConfig.defaultManagementURL }
+    private static func normalizedManagement(_ value: String?, fallback: String) -> String? {
+        guard let value, !value.isEmpty else { return fallback.isEmpty ? nil : fallback }
         guard let components = URLComponents(string: value),
               components.scheme?.lowercased() == "https",
               let host = components.host, !host.isEmpty else { return nil }
 
         // Одна завершающая точка FQDN срезается до маски и удостоверения:
-        // `netbird.jet-net.net.` — тот же сервер (находка Android, 18.11.2026).
+        // `mgmt.example.` — тот же сервер (находка Android, 18.11.2026).
         var name = host.lowercased()
         if name.hasSuffix(".") { name.removeLast() }
         var normalized = "https://" + name

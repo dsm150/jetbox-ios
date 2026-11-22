@@ -23,7 +23,7 @@ final class JetBoxLinkTests: XCTestCase {
             XCTFail("URL не разобрался: \(string)")
             return .notOurs
         }
-        return JetBoxLink.parse(url)
+        return JetBoxLink.parse(url, rules: .jetNet)
     }
 
     private func payload(_ string: String, file: StaticString = #filePath, line: UInt = #line) -> JetBoxLinkPayload? {
@@ -89,9 +89,9 @@ final class JetBoxLinkTests: XCTestCase {
 
     func testManagementDefaultsWhenMissingOrEmpty() {
         XCTAssertEqual(payload("jetbox://connect#k=\(key)")?.managementURL,
-                       JetBoxConfig.defaultManagementURL)
+                       JetBoxLinkRules.jetNet.defaultManagementURL)
         XCTAssertEqual(payload("jetbox://connect#k=\(key)&m=")?.managementURL,
-                       JetBoxConfig.defaultManagementURL)
+                       JetBoxLinkRules.jetNet.defaultManagementURL)
     }
 
     func testManagementNormalisation() {
@@ -374,15 +374,15 @@ final class JetBoxLinkTests: XCTestCase {
         let vectors = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: url))
         XCTAssertGreaterThanOrEqual(vectors.cases.count, 35)
         for c in vectors.cases {
-            XCTAssertEqual(JetBoxLink.allowedManagement(c.m), c.ok, "\(c.m) — \(c.why)")
+            XCTAssertEqual(JetBoxLink.allowedManagement(c.m, suffix: JetBoxLinkRules.jetNet.managementSuffix), c.ok, "\(c.m) — \(c.why)")
         }
     }
 
     func testForeignManagementIsRefusedBeforeAnything() {
         let link = URL(string: "https://box.jet-net.net/connect#k=\(key)&m=https%3A%2F%2Fevil.example.com&e=one")!
-        XCTAssertEqual(JetBoxLink.parse(link), .foreignServer)
+        XCTAssertEqual(JetBoxLink.parse(link, rules: .jetNet), .foreignServer)
         let ip = URL(string: "jetbox://connect#k=\(key)&m=https%3A%2F%2F100.64.0.1%3A33073")!
-        XCTAssertEqual(JetBoxLink.parse(ip), .foreignServer)
+        XCTAssertEqual(JetBoxLink.parse(ip, rules: .jetNet), .foreignServer)
     }
 
     func testMaskedManagementWithPortIsAccepted() {
@@ -391,7 +391,7 @@ final class JetBoxLinkTests: XCTestCase {
     }
 
     func testMissingManagementStillMeansDefault() {
-        XCTAssertEqual(payload("jetbox://connect#k=\(key)&e=one")?.managementURL, JetBoxConfig.defaultManagementURL)
+        XCTAssertEqual(payload("jetbox://connect#k=\(key)&e=one")?.managementURL, JetBoxLinkRules.jetNet.defaultManagementURL)
     }
 
     // MARK: - Обрыв сценария замены и завершающая точка (находки Android, 18.11.2026)
@@ -789,7 +789,7 @@ final class JetBoxLoginAPITests: XCTestCase {
     private let key = "11111111-2222-4333-8444-555555555555"
 
     private var okBody: String {
-        #"{"setup_key":"\#(key)","management_url":"https://netbird.jet-net.net","exit_node":"home-1","site_name":"Lakeview Home","connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&e=home-1&n=Lakeview%20Home"}"#
+        #"{"setup_key":"\#(key)","management_url":"https://\#(JBT.mgmtHost)","exit_node":"home-1","site_name":"Lakeview Home","connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&e=home-1&n=Lakeview%20Home"}"#
     }
 
     func testRequestSendsEmailLanguageAndPlatform() async {
@@ -798,7 +798,7 @@ final class JetBoxLoginAPITests: XCTestCase {
         let outcome = await stub.api().requestLink(email: " alex@example.com ", language: "en")
         XCTAssertEqual(outcome, .sent)
         XCTAssertEqual(stub.requests.first?.httpMethod, "POST")
-        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "https://box.jet-net.net/api/app/v1/login/request")
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "\(JBT.api)login/request")
         XCTAssertEqual(stub.body(0), ["email": "alex@example.com", "lang": "en", "platform": "ios"])
     }
 
@@ -819,7 +819,7 @@ final class JetBoxLoginAPITests: XCTestCase {
         let stub = JetBoxLoginStub()
         stub.replies["verify"] = (200, okBody)
         let outcome = await stub.api().verify(token: token, deviceName: "Alex’s iPhone")
-        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "https://box.jet-net.net/api/app/v1/login/verify")
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "\(JBT.api)login/verify")
         XCTAssertEqual(stub.body(0), ["token": token, "device_name": "Alex’s iPhone", "platform": "ios"])
         guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
             return XCTFail("ожидали ссылку подключения, получили \(outcome)")
@@ -831,19 +831,19 @@ final class JetBoxLoginAPITests: XCTestCase {
 
     func testVerifyWithoutConnectURLBuildsLinkFromFields() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"setup_key":"\#(key)","management_url":"https://netbird.jet-net.net","site_name":"Дом & сад"}"#)
+        stub.replies["verify"] = (200, #"{"setup_key":"\#(key)","management_url":"https://\#(JBT.mgmtHost)","site_name":"Дом & сад"}"#)
         let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
         guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
             return XCTFail("ожидали ссылку подключения, получили \(outcome)")
         }
-        XCTAssertEqual(payload.managementURL, "https://netbird.jet-net.net")
+        XCTAssertEqual(payload.managementURL, JetBoxConfig.defaultManagementURL)
         XCTAssertEqual(payload.boxName, "Дом & сад")
     }
 
     func testVerifyResponseWithForeignServerIsNotTrusted() async {
         // Ответ всё равно проходит маску *.jet-net.net: ключ на чужой сервер не уйдёт.
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fevil.example"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2Fevil.example"}"#)
         let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
         XCTAssertEqual(outcome, .unavailable)
     }
@@ -956,8 +956,9 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
 
     func testLoginLinkLeadsToTheConnectScreen() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&n=Lakeview%20Home"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Lakeview%20Home"}"#)
         let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
         flow.loginAPI = stub.api()
         XCTAssertTrue(flow.handle(link))
         XCTAssertEqual(flow.step, .signingIn)
@@ -971,6 +972,7 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
         let stub = JetBoxLoginStub()
         stub.replies["verify"] = (410, "")
         let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
         flow.loginAPI = stub.api()
         flow.handle(link)
         await settle(flow)
@@ -983,6 +985,7 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
         let stub = JetBoxLoginStub()
         stub.replies["verify"] = (409, #"{"error":"device_limit"}"#)
         let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
         flow.loginAPI = stub.api()
         flow.handle(link)
         await settle(flow)
@@ -993,6 +996,7 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
     func testDamagedLoginLinkDoesNotGoToNetwork() {
         let stub = JetBoxLoginStub()
         let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
         flow.loginAPI = stub.api()
         XCTAssertTrue(flow.handle(URL(string: "https://jetbox.ai-boss.us/auth/verify#t=bad")!))
         XCTAssertEqual(flow.step, .failed(.brokenLink))
@@ -1006,7 +1010,7 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
 final class JetBoxLoginCodeTests: XCTestCase {
     private let key = "11111111-2222-4333-8444-555555555555"
     private var connectBody: String {
-        #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&n=Demo%20Home"}"#
+        #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Demo%20Home"}"#
     }
 
     private func sentModel(_ stub: JetBoxLoginStub, email: String = "alex@example.com") async -> JetBoxLoginModel {
@@ -1065,6 +1069,7 @@ final class JetBoxLoginCodeTests: XCTestCase {
         XCTAssertEqual(stub.body(1), ["email": "appreview@ai-boss.us", "code": "246810",
                                       "device_name": "Test iPhone", "platform": "ios"])
         let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
         let saved = JetBoxStore.currentBox
         JetBoxStore.currentBox = nil
         defer { JetBoxStore.currentBox = saved }
@@ -1168,6 +1173,8 @@ final class JetBoxSignOutTests: XCTestCase {
         XCTAssertFalse(JetBoxEdition.showsEmailLogin(homeOnly: true, box: JetBoxStore.currentBox))
 
         let flow = JetBoxOnboarding()
+
+        flow.needsDataConsent = { false }
         var stopped = false
         await flow.signOut(stopTunnel: { stopped = true }, files: files)
 
@@ -1183,6 +1190,7 @@ final class JetBoxSignOutTests: XCTestCase {
     func testCodeLoginWorksAgainAfterSignOut() async throws {
         JetBoxStore.currentBox = box("Old Home")
         let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
         await flow.signOut(stopTunnel: {}, files: files)
 
         let stub = JetBoxLoginStub()
@@ -1203,7 +1211,7 @@ final class JetBoxSignOutTests: XCTestCase {
         model.enterCodeManually()
         var received: URL?
         model.onConnect = { received = $0 }
-        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&n=Demo%20Home"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Demo%20Home"}"#)
         model.code = "246810"
         await model.submitCode()
 
@@ -1352,6 +1360,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
 
     private func flow(_ stub: JetBoxLoginStub) -> JetBoxOnboarding {
         let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
         flow.loginAPI = stub.api()
         flow.loadAppToken = { [unowned self] in self.token }
         flow.deleteAppToken = { [unowned self] in self.token = nil; self.tokenDeleted += 1 }
@@ -1369,7 +1378,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
         let result = await flow.deleteAccount(stopTunnel: { stopped = true }, files: nil)
 
         XCTAssertEqual(result, .deleted)
-        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "https://box.jet-net.net/api/app/v1/account/delete")
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "\(JBT.api)account/delete")
         XCTAssertEqual(stub.requests.first?.httpMethod, "POST")
         XCTAssertEqual(stub.requests.first?.value(forHTTPHeaderField: "Authorization"), "Bearer app-token-123")
         XCTAssertTrue(stopped)
@@ -1438,7 +1447,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
 
     func testVerifyStoresAppTokenButNotInLink() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&n=Demo%20Home","app_token":"tok-1"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&n=Demo%20Home","app_token":"tok-1"}"#)
         var api = stub.api()
         var stored: [String?] = []
         api.storeAppToken = { stored.append($0) }
@@ -1451,7 +1460,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
 
     func testVerifyWithoutTokenClearsOldOne() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&n=Demo%20Home"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&n=Demo%20Home"}"#)
         var api = stub.api()
         var stored: [String?] = ["old"]
         api.storeAppToken = { stored.append($0) }
@@ -1537,4 +1546,103 @@ final class JetBoxBackupTests: XCTestCase {
         XCTAssertFalse(JetBoxBackup.isOrphaned(box: box, configPath: nil, fileExists: { _ in false }))
         XCTAssertFalse(JetBoxBackup.isOrphaned(box: nil, configPath: "/x/netbird.cfg", fileExists: { _ in false }))
     }
+}
+
+extension JetBoxLinkRules {
+    /// Правила русской сборки: на них написаны общие векторы всех платформ
+    /// (`identity.json`, `mgmt-mask.json`) — разбор от редакции не зависит.
+    static let jetNet = JetBoxLinkRules(connectHost: "box.jet-net.net",
+                                        managementSuffix: ".jet-net.net",
+                                        defaultManagementURL: "https://netbird.jet-net.net")
+}
+
+/// Адреса редакции, под которую собраны тесты: сценарии входа идут через код
+/// приложения, а он берёт хосты из Info.plist (Config/JetBoxEdition.xcconfig).
+enum JBT {
+    static var connect: String { JetBoxConfig.universalLinkHost }
+    static var mgmtHost: String { URL(string: JetBoxConfig.defaultManagementURL)?.host ?? "" }
+    static var api: String { JetBoxConfig.loginAPIBase.absoluteString }
+}
+
+/// Сборка 1.0 (18): согласие «какие данные собираем» до входа и подключения.
+@MainActor
+final class JetBoxDataConsentTests: XCTestCase {
+    private let key = "11111111-2222-4333-8444-555555555555"
+    private let token = "tok_abcdefghijklmnopqrstuvwxyz012345"
+
+    func testConsentIsAskedOnlyInUSBuildAndOnlyOnce() {
+        XCTAssertTrue(JetBoxDataConsent.needsConsent(homeOnly: true, accepted: false))
+        XCTAssertFalse(JetBoxDataConsent.needsConsent(homeOnly: true, accepted: true))
+        XCTAssertFalse(JetBoxDataConsent.needsConsent(homeOnly: false, accepted: false))
+    }
+
+    func testAcceptIsRemembered() {
+        let defaults = UserDefaults(suiteName: "JetBoxDataConsentTests")!
+        defaults.removePersistentDomain(forName: "JetBoxDataConsentTests")
+        XCTAssertFalse(defaults.bool(forKey: JetBoxDataConsent.acceptedKey))
+        JetBoxDataConsent.accept(defaults: defaults)
+        XCTAssertTrue(defaults.bool(forKey: JetBoxDataConsent.acceptedKey))
+    }
+
+    func testLoginLinkWaitsForConsentAndDoesNotGoOnline() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&n=Demo%20Home"}"#)
+        let flow = JetBoxOnboarding()
+        flow.loginAPI = stub.api()
+        var consent = false
+        flow.needsDataConsent = { !consent }
+        let link = URL(string: "https://\(JetBoxConfig.loginLinkHost)/auth/verify#t=\(token)")!
+
+        XCTAssertTrue(flow.handle(link), "ссылка наша — её не отдают дальше по цепочке")
+        XCTAssertEqual(flow.step, .idle)
+        XCTAssertTrue(stub.requests.isEmpty, "до согласия в сеть не ходим")
+
+        consent = true
+        flow.resumeAfterDataConsent()
+        XCTAssertEqual(flow.step, .signingIn)
+        for _ in 0..<100 where flow.step == .signingIn {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        guard case .ready = flow.step else { return XCTFail("шаг \(flow.step)") }
+    }
+
+    func testForeignLinkIsNotHeld() {
+        let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { true }
+        XCTAssertFalse(flow.handle(URL(string: "jetbox://app/connect")!))
+        XCTAssertFalse(flow.handle(URL(string: "https://example.com/connect#k=\(key)")!))
+    }
+}
+
+/// Сборка 1.0 (18): адреса серверов — только из конфига редакции.
+final class JetBoxServersTests: XCTestCase {
+    func testAddressesComeFromTheEditionConfig() {
+        for value in [JetBoxServers.managementURL, JetBoxServers.managementSuffix, JetBoxServers.apiBaseURL,
+                      JetBoxServers.connectLinkHost, JetBoxServers.loginLinkHost, JetBoxServers.probeName] {
+            XCTAssertFalse(value.isEmpty)
+            XCTAssertFalse(value.contains("$("), "настройка сборки не подставилась: \(value)")
+        }
+        XCTAssertTrue(JetBoxServers.managementURL.hasPrefix("https://"))
+        XCTAssertTrue(JetBoxServers.apiBaseURL.hasPrefix("https://"))
+        XCTAssertTrue(JetBoxServers.managementSuffix.hasPrefix("."))
+    }
+
+    #if JETBOX_US
+    func testUSBuildHasNoRussianOrUpstreamAddresses() {
+        let all = [JetBoxServers.managementURL, JetBoxServers.managementSuffix, JetBoxServers.apiBaseURL,
+                   JetBoxServers.connectLinkHost, JetBoxServers.loginLinkHost, JetBoxServers.probeName,
+                   JetBoxConfig.defaultManagementURL, JetBoxConfig.loginAPIBase.absoluteString]
+        for value in all {
+            XCTAssertFalse(value.contains("jet-net"), value)
+            XCTAssertFalse(value.contains("xn--"), value)
+            XCTAssertFalse(value.contains("netbird.io"), value)
+            XCTAssertTrue(value.contains("ai-boss.us"), value)
+        }
+    }
+
+    func testDefaultManagementPassesItsOwnMask() {
+        XCTAssertTrue(JetBoxLink.allowedManagement(JetBoxServers.managementURL))
+        XCTAssertFalse(JetBoxLink.allowedManagement("https://netbird.jet-net.net"))
+    }
+    #endif
 }

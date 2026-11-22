@@ -19,7 +19,7 @@ import Network
 enum JetBoxHomeProbe {
     static let samples = 3
     static let timeout: TimeInterval = 1.5
-    static let probeName = "jet-net.net"
+    static var probeName: String { JetBoxServers.probeName }
 
     /// Меряет и отдаёт результат (мс) на главной очереди; nil — не ответил.
     static func measure(host: String, completion: @escaping (Int?) -> Void) {

@@ -44,17 +44,17 @@ enum JetBoxHomeOnlyGuard {
                         available: routes.exitNodes.map(\.name), allowed: allowed, homeOnly: homeOnly)
         // Выбор выхода в RoutesViewModel сам снимает остальные выходы.
         if let name = plan.select, let node = routes.exitNodes.first(where: { $0.name == name }) {
-            AppLogger.shared.log("JetBox: «только дом» — включаю выход своей коробки \(name)")
+            AppLogger.shared.log("JetBox: home only — selecting own box exit \(name)")
             routes.setExitNode(node)
         } else if let name = plan.deselect {
-            AppLogger.shared.log("JetBox: «только дом» — снимаю выход \(name)")
+            AppLogger.shared.log("JetBox: home only — deselecting exit \(name)")
             routes.setExitNode(nil)
         }
         // Проверка по ядру, а не по записи: какой выход там выбран на самом деле.
         try? await Task.sleep(nanoseconds: 2_000_000_000)
         routes.getRoutes()
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        AppLogger.shared.log("JetBox: выход в ядре после подключения — \(routes.selectedExitNode?.name ?? "нет") (свой: \(allowed ?? "нет")); маршрут по умолчанию в туннеле: \(JetBoxTunnelState.defaultRouteInTunnel() ? "да" : "нет")")
+        AppLogger.shared.log("JetBox: exit in core after connect — \(routes.selectedExitNode?.name ?? "none") (own: \(allowed ?? "none")); default route in tunnel: \(JetBoxTunnelState.defaultRouteInTunnel() ? "yes" : "no")")
     }
 }
 #endif

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>inter-variable.ttf</string>
+		<string>jetbrains-mono-variable.ttf</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<!-- JetBox: ссылка из Кабинета self-service. Setup key передаётся во
+		     фрагменте (#k=...), поэтому не попадает ни в логи веб-сервера,
+		     ни в Referer, ни в историю редиректов. -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>net.jetnet.jetbox</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>jetbox</string>
+			</array>
+		</dict>
+	</array>
+	<!-- The PKCE login flow redirects to the SDK's loopback listener over plain
+	     http. When the system auth session captures that redirect instead of
+	     letting the browser follow it, the app has to replay the request to hand
+	     the authorization code over; ATS would otherwise block it. Scoped to
+	     local networking only — no general cleartext exception. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<!-- JetBox: Info.plist сборки США (JETBOX_HOME_ONLY=YES), без схемы апстрима.
+	     «Только дом» — выходы и облако скрыты (английская сборка для
+	     App Store США, решение владельца 21.11.2026). Значение — из настройки
+	     сборки JETBOX_HOME_ONLY (YES/NO): русская сборка ставит NO. -->
+	<key>JetBoxHomeOnly</key>
+	<string>$(JETBOX_HOME_ONLY)</string>
+	<!-- JetBox: адреса серверов — из Config/JetBoxEdition.xcconfig (по редакции). -->
+	<key>JetBoxManagementURL</key>
+	<string>https://$(JETBOX_MANAGEMENT_HOST)</string>
+	<key>JetBoxManagementSuffix</key>
+	<string>$(JETBOX_MANAGEMENT_SUFFIX)</string>
+	<key>JetBoxAPIBaseURL</key>
+	<string>https://$(JETBOX_API_HOST)$(JETBOX_API_PATH)</string>
+	<key>JetBoxConnectLinkHost</key>
+	<string>$(JETBOX_CONNECT_LINK_HOST)</string>
+	<key>JetBoxLoginLinkHost</key>
+	<string>$(JETBOX_LOGIN_LINK_HOST)</string>
+	<key>JetBoxProbeName</key>
+	<string>$(JETBOX_PROBE_NAME)</string>
+</dict>
+</plist>

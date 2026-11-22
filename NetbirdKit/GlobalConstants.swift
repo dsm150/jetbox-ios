@@ -5,6 +5,8 @@
 //  Created by Diego Romar on 03/12/25.
 //
 
+import Foundation
+
 struct GlobalConstants {
     #if os(tvOS)
     static let userPreferencesSuiteName = "group.net.jetnet.jetbox.tv"
@@ -131,5 +133,37 @@ enum JetBoxTunnelState {
     static func defaultRouteInTunnel(at url: URL? = defaultURL()) -> Bool {
         guard let url, let data = try? Data(contentsOf: url) else { return false }
         return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
+    }
+}
+
+/// JetBox: адреса серверов. Значения — из Info.plist, а туда из
+/// `Config/JetBoxEdition.xcconfig` по редакции (США / русская): в коде адресов
+/// нет, в бинарник сборки США чужие адреса не попадают.
+enum JetBoxServers {
+    /// Management NetBird по умолчанию (`https://…`).
+    static var managementURL: String {
+        #if os(tvOS)
+        // tvOS-таргет апстрима адресов JetBox не знает.
+        return "https://api.netbird.io"
+        #else
+        return value("JetBoxManagementURL")
+        #endif
+    }
+    /// Маска management для `m` из ссылки Кабинета (`.домен`).
+    static var managementSuffix: String { value("JetBoxManagementSuffix") }
+    /// API приложения: вход по email, удаление аккаунта.
+    static var apiBaseURL: String { value("JetBoxAPIBaseURL") }
+    /// Хост универсальной ссылки подключения (`/connect#k=…`).
+    static var connectLinkHost: String { value("JetBoxConnectLinkHost") }
+    /// Хост ссылки входа из письма (`/auth/verify#t=…`).
+    static var loginLinkHost: String { value("JetBoxLoginLinkHost") }
+    /// Имя для проверки DNS коробки.
+    static var probeName: String { value("JetBoxProbeName") }
+
+    /// Пусто, если ключа нет или настройка сборки не подставилась: тогда
+    /// подключение честно не сработает, а не уйдёт на сервер по умолчанию.
+    static func value(_ key: String, bundle: Bundle = .main) -> String {
+        let raw = (bundle.object(forInfoDictionaryKey: key) as? String ?? "").trimmingCharacters(in: .whitespaces)
+        return raw.contains("$(") ? "" : raw
     }
 }

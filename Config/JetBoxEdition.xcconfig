@@ -1,0 +1,58 @@
+// JetBox: редакция сборки — единственное место, где заданы адреса серверов
+// и то, что входит в бинарник.
+//
+//   JETBOX_HOME_ONLY = YES  — сборка для App Store США (по умолчанию);
+//   JETBOX_HOME_ONLY = NO   — русская сборка (xcodebuild ... JETBOX_HOME_ONLY=NO).
+//
+// Сам флаг задан в project.pbxproj (уровень проекта), здесь — только то,
+// что из него следует. Значения выбираются по имени: X_$(JETBOX_HOME_ONLY).
+//
+// В xcconfig «//» — начало комментария, поэтому здесь только имена хостов,
+// схему https:// добавляют Info.plist и entitlements.
+
+// --- Серверы -----------------------------------------------------------------
+// Management NetBird: адрес по умолчанию и маска для `m` из ссылки Кабинета.
+JETBOX_MANAGEMENT_HOST_YES = net.jetbox.ai-boss.us
+JETBOX_MANAGEMENT_HOST_NO = netbird.jet-net.net
+JETBOX_MANAGEMENT_HOST = $(JETBOX_MANAGEMENT_HOST_$(JETBOX_HOME_ONLY))
+
+JETBOX_MANAGEMENT_SUFFIX_YES = .jetbox.ai-boss.us
+JETBOX_MANAGEMENT_SUFFIX_NO = .jet-net.net
+JETBOX_MANAGEMENT_SUFFIX = $(JETBOX_MANAGEMENT_SUFFIX_$(JETBOX_HOME_ONLY))
+
+// API приложения (вход по email, удаление аккаунта): хост и путь.
+JETBOX_API_HOST_YES = api.jetbox.ai-boss.us
+JETBOX_API_HOST_NO = box.jet-net.net
+JETBOX_API_HOST = $(JETBOX_API_HOST_$(JETBOX_HOME_ONLY))
+JETBOX_API_PATH = /api/app/v1/
+
+// Хост универсальной ссылки подключения (`/connect#k=…`), есть в AASA.
+JETBOX_CONNECT_LINK_HOST_YES = api.jetbox.ai-boss.us
+JETBOX_CONNECT_LINK_HOST_NO = box.jet-net.net
+JETBOX_CONNECT_LINK_HOST = $(JETBOX_CONNECT_LINK_HOST_$(JETBOX_HOME_ONLY))
+
+// Хост ссылки входа из письма (`/auth/verify#t=…`) — сайт JetBox.
+JETBOX_LOGIN_LINK_HOST = jetbox.ai-boss.us
+
+// Имя, которое спрашиваем у DNS коробки, чтобы понять, что дом отвечает.
+JETBOX_PROBE_NAME_YES = jetbox.ai-boss.us
+JETBOX_PROBE_NAME_NO = jet-net.net
+JETBOX_PROBE_NAME = $(JETBOX_PROBE_NAME_$(JETBOX_HOME_ONLY))
+
+// --- Что входит в бинарник ---------------------------------------------------
+// Условие компиляции Swift: JETBOX_US / JETBOX_RU.
+JETBOX_SWIFT_EDITION_YES = JETBOX_US
+JETBOX_SWIFT_EDITION_NO = JETBOX_RU
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(JETBOX_SWIFT_EDITION_$(JETBOX_HOME_ONLY))
+
+// Info.plist приложения: в США без схемы netbird:// и прочего апстрима.
+JETBOX_APP_INFOPLIST_YES = NetBird/Info-US.plist
+JETBOX_APP_INFOPLIST_NO = NetBird/Info.plist
+JETBOX_APP_INFOPLIST = $(JETBOX_APP_INFOPLIST_$(JETBOX_HOME_ONLY))
+
+// Экраны NetBird, которых в сборке США нет вовсе (не скрыты, а не собираются):
+// ручной выбор сервера, профили, расширенный режим (7 нажатий) со всеми его
+// вкладками. Экраны tvOS в приложение iOS не входят и так (свой таргет).
+JETBOX_EXCLUDED_SOURCES_YES = ServerView.swift AddProfileSheet.swift AddProfileViewModel.swift ProfilesListView.swift ProfileBadge.swift FirstLaunchView.swift AdvancedView.swift AboutView.swift TroubleshootView.swift VPNOnDemandView.swift iOSSettingsView.swift iOSConnectionView.swift iOSPeersView.swift iOSNetworksView.swift PeerTabView.swift RouteTabView.swift PeerCard.swift PeerDetailSheet.swift EmptyTabPlaceholder.swift CustomTextField.swift NetworkWarningBanner.swift VPNToggleView.swift SafariView.swift AppButton.swift MDMManagedNotice.swift
+JETBOX_EXCLUDED_SOURCES_NO =
+EXCLUDED_SOURCE_FILE_NAMES[sdk=iphone*] = $(inherited) $(JETBOX_EXCLUDED_SOURCES_$(JETBOX_HOME_ONLY))

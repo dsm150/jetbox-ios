@@ -249,7 +249,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             let error = NSError(
                 domain: "io.netbird.NetbirdNetworkExtension",
                 code: 1003,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to initialize NetBird adapter."]
+                userInfo: [NSLocalizedDescriptionKey: "Failed to initialize JetBox connection."]
             )
             completeTunnelStart(with: error)
             return
@@ -818,7 +818,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
         let content = UNMutableNotificationContent()
         content.title = "MDM policy applied"
-        content.body = "NetBird configuration was updated by your IT policy."
+        content.body = "JetBox settings were updated by your IT policy."
         content.sound = .default
         let request = UNNotificationRequest(
             identifier: GlobalConstants.notificationMDMPolicyApplied,
@@ -874,7 +874,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             cancelTunnelWithError(NSError(
                 domain: "io.netbird.NetbirdNetworkExtension",
                 code: 1005,
-                userInfo: [NSLocalizedDescriptionKey: "Could not restart NetBird after a network change."]
+                userInfo: [NSLocalizedDescriptionKey: "Could not restart JetBox after a network change."]
             ))
             return
         }
@@ -1096,7 +1096,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     func enforceOwnExit(allowed: String?) -> Bool? {
         guard let adapter = adapter,
               let details = try? adapter.client.getRoutesSelectionDetails() else {
-            AppLogger.shared.log("JetBox: «только дом» — ядро не отдало маршруты, проверю выход позже")
+            AppLogger.shared.log("JetBox: home only — core returned no routes, will check exit later")
             return nil
         }
         var exits: [NetworkChangeListener.ExitRoute] = []
@@ -1107,11 +1107,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
         let actions = NetworkChangeListener.exitActions(exits, allowed: allowed)
         for id in actions.deselect {
-            AppLogger.shared.log("JetBox: «только дом» — снимаю выход \(id) в расширении (разрешён: \(allowed ?? "никакой"))")
+            AppLogger.shared.log("JetBox: home only — deselecting exit \(id) in extension (allowed: \(allowed ?? "none"))")
             deselectRoute(id: id)
         }
         if let id = actions.select {
-            AppLogger.shared.log("JetBox: «только дом» — включаю выход своей коробки \(id) в расширении")
+            AppLogger.shared.log("JetBox: home only — selecting own box exit \(id) in extension")
             selectRoute(id: id)
         }
         return actions.ownActive

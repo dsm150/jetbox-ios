@@ -43,7 +43,7 @@ struct NetBirdWidget: Widget {
             }
         }
         .configurationDisplayName("JetBox")
-        .description("Подключение и отключение JetBox одним касанием.")
+        .description("Connect or disconnect JetBox with one tap.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

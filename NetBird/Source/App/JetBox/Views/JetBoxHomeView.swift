@@ -24,6 +24,8 @@ struct JetBoxHomeView: View {
     @State private var showsSettings = false
     @State private var showsDetails = false
     @StateObject private var login = JetBoxLoginModel()
+    /// Согласие «какие данные собираем» (сборка США) — до входа и подключения.
+    @State private var consentAccepted = JetBoxDataConsent.isAccepted
     @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
     private var styleRaw = JetBoxStyle.fallback.rawValue
     @EnvironmentObject private var jetbox: JetBoxOnboarding
@@ -37,6 +39,13 @@ struct JetBoxHomeView: View {
         return JetBoxEdition.showsEmailLogin(box: box)
     }
     private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
+    private var needsConsent: Bool {
+        #if DEBUG
+        // Съёмка демо-экранов в симуляторе: `-JetBoxSkipConsent YES`.
+        if UserDefaults.standard.bool(forKey: "JetBoxSkipConsent") { return false }
+        #endif
+        return JetBoxDataConsent.needsConsent(accepted: consentAccepted)
+    }
 
     var body: some View {
         #if DEBUG
@@ -85,7 +94,13 @@ struct JetBoxHomeView: View {
         // Пока ждём дом, выключить можно: кнопка — по настоящему состоянию туннеля.
         let power = JetBoxPowerAction.action(for: viewModel.vpnDisplayState, hasBox: box != nil)
         return Group {
-            if showsEmailLogin {
+            if needsConsent {
+                JetBoxDataConsentView {
+                    JetBoxDataConsent.accept()
+                    consentAccepted = true
+                    jetbox.resumeAfterDataConsent()
+                }
+            } else if showsEmailLogin {
                 JetBoxEmailLoginView(model: login, onSettings: { showsSettings = true })
                     // Код подтверждён — дальше обычный сценарий ссылки /connect.
                     .onAppear { login.onConnect = { [weak jetbox = jetbox] url in jetbox?.handle(url) } }
@@ -269,7 +284,7 @@ struct JetBoxShieldDemoView: View {
     /// `-JetBoxDemoScreen settings|about|details` — сразу открыть нужный лист.
     private var screen: String { UserDefaults.standard.string(forKey: "JetBoxDemoScreen") ?? "" }
 
-    private let box = JetBoxBox(managementURL: "https://netbird.jet-net.net",
+    private let box = JetBoxBox(managementURL: JetBoxConfig.defaultManagementURL,
                                 exitNodeName: "home-ivanov",
                                 selectedExitNode: nil,
                                 boxName: "Lakeview Home",

@@ -48,7 +48,7 @@ enum JetBoxBackup {
         guard box != nil else { return }
         guard isOrphaned(box: box, configPath: Preferences.configFile(),
                          fileExists: { FileManager.default.fileExists(atPath: $0) }) else { return }
-        AppLogger.shared.log("JetBox: запись JetBox без конфига (восстановлена из бэкапа?) — нужен вход заново")
+        AppLogger.shared.log("JetBox: JetBox record without config (restored from backup?) — log in again")
         JetBoxStore.currentBox = nil
         JetBoxAppToken.delete()
     }
@@ -60,7 +60,7 @@ enum JetBoxBackup {
         do {
             try url.setResourceValues(values)
         } catch {
-            AppLogger.shared.log("JetBox: не удалось исключить из бэкапа \(url.lastPathComponent)")
+            AppLogger.shared.log("JetBox: could not exclude from backup \(url.lastPathComponent)")
         }
     }
 }

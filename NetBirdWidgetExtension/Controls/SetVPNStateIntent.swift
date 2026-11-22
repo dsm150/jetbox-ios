@@ -4,10 +4,10 @@ import WidgetKit
 
 @available(iOS 18.0, *)
 struct SetVPNStateIntent: SetValueIntent {
-    static var title: LocalizedStringResource = "Включить или выключить JetBox"
+    static var title: LocalizedStringResource = "Turn JetBox on or off"
     static var openAppWhenRun: Bool = false
 
-    @Parameter(title: "Подключить")
+    @Parameter(title: "Connect")
     var value: Bool
 
     func perform() async throws -> some IntentResult {

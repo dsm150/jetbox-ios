@@ -143,21 +143,42 @@ final class JetBoxOnboarding: ObservableObject {
 
     var isPresenting: Bool { step != .idle }
 
+    /// Наша ссылка, пришедшая до согласия «какие данные собираем» (сборка США):
+    /// ждёт, пока человек не примет экран согласия, и только потом идёт в сеть.
+    private var pendingURL: URL?
+    /// Нужен ли экран согласия; в тестах подменяется.
+    var needsDataConsent: () -> Bool = { JetBoxDataConsent.needsConsent() }
+
+    /// Согласие принято — ссылку, отложенную до него, отрабатываем сейчас.
+    func resumeAfterDataConsent() {
+        guard let url = pendingURL else { return }
+        pendingURL = nil
+        handle(url)
+    }
+
     // MARK: Вход по ссылке
 
     /// Точка входа из `onOpenURL` / `onContinueUserActivity`.
     /// Возвращает true, если ссылка наша и обработана.
     @discardableResult
     func handle(_ url: URL) -> Bool {
+        if needsDataConsent() {
+            let ours = JetBoxLoginLink.parse(url) != .notOurs || JetBoxLink.parse(url) != .notOurs
+            if ours {
+                AppLogger.shared.log("JetBox: link held until data consent is accepted")
+                pendingURL = url
+            }
+            return ours
+        }
         switch JetBoxLoginLink.parse(url) {
         case .token(let token):
             if step == .signingIn, token == lastLoginToken { return true }
-            AppLogger.shared.log("JetBox: ссылка входа из письма принята")
+            AppLogger.shared.log("JetBox: email login link accepted")
             JetBoxStore.skipUpstreamOnboarding()
             startLogin(token: token)
             return true
         case .broken:
-            AppLogger.shared.log("JetBox: ссылка входа без токена или с испорченным токеном, в сеть не идём")
+            AppLogger.shared.log("JetBox: email login link without a valid token, not going online")
             flowTask?.cancel()
             lastLoginToken = nil
             step = .failed(.brokenLink)
@@ -171,14 +192,14 @@ final class JetBoxOnboarding: ObservableObject {
             return false
 
         case .broken:
-            AppLogger.shared.log("JetBox: ссылка не проходит проверку формата, в сеть не идём")
+            AppLogger.shared.log("JetBox: link fails format check, not going online")
             flowTask?.cancel()
             step = .failed(.brokenLink)
             return true
 
         case .foreignServer:
             // Чужой сервер: ни вопроса, ни регистрации, текущее подключение не трогаем.
-            AppLogger.shared.log("JetBox: адрес сервера в ссылке вне маски *.jet-net.net, в сеть не идём")
+            AppLogger.shared.log("JetBox: server address in link is outside the allowed domain, not going online")
             flowTask?.cancel()
             step = .failed(.foreignServer)
             return true
@@ -189,7 +210,7 @@ final class JetBoxOnboarding: ObservableObject {
             if let active = activePayload, active == payload, !isRestartable {
                 return true
             }
-            AppLogger.shared.log("JetBox: ссылка принята, объект \(payload.displayName), ключ \(payload.maskedKey)")
+            AppLogger.shared.log("JetBox: link accepted, box \(payload.displayName), key \(payload.maskedKey)")
             JetBoxStore.skipUpstreamOnboarding()
             flowTask?.cancel()
             lastPayload = payload
@@ -274,7 +295,7 @@ final class JetBoxOnboarding: ObservableObject {
         JetBoxStore.currentBox = nil
         deleteAppToken()
         signOutCount += 1
-        AppLogger.shared.log("JetBox: выход — туннель выключен, файлов профиля стёрто: \(removed)")
+        AppLogger.shared.log("JetBox: sign out — tunnel stopped, profile files removed: \(removed)")
     }
 
     func signOut(viewModel: ViewModel) async {
@@ -306,7 +327,7 @@ final class JetBoxOnboarding: ObservableObject {
     func deleteAccount(stopTunnel: @MainActor () async -> Void,
                        files: JetBoxSignOut.Files? = JetBoxSignOut.Files.active()) async -> AccountDeletion {
         guard let token = loadAppToken() else {
-            AppLogger.shared.log("JetBox: удаление аккаунта — токена нет, выходим локально")
+            AppLogger.shared.log("JetBox: account deletion — no app token, signing out locally")
             loginNotice = JBText.deleteSignInAgain
             await signOut(stopTunnel: stopTunnel, files: files)
             return .signInAgain
@@ -389,7 +410,7 @@ final class JetBoxOnboarding: ObservableObject {
         let loginConfig = plan == .fresh ? JetBoxIdentity.stagingPath(for: activeConfig) : activeConfig
         if plan == .fresh {
             try? FileManager.default.removeItem(atPath: loginConfig)
-            AppLogger.shared.log("JetBox: замена подключения — регистрируем новую личность устройства")
+            AppLogger.shared.log("JetBox: replacing connection — registering a new device identity")
         }
         let model = ServerViewModel(configurationFilePath: loginConfig, deviceName: Device.getName())
         registration = model
@@ -414,7 +435,7 @@ final class JetBoxOnboarding: ObservableObject {
             do {
                 try JetBoxIdentity.install(staging: loginConfig, into: activeConfig)
             } catch {
-                AppLogger.shared.log("JetBox: не удалось поставить новый конфиг: \(error.localizedDescription)")
+                AppLogger.shared.log("JetBox: could not install the new config: \(error.localizedDescription)")
                 step = .failed(.tunnelFailed)
                 return
             }
@@ -426,7 +447,7 @@ final class JetBoxOnboarding: ObservableObject {
                 // прежний конфиг на место, туннель — как был до сценария.
                 JetBoxIdentity.rollback(into: activeConfig)
                 if tunnelWasUp { viewModel.connect() }
-                AppLogger.shared.log("JetBox: замена прервана, прежнее подключение восстановлено")
+                AppLogger.shared.log("JetBox: replacement aborted, previous connection restored")
                 return
             }
         }
@@ -434,7 +455,7 @@ final class JetBoxOnboarding: ObservableObject {
         JetBoxStore.remember(payload)
         if plan == .fresh { JetBoxIdentity.discardBackup(for: activeConfig) }
         JetBoxBackup.excludeProfileFiles()
-        AppLogger.shared.log("JetBox: устройство зарегистрировано на объекте (\(clock.lap()) мс)")
+        AppLogger.shared.log("JetBox: device registered (\(clock.lap()) ms)")
 
         // 3. Туннель.
         step = .connecting(payload)
@@ -442,16 +463,16 @@ final class JetBoxOnboarding: ObservableObject {
 
         guard await waitForTunnel(viewModel: viewModel) else {
             if Task.isCancelled { return }
-            AppLogger.shared.log("JetBox: туннель не поднялся за \(clock.lap()) мс")
+            AppLogger.shared.log("JetBox: tunnel did not come up in \(clock.lap()) ms")
             step = .failed(.tunnelFailed)
             return
         }
-        AppLogger.shared.log("JetBox: туннель поднят (\(clock.lap()) мс)")
+        AppLogger.shared.log("JetBox: tunnel up (\(clock.lap()) ms)")
 
         // 3а. Дом. «Готово» — только когда отвечает коробка, до 90 с (JetBoxHomeReadiness).
         await JetBoxHomeReadiness.shared.waitUntilReady(viewModel: viewModel)
         if Task.isCancelled { return }
-        AppLogger.shared.log("JetBox: ожидание дома (\(clock.lap()) мс)")
+        AppLogger.shared.log("JetBox: waited for home (\(clock.lap()) ms)")
 
         // 4. Выход в интернет.
         // `x=0` (облако): выход по умолчанию не включаем, клиент включит сам.
@@ -463,7 +484,7 @@ final class JetBoxOnboarding: ObservableObject {
         } else {
             exitOutcome = .none
         }
-        AppLogger.shared.log("JetBox: выход определён (\(clock.lap()) мс), всего \(clock.total()) мс")
+        AppLogger.shared.log("JetBox: exit resolved (\(clock.lap()) ms), total \(clock.total()) ms")
         switch exitOutcome {
         case .selected(let name):
             JetBoxStore.rememberExitNode(name)
@@ -473,7 +494,7 @@ final class JetBoxOnboarding: ObservableObject {
             step = Self.stepForAmbiguousExit(payload: payload, options: options, style: JetBoxStyle.current,
                                              homeOnly: JetBoxEdition.homeOnly)
             if case .protected = step {
-                AppLogger.shared.log("JetBox: выбор выхода не показываем (стиль «простое» или «только дом»), как «Пока не выбирать»")
+                AppLogger.shared.log("JetBox: exit picker not shown (simple style or home only), same as Not now")
                 JetBoxNotifications.requestIfNeeded()
             }
         case .none:
@@ -498,7 +519,7 @@ final class JetBoxOnboarding: ObservableObject {
             }
             if viewModel.vpnDisplayState == .disconnected { return }
         }
-        AppLogger.shared.log("JetBox: туннель не остановился за \(Int(stopTimeout)) с, подключаемся заново")
+        AppLogger.shared.log("JetBox: tunnel did not stop in \(Int(stopTimeout)) s, reconnecting")
     }
 
     /// Ждём, пока расширение доложит `.connected`. Отдельного колбэка на это
@@ -563,19 +584,19 @@ final class JetBoxOnboarding: ObservableObject {
 
         // «Только дом»: никаких догадок — своего выхода нет в маршрутах, значит без выхода.
         if JetBoxEdition.homeOnly {
-            AppLogger.shared.log("JetBox: «только дом» — выхода своей коробки нет в маршрутах (\(nodes.count) других)")
+            AppLogger.shared.log("JetBox: home only — own box exit not in routes (\(nodes.count) others)")
             return .none
         }
 
         // 2. Ровно один выход — выбираем его.
         if nodes.count == 1, let only = nodes.first {
             await select(only, in: routes)
-            AppLogger.shared.log("JetBox: выход выбран автоматически — единственный доступный")
+            AppLogger.shared.log("JetBox: exit selected automatically — the only one available")
             return .selected(only.name)
         }
 
         // 3. Ноль или больше одного — спрашиваем человека.
-        AppLogger.shared.log("JetBox: выход из ссылки не найден, показываем выбор (\(nodes.count) вариантов)")
+        AppLogger.shared.log("JetBox: exit from link not found, showing picker (\(nodes.count) options)")
         return .ambiguous(nodes.map(\.name))
     }
 
@@ -646,7 +667,7 @@ extension JetBoxOnboarding {
     func showDemoIfRequested() {
         guard let raw = UserDefaults.standard.string(forKey: "JetBoxFlowDemo") else { return }
         let payload = JetBoxLinkPayload(setupKey: "3f6c2a9e-0d41-4c7b-9a55-8e21b07c4d19",
-                                        managementURL: "https://netbird.jet-net.net",
+                                        managementURL: JetBoxConfig.defaultManagementURL,
                                         exitNodeName: "home-ivanov",
                                         boxName: "Lakeview Home")
         switch raw {

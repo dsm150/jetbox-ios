@@ -18,10 +18,10 @@ enum WidgetVPNStatus: String {
     /// Text(...), и в реплики интентов, а Text(String) сам ничего не переводит.
     var displayText: String {
         switch self {
-        case .connected: return String(localized: "Подключено")
-        case .connecting: return String(localized: "Подключаем…")
-        case .disconnecting: return String(localized: "Отключаем…")
-        case .disconnected: return String(localized: "Отключено")
+        case .connected: return String(localized: "On your home network")
+        case .connecting: return String(localized: "Connecting…")
+        case .disconnecting: return String(localized: "Disconnecting…")
+        case .disconnected: return String(localized: "Not on your home network")
         }
     }
 

@@ -292,6 +292,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		JB00000E2026112200000001 /* JetBoxEdition.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = JetBoxEdition.xcconfig; path = Config/JetBoxEdition.xcconfig; sourceTree = "<group>"; };
 		JB0000012026112100000010 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2F8A4B98A775451786C5DDF8 /* iOSSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSSettingsView.swift; sourceTree = "<group>"; };
 		3E054D83063E440DAD0C52FA /* GlobalConstantsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalConstantsTests.swift; sourceTree = "<group>"; };
@@ -584,6 +585,7 @@
 		50A8910E2A792A15007C48FC = {
 			isa = PBXGroup;
 			children = (
+				JB00000E2026112200000001 /* JetBoxEdition.xcconfig */,
 				50D402932BD9143900D4AC5B /* NetBirdSDK.xcframework */,
 				50245A0A2A7AA9390034792B /* NetBird-Bridging-Header.h */,
 				50A891192A792A15007C48FC /* NetBird */,
@@ -1543,6 +1545,7 @@
 		};
 		50A891232A792A16007C48FC /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = JB00000E2026112200000001 /* JetBoxEdition.xcconfig */;
 			buildSettings = {
 				JETBOX_HOME_ONLY = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1598,7 +1601,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_PRECOMPILE_BRIDGING_HEADER = NO;
 			};
@@ -1606,6 +1609,7 @@
 		};
 		50A891242A792A16007C48FC /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = JB00000E2026112200000001 /* JetBoxEdition.xcconfig */;
 			buildSettings = {
 				JETBOX_HOME_ONLY = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1676,7 +1680,7 @@
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/**";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = NetBird/Info.plist;
+				INFOPLIST_FILE = "$(JETBOX_APP_INFOPLIST)";
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -1723,7 +1727,7 @@
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/**";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = NetBird/Info.plist;
+				INFOPLIST_FILE = "$(JETBOX_APP_INFOPLIST)";
 				INFOPLIST_KEY_CFBundleDisplayName = JetBox;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "\U00a9 2026 JetNet";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";

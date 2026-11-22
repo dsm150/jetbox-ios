@@ -21,8 +21,16 @@ class EnvVarPackager {
         let defaultForceRelay = false
         #endif
 
+        #if JETBOX_US
+        // JetBox, сборка США: relay — только когда не вышло напрямую (P2P).
+        // Принудительного relay нет и переключателя тоже — значение с прежних
+        // сборок (там по умолчанию было true) не читаем.
+        _ = defaultForceRelay
+        let forceRelayConnection = false
+        #else
         defaults.register(defaults: [GlobalConstants.keyForceRelayConnection: defaultForceRelay])
         let forceRelayConnection = defaults.bool(forKey: GlobalConstants.keyForceRelayConnection)
+        #endif
 
         envList.put(NetBirdSDKGetEnvKeyNBForceRelay(), value: String(forceRelayConnection))
 

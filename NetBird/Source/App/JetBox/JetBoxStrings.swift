@@ -41,6 +41,20 @@ enum JBText {
     static var privacyNotice: String { t("jetbox.privacy.notice") }
     static var privacyMore: String { t("jetbox.privacy.more") }
 
+    // MARK: Согласие «какие данные собираем» (сборка США, до входа)
+
+    static var consentTitle: String { t("jetbox.consent.title") }
+    static var consentIntro: String { t("jetbox.consent.intro") }
+    static var consentEmailTitle: String { t("jetbox.consent.email.title") }
+    static var consentEmailBody: String { t("jetbox.consent.email.body") }
+    static var consentDeviceTitle: String { t("jetbox.consent.device.title") }
+    static var consentDeviceBody: String { t("jetbox.consent.device.body") }
+    static var consentNetworkTitle: String { t("jetbox.consent.network.title") }
+    static var consentNetworkBody: String { t("jetbox.consent.network.body") }
+    static var consentNever: String { t("jetbox.consent.never") }
+    static var consentReadPolicy: String { t("jetbox.consent.read_policy") }
+    static var consentAccept: String { t("jetbox.consent.accept") }
+
     static var switchTitle: String { t("jetbox.switch.title") }
     static func switchMessage(_ from: String, _ to: String) -> String {
         String(format: String(localized: "jetbox.switch.message"), from, to)

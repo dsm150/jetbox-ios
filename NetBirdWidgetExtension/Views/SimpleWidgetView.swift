@@ -95,8 +95,8 @@ struct SimpleWidgetView: View {
                 .padding(3)
         }
         .frame(width: width, height: height)
-        .accessibilityLabel(isOn ? "Отключить JetBox" : "Подключить JetBox")
-        .accessibilityValue(isOn ? "Вкл" : "Выкл")
+        .accessibilityLabel(isOn ? "Disconnect JetBox" : "Connect JetBox")
+        .accessibilityValue(isOn ? "On" : "Off")
         .accessibilityAddTraits(.isButton)
     }
 }

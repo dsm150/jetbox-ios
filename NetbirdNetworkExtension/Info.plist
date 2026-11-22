@@ -13,5 +13,8 @@
 	     выхода и снимает его в ядре. Значение — настройка сборки JETBOX_HOME_ONLY. -->
 	<key>JetBoxHomeOnly</key>
 	<string>$(JETBOX_HOME_ONLY)</string>
+	<!-- JetBox: management по умолчанию — из Config/JetBoxEdition.xcconfig. -->
+	<key>JetBoxManagementURL</key>
+	<string>https://$(JETBOX_MANAGEMENT_HOST)</string>
 </dict>
 </plist>

@@ -116,6 +116,10 @@ enum JetBoxAdvancedAccess {
     /// Чистим его при старте: иначе на телефоне, где режим был включён, он
     /// останется включённым и в обход семи нажатий.
     static func migrateLegacyFlagIfNeeded() {
+        #if JETBOX_US
+        // Сборка США: расширенного режима нет — состояние с прежних сборок гасим.
+        if isOn || isUnlocked { lock() }
+        #endif
         let legacy = UserDefaults.standard
         guard legacy.object(forKey: modeKey) != nil else { return }
         legacy.removeObject(forKey: modeKey)

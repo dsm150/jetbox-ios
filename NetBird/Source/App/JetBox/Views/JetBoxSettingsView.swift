@@ -125,6 +125,7 @@ struct JetBoxSettingsView: View {
                     }
                 }
 
+#if !JETBOX_US
                 if advancedUnlocked {
                     Section {
                         Button(JBText.settingsAdvanced) {
@@ -136,6 +137,7 @@ struct JetBoxSettingsView: View {
                         Text(JBText.settingsAdvancedFooter)
                     }
                 }
+#endif
             }
             .overlay(alignment: .bottom) {
                 if let toast {
@@ -190,6 +192,8 @@ struct JetBoxSettingsView: View {
     /// Семь быстрых нажатий по строке версии открывают расширенные настройки;
     /// начиная с четвёртого показываем, сколько осталось.
     private func tapVersion() {
+        // Сборка США: расширенного режима нет — строка версии просто строка.
+        #if !JETBOX_US
         switch unlockCounter.tap(isUnlocked: advancedUnlocked) {
         case .silent:
             break
@@ -202,6 +206,7 @@ struct JetBoxSettingsView: View {
         case .alreadyUnlocked:
             show(JBText.settingsAdvancedAlready)
         }
+        #endif
     }
 
     private func show(_ text: String) {
@@ -264,6 +269,7 @@ struct JetBoxAboutView: View {
 /// Выключение закрывает и доступ: пункт «Расширенные настройки» исчезает,
 /// и чтобы вернуться, снова нужны семь нажатий. Иначе «выключил» превращается
 /// в «спрятал на один тап», а именно от этого режим и прячут.
+#if !JETBOX_US
 struct JetBoxAdvancedModeSection: View {
     @Binding var advancedMode: Bool
 
@@ -279,5 +285,6 @@ struct JetBoxAdvancedModeSection: View {
         }
     }
 }
+#endif  // !JETBOX_US
 
 #endif

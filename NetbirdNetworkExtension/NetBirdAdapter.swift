@@ -59,7 +59,8 @@ public class NetBirdAdapter {
 
     #if os(tvOS)
     /// Default management URL for tvOS (public NetBird server)
-    static let defaultManagementURL = "https://api.netbird.io"
+    // JetBox: адрес по редакции (Config/JetBoxEdition.xcconfig), без api.netbird.io.
+    static let defaultManagementURL = JetBoxServers.managementURL
     #endif
 
     /// Packet tunnel provider.

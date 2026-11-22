@@ -69,6 +69,12 @@ struct iOSMainView: View {
 
     var body: some View {
         ZStack {
+            #if JETBOX_US
+            // JetBox, сборка США: только экран JetBox. Экранов NetBird
+            // (сервер, профили, расширенный режим) в этой сборке нет вовсе —
+            // Config/JetBoxEdition.xcconfig их не компилирует.
+            JetBoxHomeView(routes: viewModel.routeViewModel)
+            #else
             if !advancedMode {
                 JetBoxHomeView(routes: viewModel.routeViewModel)
             } else if !hasCompletedOnboarding {
@@ -91,6 +97,7 @@ struct iOSMainView: View {
             } else {
                 mainContent
             }
+            #endif
 
             // JetBox: экран «одной кнопки» перекрывает всё остальное, пока
             // идёт сценарий «ссылка из Кабинета → подключено».
@@ -104,6 +111,7 @@ struct iOSMainView: View {
         .onAppear {
             viewModel.refreshMDMRestrictions()
         }
+        #if !JETBOX_US
         .alert(item: $activeAlert) { alertType in
             switch alertType {
             case .changeServer:
@@ -177,8 +185,10 @@ struct iOSMainView: View {
                 )
             }
         }
+        #endif
     }
 
+    #if !JETBOX_US
     private var mainContent: some View {
         ZStack {
             TabView(selection: $selectedTab) {
@@ -313,6 +323,7 @@ struct iOSMainView: View {
             }
         }
     }
+    #endif
 }
 
 struct MainView_Previews: PreviewProvider {

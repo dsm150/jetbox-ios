@@ -27,10 +27,11 @@ import Foundation
 
 extension JetBoxConfig {
     /// Сайт партнёра: на нём лежит AASA для `/auth/verify` и `/auth/*`.
-    static let loginLinkHost = "jetbox.ai-boss.us"
+    static var loginLinkHost: String { JetBoxServers.loginLinkHost }
     static let loginLinkPath = "/auth/verify"
     /// API приложения в Кабинете. Сайт партнёра токенов и ключей не видит.
-    static let loginAPIBase = URL(string: "https://box.jet-net.net/api/app/v1/")!
+    /// Адрес — по редакции (Config/JetBoxEdition.xcconfig → Info.plist).
+    static var loginAPIBase: URL { URL(string: JetBoxServers.apiBaseURL) ?? URL(string: "https://invalid.invalid/")! }
     /// Не чаще одного письма в минуту с одного экрана (лимит Кабинета строже
     /// по сумме: 5 на адрес за 10 минут).
     static let loginResendInterval: TimeInterval = 60
@@ -143,13 +144,13 @@ struct JetBoxLoginAPI {
         let body = ["email": JetBoxEmail.normalized(email), "lang": language, "platform": "ios"]
         switch await post("login/request", body) {
         case .response(let code, _) where (200...299).contains(code):
-            log("JetBox: вход по email — запрос ссылки принят (\(code))")
+            log("JetBox: email login — link request accepted (\(code))")
             return .sent
         case .response(429, _):
-            log("JetBox: вход по email — лимит запросов (429)")
+            log("JetBox: email login — request limit (429)")
             return .rateLimited
         case .response(let code, _):
-            log("JetBox: вход по email — Кабинет ответил \(code) на запрос ссылки")
+            log("JetBox: email login — server answered \(code) to link request")
             return .unavailable
         case .offline:
             return .offline
@@ -177,30 +178,30 @@ struct JetBoxLoginAPI {
         switch await post("login/verify", body) {
         case .response(200, let data):
             guard let url = Self.connectURL(from: data) else {
-                log("JetBox: вход по email — ответ без параметров подключения")
+                log("JetBox: email login — response without connection details")
                 return .unavailable
             }
             let token = Self.appToken(from: data)
             storeAppToken(token)
-            log("JetBox: вход по email — ссылка подтверждена (200), токен приложения: \(token == nil ? "нет" : "есть")")
+            log("JetBox: email login — verified (200), app token: \(token == nil ? "no" : "yes")")
             return .connect(url)
         case .response(410, _):
-            log("JetBox: вход по email — ссылка устарела или использована (410)")
+            log("JetBox: email login — link expired or used (410)")
             return .expired
         case .response(401, let data):
             let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             let left = (json?["attempts_left"] as? NSNumber)?.intValue
-            log("JetBox: вход по email — неверный код (401), попыток осталось: \(left.map(String.init) ?? "?")")
+            log("JetBox: email login — wrong code (401), attempts left: \(left.map(String.init) ?? "?")")
             return .badCode(attemptsLeft: left)
         case .response(409, let data):
             let error = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
-            log("JetBox: вход по email — отказ 409 (\(error ?? "без кода"))")
+            log("JetBox: email login — refused 409 (\(error ?? "no code"))")
             return error == "device_limit" ? .deviceLimit : .unavailable
         case .response(429, _):
-            log("JetBox: вход по email — лимит подтверждений (429)")
+            log("JetBox: email login — verify limit (429)")
             return .rateLimited
         case .response(let code, _):
-            log("JetBox: вход по email — Кабинет ответил \(code) на подтверждение")
+            log("JetBox: email login — server answered \(code) to verify")
             return .unavailable
         case .offline:
             return .offline
@@ -247,12 +248,12 @@ struct JetBoxLoginAPI {
             guard let http = response as? HTTPURLResponse else { return .failed }
             return .response(http.statusCode, data)
         } catch let error as URLError where Self.offlineCodes.contains(error.code) {
-            log("JetBox: вход по email — нет связи с Кабинетом (\(error.code.rawValue))")
+            log("JetBox: email login — server unreachable (\(error.code.rawValue))")
             return .offline
         } catch {
             // Текст ошибки не пишем: в нём бывает URL, а URL здесь без секретов,
             // но правило «только коды» проще держать без исключений.
-            log("JetBox: вход по email — запрос не выполнен")
+            log("JetBox: email login — request failed")
             return .failed
         }
     }

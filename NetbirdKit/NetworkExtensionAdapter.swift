@@ -113,7 +113,8 @@ public class NetworkExtensionAdapter: ObservableObject {
     private let logger = Logger(subsystem: "io.netbird.app", category: "NetworkExtensionAdapter")
 
     #if os(tvOS)
-    static let defaultManagementURL = "https://api.netbird.io"
+    // JetBox: адрес из JetBoxServers (на tvOS — апстрима).
+    static let defaultManagementURL = JetBoxServers.managementURL
     #endif
 
     var session: NETunnelProviderSession?

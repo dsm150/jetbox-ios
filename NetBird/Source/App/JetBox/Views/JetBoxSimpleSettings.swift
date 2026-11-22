@@ -122,6 +122,7 @@ struct JetBoxSimpleSettingsView: View {
                         .padding(.top, 10)
                     }
 
+#if !JETBOX_US
                     if advancedUnlocked {
                         JBSimpleCard {
                             Button {
@@ -134,6 +135,7 @@ struct JetBoxSimpleSettingsView: View {
                         }
                         .padding(.top, 10)
                     }
+#endif
 
                     // Строка версии — вход в расширенные настройки (семь нажатий).
                     Button { tapVersion() } label: {
@@ -202,6 +204,8 @@ struct JetBoxSimpleSettingsView: View {
     }
 
     private func tapVersion() {
+        // Сборка США: расширенного режима нет — строка версии просто строка.
+        #if !JETBOX_US
         switch unlockCounter.tap(isUnlocked: advancedUnlocked) {
         case .silent:
             break
@@ -214,6 +218,7 @@ struct JetBoxSimpleSettingsView: View {
         case .alreadyUnlocked:
             show(JBText.settingsAdvancedAlready)
         }
+        #endif
     }
 
     private func show(_ text: String) {

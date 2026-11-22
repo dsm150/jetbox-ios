@@ -42,8 +42,8 @@ struct SmallWidgetView: View {
                 .padding(3)
         }
         .frame(width: 54, height: 30)
-        .accessibilityLabel(isConnected ? "Отключить JetBox" : "Подключить JetBox")
-        .accessibilityValue(isConnected ? "Вкл" : "Выкл")
+        .accessibilityLabel(isConnected ? "Disconnect JetBox" : "Connect JetBox")
+        .accessibilityValue(isConnected ? "On" : "Off")
         .accessibilityAddTraits(.isButton)
     }
 }

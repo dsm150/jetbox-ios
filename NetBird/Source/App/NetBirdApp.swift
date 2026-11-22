@@ -313,8 +313,20 @@ struct NetBirdApp: App {
 
     /// Handles deep link URLs from the Home Screen widget.
     private func handleWidgetURL(_ url: URL, viewModel: ViewModel) {
-        guard url.scheme == "netbird" else { return }
-        switch url.host {
+        // JetBox: виджет открывает `jetbox://app/<действие>` (схемы netbird://
+        // в сборке США нет); русская сборка понимает и старые ссылки апстрима.
+        let action: String?
+        if url.scheme == JetBoxConfig.customScheme, url.host == "app" {
+            action = url.pathComponents.dropFirst().first
+        } else {
+            #if JETBOX_US
+            return
+            #else
+            guard url.scheme == "netbird" else { return }
+            action = url.host
+            #endif
+        }
+        switch action {
         case "login":
             viewModel.connect()
         case "connect":
