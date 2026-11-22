@@ -103,13 +103,11 @@ enum JetBoxStore {
         return selected
     }
 
-    static func shareOwnExit(_ box: JetBoxBox?,
-                             defaults: UserDefaults? = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)) {
-        if let exit = ownExitToAllow(for: box) {
-            defaults?.set(exit, forKey: GlobalConstants.keyJetBoxOwnExit)
-        } else {
-            defaults?.removeObject(forKey: GlobalConstants.keyJetBoxOwnExit)
-        }
+    static func shareOwnExit(_ box: JetBoxBox?, file: URL? = JetBoxSharedExit.defaultURL()) {
+        JetBoxSharedExit.write(ownExitToAllow(for: box), at: file)
+        // Ключ 1.0 (14) больше не читается — убираем, чтобы не путал.
+        UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)?
+            .removeObject(forKey: GlobalConstants.keyJetBoxOwnExit)
     }
 
     /// Тумблер «весь интернет через мой JetBox» включён.

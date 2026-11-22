@@ -20,9 +20,9 @@ struct GlobalConstants {
     static let keyOnDemandCellularPolicy = "netbird.onDemand.cellularPolicy"
     static let keyOnDemandWiFiNetworks = "netbird.onDemand.wifiNetworks"
     static let keyKnownSSIDs = "netbird.knownSSIDs"
-    /// JetBox «только дом»: выход своей коробки, который разрешено держать
-    /// включённым (тумблер «All internet through my JetBox»). Нет значения —
-    /// расширение снимает любой выход. Пишет приложение (JetBoxStore).
+    /// Устаревший ключ 1.0 (14): разрешённый выход своей коробки жил в App Group
+    /// UserDefaults. Расширение видело его кэш и после выключения тумблера
+    /// включало выход обратно — с 1.0 (15) это файл (JetBoxSharedExit).
     static let keyJetBoxOwnExit = "jetbox.ownExit"
 
     // Widget shared state keys
@@ -75,4 +75,36 @@ struct GlobalConstants {
     // Local notification identifiers
     static let notificationLoginRequired = "netbird.login.required"
     static let notificationMDMPolicyApplied = "netbird.mdm.policyApplied"
+}
+
+/// JetBox «только дом»: выход своей коробки, который разрешено держать
+/// включённым (тумблер «All internet through my JetBox»). Пишет приложение
+/// (JetBoxStore), читает сетевое расширение при каждом изменении маршрутов.
+/// Файл, а не UserDefaults: UserDefaults App Group другой процесс видит из
+/// своего кэша — расширение после выключения тумблера включало выход обратно
+/// (баг 1.0 (14), 22.11.2026). Нет файла — расширение снимает любой выход.
+enum JetBoxSharedExit {
+    static let fileName = "jetbox-own-exit"
+
+    static func defaultURL() -> URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: GlobalConstants.userPreferencesSuiteName)?
+            .appendingPathComponent(fileName)
+    }
+
+    static func read(at url: URL? = defaultURL()) -> String? {
+        guard let url, let data = try? Data(contentsOf: url),
+              let name = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !name.isEmpty else { return nil }
+        return name
+    }
+
+    static func write(_ name: String?, at url: URL? = defaultURL()) {
+        guard let url else { return }
+        if let name, !name.isEmpty {
+            try? Data(name.utf8).write(to: url, options: .atomic)
+        } else {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
 }

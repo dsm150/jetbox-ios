@@ -583,18 +583,16 @@ final class JetBoxHomeOnlyGuardTests: XCTestCase {
     }
 }
 
-/// Какой выход приложение разрешает расширению (App Group) — 1.0 (14).
+/// Какой выход приложение разрешает расширению — файл в App Group (1.0 (15)).
 final class JetBoxOwnExitShareTests: XCTestCase {
-    private var defaults: UserDefaults!
-    private let suite = "jetbox.tests.ownexit"
+    private var file: URL!
 
     override func setUp() {
-        defaults = UserDefaults(suiteName: suite)
-        defaults.removePersistentDomain(forName: suite)
+        file = FileManager.default.temporaryDirectory.appendingPathComponent("jetbox-own-exit-\(UUID().uuidString)")
     }
 
     override func tearDown() {
-        defaults.removePersistentDomain(forName: suite)
+        try? FileManager.default.removeItem(at: file)
     }
 
     private func box(exit: String?, selected: String?) -> JetBoxBox {
@@ -603,27 +601,69 @@ final class JetBoxOwnExitShareTests: XCTestCase {
     }
 
     func testSharesOwnExitWhenEnabled() {
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), defaults: defaults)
-        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(defaults), "home-ivanov")
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), file: file)
+        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(file), "home-ivanov")
     }
 
-    func testToggleOffClearsSharedExit() {
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), defaults: defaults)
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: nil), defaults: defaults)
-        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults))
+    /// Баг 1.0 (14): выключили тумблер — расширение всё ещё видело старое
+    /// значение и включало выход обратно. Каждое чтение — свежее.
+    func testToggleOffIsSeenOnTheVeryNextRead() {
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), file: file)
+        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(file), "home-ivanov")
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: nil), file: file)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(file))
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), file: file)
+        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(file), "home-ivanov", "и включение — сразу")
     }
 
     func testNeverSharesForeignOrSharedExit() {
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "other-box"), defaults: defaults)
-        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults), "выбран не выход своей коробки")
-        JetBoxStore.shareOwnExit(box(exit: "cl-exit", selected: "cl-exit"), defaults: defaults)
-        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults), "облако")
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "other-box"), file: file)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(file), "выбран не выход своей коробки")
+        JetBoxStore.shareOwnExit(box(exit: "cl-exit", selected: "cl-exit"), file: file)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(file), "облако")
     }
 
     func testSignOutClearsSharedExit() {
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), defaults: defaults)
-        JetBoxStore.shareOwnExit(nil, defaults: defaults)
-        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults))
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), file: file)
+        JetBoxStore.shareOwnExit(nil, file: file)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(file))
+    }
+}
+
+/// Решение расширения по выходам ядра (PacketTunnelProvider.enforceOwnExit).
+final class JetBoxExtensionExitActionsTests: XCTestCase {
+    typealias R = NetworkChangeListener.ExitRoute
+
+    func testToggleOffDeselectsOwnExitAndItsV6Pair() {
+        let a = NetworkChangeListener.exitActions([R(id: "home-ivanov", selected: true),
+                                                   R(id: "home-ivanov-v6", selected: true)], allowed: nil)
+        XCTAssertEqual(a.deselect, ["home-ivanov", "home-ivanov-v6"])
+        XCTAssertNil(a.select, "выключенный тумблер свой выход не включает")
+        XCTAssertFalse(a.ownActive)
+    }
+
+    func testToggleOnSelectsOwnExit() {
+        let a = NetworkChangeListener.exitActions([R(id: "home-ivanov", selected: false)], allowed: "home-ivanov")
+        XCTAssertEqual(a.select, "home-ivanov")
+        XCTAssertFalse(a.ownActive, "маршрут 0.0.0.0/0 пустим после следующей проверки")
+    }
+
+    func testOwnExitActiveKeepsRoute() {
+        let a = NetworkChangeListener.exitActions([R(id: "home-ivanov", selected: true),
+                                                   R(id: "home-ivanov-v6", selected: true)], allowed: "home-ivanov")
+        XCTAssertEqual(a, NetworkChangeListener.ExitActions(deselect: [], select: nil, ownActive: true))
+    }
+
+    func testForeignExitSwappedForOwn() {
+        let a = NetworkChangeListener.exitActions([R(id: "cl-exit", selected: true),
+                                                   R(id: "home-ivanov", selected: false)], allowed: "home-ivanov")
+        XCTAssertEqual(a.deselect, ["cl-exit"])
+        XCTAssertEqual(a.select, "home-ivanov")
+    }
+
+    func testOwnExitMissingSelectsNothing() {
+        let a = NetworkChangeListener.exitActions([R(id: "cl-exit", selected: false)], allowed: "home-ivanov")
+        XCTAssertEqual(a, NetworkChangeListener.ExitActions())
     }
 }
 

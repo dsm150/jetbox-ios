@@ -1092,28 +1092,22 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     func enforceOwnExit(allowed: String?) -> Bool {
         guard let adapter = adapter,
               let details = try? adapter.client.getRoutesSelectionDetails() else { return false }
-        var ownPresent = false, ownSelected = false, changed = false
+        var exits: [NetworkChangeListener.ExitRoute] = []
         for index in 0..<details.size() {
             guard let route = details.get(index),
                   route.network == "0.0.0.0/0" || route.network == "::/0" else { continue }
-            if let allowed, route.id_ == allowed || route.id_ == allowed + "-v6" {
-                if route.id_ == allowed {
-                    ownPresent = true
-                    ownSelected = route.selected
-                }
-                continue
-            }
-            guard route.selected else { continue }
-            AppLogger.shared.log("JetBox: «только дом» — снимаю чужой выход \(route.id_) в расширении")
-            deselectRoute(id: route.id_)
-            changed = true
+            exits.append(.init(id: route.id_, selected: route.selected))
         }
-        if let allowed, ownPresent, !ownSelected {
-            AppLogger.shared.log("JetBox: «только дом» — включаю выход своей коробки \(allowed) в расширении")
-            selectRoute(id: allowed)
-            changed = true
+        let actions = NetworkChangeListener.exitActions(exits, allowed: allowed)
+        for id in actions.deselect {
+            AppLogger.shared.log("JetBox: «только дом» — снимаю выход \(id) в расширении (разрешён: \(allowed ?? "никакой"))")
+            deselectRoute(id: id)
         }
-        return ownSelected && !changed
+        if let id = actions.select {
+            AppLogger.shared.log("JetBox: «только дом» — включаю выход своей коробки \(id) в расширении")
+            selectRoute(id: id)
+        }
+        return actions.ownActive
     }
 
     func deselectRoute(id: String) {

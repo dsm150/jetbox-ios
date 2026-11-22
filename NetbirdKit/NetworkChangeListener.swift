@@ -102,13 +102,44 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
         return !["NO", "FALSE", "0"].contains(text)
     }
 
-    /// Выход своей коробки, который приложение разрешило (App Group). nil —
-    /// тумблер выключен или выхода своей коробки нет.
-    static func jetBoxOwnExit(
-        _ defaults: UserDefaults? = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
-    ) -> String? {
-        guard let name = defaults?.string(forKey: GlobalConstants.keyJetBoxOwnExit), !name.isEmpty else { return nil }
-        return name
+    /// Выход своей коробки, который приложение разрешило (файл в App Group,
+    /// читается заново каждый раз — JetBoxSharedExit). nil — тумблер выключен
+    /// или выхода своей коробки нет.
+    static func jetBoxOwnExit(_ file: URL? = JetBoxSharedExit.defaultURL()) -> String? {
+        JetBoxSharedExit.read(at: file)
+    }
+
+    struct ExitRoute: Equatable {
+        var id: String
+        var selected: Bool
+    }
+
+    struct ExitActions: Equatable {
+        var deselect: [String] = []
+        var select: String?
+        /// Свой выход включён, и менять ничего не пришлось — можно пускать 0.0.0.0/0.
+        var ownActive = false
+    }
+
+    /// Что сделать с маршрутами выхода ядра: чужие снять, свой (`allowed`)
+    /// включить, если он есть, но не выбран. `allowed == nil` (тумблер
+    /// выключен) — снять любой выход. IPv6-пара «<имя>-v6» следует за основным.
+    static func exitActions(_ routes: [ExitRoute], allowed: String?) -> ExitActions {
+        var actions = ExitActions()
+        var ownPresent = false, ownSelected = false
+        for route in routes {
+            if let allowed, route.id == allowed || route.id == allowed + "-v6" {
+                if route.id == allowed {
+                    ownPresent = true
+                    ownSelected = route.selected
+                }
+                continue
+            }
+            if route.selected { actions.deselect.append(route.id) }
+        }
+        if let allowed, ownPresent, !ownSelected { actions.select = allowed }
+        actions.ownActive = ownSelected && actions.deselect.isEmpty && actions.select == nil
+        return actions
     }
 
     /// Убирает из списка маршрутов ядра (CIDR через запятую) маршруты выхода
