@@ -2111,6 +2111,57 @@
         }
       }
     },
+    "jetbox.settings.sign_out": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выйти"
+          }
+        }
+      }
+    },
+    "jetbox.settings.sign_out.confirm_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This phone will disconnect from JetBox and forget it. To come back, log in again."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Телефон отключится от JetBox и забудет его. Чтобы вернуться, войдите снова."
+          }
+        }
+      }
+    },
+    "jetbox.settings.sign_out.confirm_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out?"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выйти?"
+          }
+        }
+      }
+    },
     "jetbox.settings.title": {
       "extractionState": "manual",
       "localizations": {

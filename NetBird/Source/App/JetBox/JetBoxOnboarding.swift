@@ -257,6 +257,29 @@ final class JetBoxOnboarding: ObservableObject {
         step = .idle
     }
 
+    // MARK: - Выход
+
+    /// Меняется при каждом выходе: главный экран по нему сбрасывает форму входа
+    /// и перерисовывается (запись JetBox живёт в UserDefaults, SwiftUI её не видит).
+    @Published private(set) var signOutCount = 0
+
+    /// «Sign out»: туннель выключен, профиль NetBird на телефоне стёрт, записи
+    /// JetBox нет — дальше как после свежей установки. Устройство на сервере
+    /// остаётся (API для этого нет).
+    func signOut(stopTunnel: @MainActor () async -> Void,
+                 files: JetBoxSignOut.Files? = JetBoxSignOut.Files.active()) async {
+        dismiss()
+        await stopTunnel()
+        let removed = files.map { JetBoxSignOut.wipe($0) } ?? 0
+        JetBoxStore.currentBox = nil
+        signOutCount += 1
+        AppLogger.shared.log("JetBox: выход — туннель выключен, файлов профиля стёрто: \(removed)")
+    }
+
+    func signOut(viewModel: ViewModel) async {
+        await signOut(stopTunnel: { await JetBoxSignOut.stopTunnel(viewModel) })
+    }
+
     // MARK: - Вход по ссылке из письма
 
     private func startLogin(token: String) {

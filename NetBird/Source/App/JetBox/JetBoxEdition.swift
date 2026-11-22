@@ -46,4 +46,9 @@ enum JetBoxEdition {
     static func aboutLegalKey(homeOnly: Bool = homeOnly) -> String {
         homeOnly ? "jetbox.about.legal.us" : "jetbox.about.legal"
     }
+
+    /// Сборка США без подключения показывает вход по email — и после «Sign out» тоже.
+    static func showsEmailLogin(homeOnly: Bool = homeOnly, box: JetBoxBox?) -> Bool {
+        homeOnly && box == nil
+    }
 }

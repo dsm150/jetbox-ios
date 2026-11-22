@@ -343,6 +343,17 @@ final class JetBoxLoginModel: ObservableObject {
         resentNote = false
     }
 
+    /// После «Sign out»: форма как у свежей установки.
+    func reset() {
+        phase = .enter
+        email = ""
+        code = ""
+        message = nil
+        resentNote = false
+        lastSentAt = nil
+        isVerifying = false
+    }
+
     func enterCodeManually() {
         guard case .sent(let address) = phase else { return }
         message = nil

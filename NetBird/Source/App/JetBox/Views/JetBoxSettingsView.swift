@@ -16,6 +16,7 @@ import SwiftUI
 
 struct JetBoxSettingsView: View {
     @EnvironmentObject var viewModel: ViewModel
+    @EnvironmentObject private var jetbox: JetBoxOnboarding
     @Environment(\.dismiss) private var dismiss
     @AppStorage(JetBoxAdvancedAccess.unlockedKey, store: JetBoxAdvancedAccess.defaults)
     private var advancedUnlocked = false
@@ -29,6 +30,8 @@ struct JetBoxSettingsView: View {
     @State private var unlockCounter = AdvancedUnlockCounter()
     @State private var toast: String?
     @State private var toastToken = 0
+    @State private var confirmsSignOut = false
+    @State private var isSigningOut = false
 
     private var box: JetBoxBox? { JetBoxStore.currentBox }
 
@@ -81,6 +84,21 @@ struct JetBoxSettingsView: View {
                     Link(JBText.legalEULA, destination: JetBoxConfig.eulaURL)
                 }
 
+                if box != nil {
+                    Section {
+                        Button(role: .destructive) { confirmsSignOut = true } label: {
+                            HStack {
+                                Text(JBText.settingsSignOut)
+                                if isSigningOut {
+                                    Spacer()
+                                    ProgressView()
+                                }
+                            }
+                        }
+                        .disabled(isSigningOut)
+                    }
+                }
+
                 if advancedUnlocked {
                     Section {
                         Button(JBText.settingsAdvanced) {
@@ -106,6 +124,12 @@ struct JetBoxSettingsView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.15), value: toast)
+            .alert(JBText.settingsSignOutTitle, isPresented: $confirmsSignOut) {
+                Button(JBText.settingsSignOut, role: .destructive) { signOut() }
+                Button(JBText.cancel, role: .cancel) {}
+            } message: {
+                Text(JBText.settingsSignOutBody)
+            }
             .navigationTitle(JBText.settingsTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -113,6 +137,16 @@ struct JetBoxSettingsView: View {
                     Button(JBText.close) { dismiss() }
                 }
             }
+        }
+    }
+
+    /// Выход: туннель выключен, профиль стёрт, главный экран — как у свежей установки.
+    private func signOut() {
+        isSigningOut = true
+        Task {
+            await jetbox.signOut(viewModel: viewModel)
+            isSigningOut = false
+            dismiss()
         }
     }
 

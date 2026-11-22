@@ -32,7 +32,7 @@ struct JetBoxHomeView: View {
         #if DEBUG
         if JetBoxLoginModel.demoRequested { return true }
         #endif
-        return JetBoxEdition.homeOnly && box == nil
+        return JetBoxEdition.showsEmailLogin(box: box)
     }
     private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
 
@@ -93,10 +93,18 @@ struct JetBoxHomeView: View {
         .sheet(isPresented: $showsSettings) {
             if isSimple {
                 JetBoxSimpleSettingsView()
+                    .environmentObject(viewModel)
+                    .environmentObject(jetbox)
             } else {
                 JetBoxSettingsView()
                     .environmentObject(viewModel)
+                    .environmentObject(jetbox)
             }
+        }
+        .onChange(of: jetbox.signOutCount) { _ in
+            // После выхода — чистая форма входа, как у свежей установки.
+            showsDetails = false
+            login.reset()
         }
         .sheet(isPresented: $showsDetails) {
             if let box {
@@ -300,10 +308,12 @@ struct JetBoxShieldDemoView: View {
         .sheet(isPresented: $showsSettings) {
             if isSimple {
                 JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about")
+                    .environmentObject(viewModel)
+                    .environmentObject(jetbox)
             } else if screen == "about" {
                 NavigationView { JetBoxAboutView() }
             } else {
-                JetBoxSettingsView().environmentObject(viewModel)
+                JetBoxSettingsView().environmentObject(viewModel).environmentObject(jetbox)
             }
         }
         .sheet(isPresented: $showsDetails) {

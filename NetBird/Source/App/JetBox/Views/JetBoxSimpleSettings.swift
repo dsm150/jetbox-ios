@@ -12,6 +12,8 @@ import SwiftUI
 #if os(iOS)
 
 struct JetBoxSimpleSettingsView: View {
+    @EnvironmentObject private var viewModel: ViewModel
+    @EnvironmentObject private var jetbox: JetBoxOnboarding
     @Environment(\.dismiss) private var dismiss
     @AppStorage(JetBoxAdvancedAccess.unlockedKey, store: JetBoxAdvancedAccess.defaults)
     private var advancedUnlocked = false
@@ -28,6 +30,8 @@ struct JetBoxSimpleSettingsView: View {
     @State private var toast: String?
     @State private var toastToken = 0
     @State private var showsAbout = false
+    @State private var confirmsSignOut = false
+    @State private var isSigningOut = false
 
     private var boxName: String? { demoBoxName ?? JetBoxStore.currentBox?.displayName }
 
@@ -85,6 +89,18 @@ struct JetBoxSimpleSettingsView: View {
                         }
                     }
 
+                    if boxName != nil {
+                        JBSimpleCard {
+                            Button { confirmsSignOut = true } label: {
+                                JBSimpleRow(title: isSigningOut ? "\(JBText.settingsSignOut)…" : JBText.settingsSignOut,
+                                            titleColor: JBSimple.error)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isSigningOut)
+                        }
+                        .padding(.top, 10)
+                    }
+
                     if advancedUnlocked {
                         JBSimpleCard {
                             Button {
@@ -128,10 +144,28 @@ struct JetBoxSimpleSettingsView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.15), value: toast)
+            .alert(JBText.settingsSignOutTitle, isPresented: $confirmsSignOut) {
+                Button(JBText.settingsSignOut, role: .destructive) { signOut() }
+                Button(JBText.cancel, role: .cancel) {}
+            } message: {
+                Text(JBText.settingsSignOutBody)
+            }
         }
         .navigationViewStyle(.stack)
         .environment(\.colorScheme, .light)
         .onAppear { if opensAbout { showsAbout = true } }
+    }
+
+    /// Выход: туннель выключен, профиль стёрт, главный экран — как у свежей установки.
+    private func signOut() {
+        // Демо для съёмки ничего не стирает.
+        guard demoBoxName == nil else { dismiss(); return }
+        isSigningOut = true
+        Task {
+            await jetbox.signOut(viewModel: viewModel)
+            isSigningOut = false
+            dismiss()
+        }
     }
 
     private func tapVersion() {

@@ -983,3 +983,95 @@ final class JetBoxLoginCodeTests: XCTestCase {
         XCTAssertEqual(stub.requests.count, 1, "только запрос письма")
     }
 }
+
+/// «Sign out» (1.0 (13)): туннель выключен, профиль стёрт, записи JetBox нет —
+/// экран входа по email снова на месте, и вход по коду работает заново.
+@MainActor
+final class JetBoxSignOutTests: XCTestCase {
+    private let key = "11111111-2222-4333-8444-555555555555"
+    private var savedBox: JetBoxBox?
+    private var dir: URL!
+
+    override func setUp() async throws {
+        savedBox = JetBoxStore.currentBox
+        dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("jetbox-signout-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() async throws {
+        JetBoxStore.currentBox = savedBox
+        try? FileManager.default.removeItem(at: dir)
+    }
+
+    private var files: JetBoxSignOut.Files {
+        JetBoxSignOut.Files(configPath: dir.appendingPathComponent("netbird.cfg").path,
+                            statePath: dir.appendingPathComponent("state.json").path,
+                            profileID: "default")
+    }
+
+    private func box(_ name: String) -> JetBoxBox {
+        JetBoxBox(managementURL: "https://netbird.jet-net.net", exitNodeName: nil, selectedExitNode: nil,
+                  boxName: name, registeredAt: Date(), setupKeyFingerprint: JetBoxIdentity.fingerprint(of: key))
+    }
+
+    func testWipesTheSameFilesAsRemoveProfile() {
+        let names = Set(files.paths.map { URL(fileURLWithPath: $0).lastPathComponent })
+        XCTAssertEqual(names, ["netbird.cfg", "netbird.cfg.jetbox-new", "netbird.cfg.jetbox-old",
+                               "netbird.account.json", "default.prefs.json", "state.json"])
+    }
+
+    func testSignOutStopsTunnelWipesProfileAndShowsEmailLogin() async {
+        let fm = FileManager.default
+        for path in files.paths { fm.createFile(atPath: path, contents: Data("{}".utf8)) }
+        let foreign = dir.appendingPathComponent("keep.json").path
+        fm.createFile(atPath: foreign, contents: Data())
+        JetBoxStore.currentBox = box("Lakeview Home")
+        XCTAssertFalse(JetBoxEdition.showsEmailLogin(homeOnly: true, box: JetBoxStore.currentBox))
+
+        let flow = JetBoxOnboarding()
+        var stopped = false
+        await flow.signOut(stopTunnel: { stopped = true }, files: files)
+
+        XCTAssertTrue(stopped, "туннель выключаем до стирания")
+        XCTAssertNil(JetBoxStore.currentBox)
+        XCTAssertTrue(JetBoxEdition.showsEmailLogin(homeOnly: true, box: JetBoxStore.currentBox))
+        XCTAssertEqual(flow.step, .idle)
+        XCTAssertEqual(flow.signOutCount, 1)
+        for path in files.paths { XCTAssertFalse(fm.fileExists(atPath: path), path) }
+        XCTAssertTrue(fm.fileExists(atPath: foreign), "чужие файлы не трогаем")
+    }
+
+    func testCodeLoginWorksAgainAfterSignOut() async throws {
+        JetBoxStore.currentBox = box("Old Home")
+        let flow = JetBoxOnboarding()
+        await flow.signOut(stopTunnel: {}, files: files)
+
+        let stub = JetBoxLoginStub()
+        stub.replies["request"] = (202, "")
+        let model = JetBoxLoginModel()
+        model.api = stub.api()
+        model.deviceName = { "Test iPhone" }
+        model.email = "old@example.com"
+        await model.submit()
+        model.enterCodeManually()
+        model.reset()                                  // главный экран после выхода
+        XCTAssertEqual(model.phase, .enter)
+        XCTAssertEqual(model.email, "")
+        XCTAssertNil(model.lastSentAt)
+
+        model.email = "appreview@ai-boss.us"
+        await model.submit()
+        model.enterCodeManually()
+        var received: URL?
+        model.onConnect = { received = $0 }
+        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&n=Demo%20Home"}"#)
+        model.code = "246810"
+        await model.submitCode()
+
+        XCTAssertTrue(flow.handle(try XCTUnwrap(received)))
+        // Записи нет — без «переключить?», сразу одна кнопка, как после установки.
+        guard case .ready(let payload) = flow.step else { return XCTFail("шаг \(flow.step)") }
+        XCTAssertEqual(payload.boxName, "Demo Home")
+    }
+}

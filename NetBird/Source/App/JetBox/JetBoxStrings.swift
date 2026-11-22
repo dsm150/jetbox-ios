@@ -141,6 +141,9 @@ enum JBText {
     static var settingsBoxName: String { t("jetbox.settings.name") }
     static var settingsExit: String { t("jetbox.settings.exit") }
     static var settingsNoBox: String { t("jetbox.settings.no_box") }
+    static var settingsSignOut: String { t("jetbox.settings.sign_out") }
+    static var settingsSignOutTitle: String { t("jetbox.settings.sign_out.confirm_title") }
+    static var settingsSignOutBody: String { t("jetbox.settings.sign_out.confirm_body") }
     static var settingsSectionApp: String { t("jetbox.settings.section.app") }
     static var settingsVersion: String { t("jetbox.settings.version") }
     static var settingsAdvanced: String { t("jetbox.settings.advanced") }
