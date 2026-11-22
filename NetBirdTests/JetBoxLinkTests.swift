@@ -861,3 +861,125 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
         XCTAssertTrue(stub.requests.isEmpty)
     }
 }
+
+// MARK: - Код вручную (решение Алексея 22.11.2026)
+
+@MainActor
+final class JetBoxLoginCodeTests: XCTestCase {
+    private let key = "11111111-2222-4333-8444-555555555555"
+    private var connectBody: String {
+        #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&m=https%3A%2F%2Fnetbird.jet-net.net&n=Demo%20Home"}"#
+    }
+
+    private func sentModel(_ stub: JetBoxLoginStub, email: String = "alex@example.com") async -> JetBoxLoginModel {
+        stub.replies["request"] = (202, "")
+        let model = JetBoxLoginModel()
+        model.api = stub.api()
+        model.deviceName = { "Test iPhone" }
+        model.email = email
+        await model.submit()
+        return model
+    }
+
+    func testCodeIsSixDigitsOnly() {
+        XCTAssertEqual(JetBoxLoginAPI.normalizedCode(" 123-456 "), "123456")
+        XCTAssertEqual(JetBoxLoginAPI.normalizedCode("1234567"), "123456")
+        XCTAssertEqual(JetBoxLoginAPI.normalizedCode("12a3"), "123")
+        XCTAssertEqual(JetBoxLoginAPI.normalizedCode("١٢٣٤٥٦"), "", "только ASCII-цифры")
+    }
+
+    func testApiSendsEmailCodeAndDevice() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, connectBody)
+        let outcome = await stub.api().verify(email: " alex@example.com ", code: "123456", deviceName: "Test iPhone")
+        XCTAssertEqual(stub.body(0), ["email": "alex@example.com", "code": "123456",
+                                      "device_name": "Test iPhone", "platform": "ios"])
+        guard case .connect = outcome else { return XCTFail("\(outcome)") }
+    }
+
+    func testBadCodeCarriesAttemptsLeft() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (401, #"{"error":"bad_code","attempts_left":2}"#)
+        let left = await stub.api().verify(email: "a@b.co", code: "000000", deviceName: "iPhone")
+        XCTAssertEqual(left, .badCode(attemptsLeft: 2))
+        stub.replies["verify"] = (401, #"{"error":"bad_code"}"#)
+        let unknown = await stub.api().verify(email: "a@b.co", code: "000000", deviceName: "iPhone")
+        XCTAssertEqual(unknown, .badCode(attemptsLeft: nil))
+        XCTAssertFalse(stub.logs.contains { $0.contains("000000") }, "код в журнал не пишем")
+    }
+
+    /// Вход проверяющего Apple: email → «Enter code manually» → постоянный код,
+    /// без почты и без ссылки. Подключение получает обычный сценарий.
+    func testReviewerPathWorksWithoutMail() async {
+        let stub = JetBoxLoginStub()
+        let model = await sentModel(stub, email: "appreview@ai-boss.us")
+        XCTAssertEqual(model.phase, .sent(email: "appreview@ai-boss.us"))
+        model.enterCodeManually()
+        XCTAssertEqual(model.phase, .code(email: "appreview@ai-boss.us"))
+
+        var received: URL?
+        model.onConnect = { received = $0 }
+        stub.replies["verify"] = (200, connectBody)
+        model.code = "246 810"
+        model.codeChanged()                       // шесть цифр — проверка сама
+        for _ in 0..<100 where received == nil { try? await Task.sleep(nanoseconds: 20_000_000) }
+
+        XCTAssertEqual(stub.body(1), ["email": "appreview@ai-boss.us", "code": "246810",
+                                      "device_name": "Test iPhone", "platform": "ios"])
+        let flow = JetBoxOnboarding()
+        let saved = JetBoxStore.currentBox
+        JetBoxStore.currentBox = nil
+        defer { JetBoxStore.currentBox = saved }
+        XCTAssertTrue(flow.handle(try XCTUnwrap(received)))
+        guard case .ready(let payload) = flow.step else { return XCTFail("шаг \(flow.step)") }
+        XCTAssertEqual(payload.boxName, "Demo Home")
+    }
+
+    func testWrongAndExpiredCodeMessages() async {
+        let stub = JetBoxLoginStub()
+        let model = await sentModel(stub)
+        model.enterCodeManually()
+
+        stub.replies["verify"] = (401, #"{"error":"bad_code","attempts_left":2}"#)
+        model.code = "111111"
+        await model.submitCode()
+        XCTAssertEqual(model.message, JBText.loginCodeWrongLeft(2))
+        XCTAssertEqual(model.code, "", "неверный код стираем — вводить заново")
+        XCTAssertEqual(model.phase, .code(email: "alex@example.com"))
+
+        stub.replies["verify"] = (410, "")
+        model.code = "222222"
+        await model.submitCode()
+        XCTAssertEqual(model.message, JBText.loginCodeExpired)
+
+        stub.replies["verify"] = (409, #"{"error":"device_limit"}"#)
+        model.code = "333333"
+        await model.submitCode()
+        XCTAssertEqual(model.message, JBText.errDeviceLimitBody)
+    }
+
+    func testNewCodeFromCodeScreenStaysOnCodeScreen() async {
+        let stub = JetBoxLoginStub()
+        var clock = Date(timeIntervalSince1970: 2_000_000)
+        stub.replies["request"] = (202, "")
+        let model = JetBoxLoginModel()
+        model.api = stub.api()
+        model.now = { clock }
+        model.email = "alex@example.com"
+        await model.submit()
+        model.enterCodeManually()
+        clock = clock.addingTimeInterval(61)
+        await model.resend()
+        XCTAssertEqual(stub.requests.count, 2)
+        XCTAssertEqual(model.phase, .code(email: "alex@example.com"))
+    }
+
+    func testShortCodeIsNotSent() async {
+        let stub = JetBoxLoginStub()
+        let model = await sentModel(stub)
+        model.enterCodeManually()
+        model.code = "12345"
+        await model.submitCode()
+        XCTAssertEqual(stub.requests.count, 1, "только запрос письма")
+    }
+}

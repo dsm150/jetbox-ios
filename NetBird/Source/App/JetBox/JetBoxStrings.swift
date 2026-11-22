@@ -70,6 +70,18 @@ enum JBText {
     static var loginOffline: String { t("jetbox.login.offline") }
     static var loginUnavailable: String { t("jetbox.login.unavailable") }
     static var loginSigningIn: String { t("jetbox.login.signing_in") }
+    static var loginCodeLink: String { t("jetbox.login.code.link") }
+    static var loginCodeTitle: String { t("jetbox.login.code.title") }
+    static func loginCodeBody(_ email: String) -> String { t("jetbox.login.code.body", email) }
+    static var loginCodeField: String { t("jetbox.login.code.field") }
+    static var loginCodeSubmit: String { t("jetbox.login.code.submit") }
+    static var loginCodeChecking: String { t("jetbox.login.code.checking") }
+    static var loginCodeWrong: String { t("jetbox.login.code.wrong") }
+    static func loginCodeWrongLeft(_ left: Int) -> String { t("jetbox.login.code.wrong_left", String(left)) }
+    static var loginCodeExpired: String { t("jetbox.login.code.expired") }
+    static var loginCodeResend: String { t("jetbox.login.code.resend") }
+    static func loginCodeResendWait(_ seconds: Int) -> String { t("jetbox.login.code.resend_wait", String(seconds)) }
+    static var loginCodeBack: String { t("jetbox.login.code.back") }
     static var errLoginExpiredTitle: String { t("jetbox.error.login_expired.title") }
     static var errLoginExpiredBody: String { t("jetbox.error.login_expired.body") }
     static var errLoginExpiredAction: String { t("jetbox.error.login_expired.action") }

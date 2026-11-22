@@ -280,7 +280,7 @@ final class JetBoxOnboarding: ObservableObject {
             lastLoginToken = nil
             flowTask = nil
             if !handle(url) { step = .failed(.brokenLink) }
-        case .expired:
+        case .expired, .badCode:
             lastLoginToken = nil
             step = .failed(.loginExpired)
         case .deviceLimit:

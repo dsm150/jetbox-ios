@@ -13,6 +13,9 @@
 //  3. Приложение меняет токен на параметры подключения:
 //     POST /api/app/v1/login/verify → 200 {connect_url, …}; 410 — ссылка
 //     устарела или использована, 409 device_limit, 429 — лимит.
+//  3а. Запасной путь (и вход проверяющего Apple без почты): «Enter code
+//     manually» → 6 цифр из письма → POST login/verify {email, code, …};
+//     401 bad_code с остатком попыток, 410 — код истёк или попытки кончились.
 //  4. connect_url идёт в тот же разбор, что ссылка /connect из Кабинета:
 //     маска сервера, проверка ключа и дальше обычный сценарий подключения.
 //
@@ -102,6 +105,8 @@ struct JetBoxLoginAPI {
 
     enum VerifyOutcome: Equatable {
         case connect(URL)
+        /// Неверный код (401 bad_code), сколько попыток осталось — если Кабинет сказал.
+        case badCode(attemptsLeft: Int?)
         case expired
         case deviceLimit
         case rateLimited
@@ -149,7 +154,21 @@ struct JetBoxLoginAPI {
     }
 
     func verify(token: String, deviceName: String) async -> VerifyOutcome {
-        let body = ["token": token, "device_name": deviceName, "platform": "ios"]
+        await verify(["token": token, "device_name": deviceName, "platform": "ios"])
+    }
+
+    /// Код из письма, введённый руками (и демо-вход проверяющего Apple).
+    func verify(email: String, code: String, deviceName: String) async -> VerifyOutcome {
+        await verify(["email": JetBoxEmail.normalized(email), "code": code,
+                      "device_name": deviceName, "platform": "ios"])
+    }
+
+    /// Код из письма: ровно 6 цифр. Всё лишнее (пробелы, дефис) отбрасываем.
+    static func normalizedCode(_ raw: String) -> String {
+        String(raw.filter { $0.isASCII && $0.isNumber }.prefix(6))
+    }
+
+    private func verify(_ body: [String: String]) async -> VerifyOutcome {
         switch await post("login/verify", body) {
         case .response(200, let data):
             guard let url = Self.connectURL(from: data) else {
@@ -161,6 +180,11 @@ struct JetBoxLoginAPI {
         case .response(410, _):
             log("JetBox: вход по email — ссылка устарела или использована (410)")
             return .expired
+        case .response(401, let data):
+            let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            let left = (json?["attempts_left"] as? NSNumber)?.intValue
+            log("JetBox: вход по email — неверный код (401), попыток осталось: \(left.map(String.init) ?? "?")")
+            return .badCode(attemptsLeft: left)
         case .response(409, let data):
             let error = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
             log("JetBox: вход по email — отказ 409 (\(error ?? "без кода"))")
@@ -246,9 +270,13 @@ final class JetBoxLoginModel: ObservableObject {
         case enter
         case sending
         case sent(email: String)
+        /// «Enter code manually»: 6 цифр из письма.
+        case code(email: String)
     }
 
     @Published var email = ""
+    @Published var code = ""
+    @Published private(set) var isVerifying = false
     @Published private(set) var phase: Phase = .enter
     /// Текст под полем или под кнопкой: неверный адрес, лимит, нет сети.
     @Published private(set) var message: String?
@@ -258,8 +286,18 @@ final class JetBoxLoginModel: ObservableObject {
 
     var api = JetBoxLoginAPI()
     var now: () -> Date = Date.init
+    var deviceName: () -> String = { Device.getName() }
+    /// Код подтверждён: ссылку подключения забирает сценарий (JetBoxOnboarding).
+    var onConnect: @MainActor (URL) -> Void = { _ in }
 
     var isSending: Bool { phase == .sending }
+
+    private var sentAddress: String? {
+        switch phase {
+        case .sent(let address), .code(let address): return address
+        case .enter, .sending: return nil
+        }
+    }
 
     /// Сколько секунд осталось до «Отправить ещё раз».
     func resendWait(at date: Date) -> Int {
@@ -283,18 +321,76 @@ final class JetBoxLoginModel: ObservableObject {
     }
 
     func resend() async {
-        guard case .sent(let address) = phase, resendWait(at: now()) == 0 else { return }
+        guard let address = sentAddress, resendWait(at: now()) == 0 else { return }
+        let back = phase
         message = nil
         phase = .sending
         let outcome = await api.requestLink(email: address)
-        apply(outcome, address: address, previous: .sent(email: address))
-        if outcome == .sent { flashResent() }
+        apply(outcome, address: address, previous: back)
+        if outcome == .sent {
+            if case .code = back {
+                phase = back
+                code = ""
+            }
+            flashResent()
+        }
     }
 
     func useAnotherEmail() {
         phase = .enter
         message = nil
+        code = ""
         resentNote = false
+    }
+
+    func enterCodeManually() {
+        guard case .sent(let address) = phase else { return }
+        message = nil
+        code = ""
+        phase = .code(email: address)
+    }
+
+    func backToLink() {
+        guard case .code(let address) = phase else { return }
+        message = nil
+        phase = .sent(email: address)
+    }
+
+    /// Поле кода: только цифры, не больше шести; шесть — сразу проверяем
+    /// (так срабатывает и автоподстановка кода iOS).
+    func codeChanged() {
+        let clean = JetBoxLoginAPI.normalizedCode(code)
+        if clean != code { code = clean }
+        if clean.count == 6, !isVerifying { Task { await submitCode() } }
+    }
+
+    func submitCode() async {
+        guard case .code(let address) = phase, !isVerifying else { return }
+        let digits = JetBoxLoginAPI.normalizedCode(code)
+        guard digits.count == 6 else { return }
+        message = nil
+        isVerifying = true
+        let outcome = await api.verify(email: address, code: digits, deviceName: deviceName())
+        isVerifying = false
+        switch outcome {
+        case .connect(let url):
+            code = ""
+            onConnect(url)
+        case .badCode(let left):
+            code = ""
+            message = left.map(JBText.loginCodeWrongLeft) ?? JBText.loginCodeWrong
+        case .expired:
+            code = ""
+            message = JBText.loginCodeExpired
+        case .deviceLimit:
+            message = JBText.errDeviceLimitBody
+        case .rateLimited:
+            message = JBText.loginRateLimited
+        case .offline:
+            message = JBText.loginOffline
+        case .unavailable:
+            message = JBText.loginUnavailable
+        }
     }
 
     private func apply(_ outcome: JetBoxLoginAPI.RequestOutcome, address: String, previous: Phase) {
@@ -337,6 +433,15 @@ extension JetBoxLoginModel {
         case "error":
             email = "alex@example"
             message = JBText.loginInvalidEmail
+        case "code":
+            email = "alex@example.com"
+            lastSentAt = now().addingTimeInterval(-18)
+            phase = .code(email: email)
+        case "badcode":
+            email = "alex@example.com"
+            lastSentAt = now().addingTimeInterval(-75)
+            phase = .code(email: email)
+            message = JBText.loginCodeWrongLeft(2)
         default:
             break
         }

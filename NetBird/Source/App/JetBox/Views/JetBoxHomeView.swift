@@ -24,9 +24,7 @@ struct JetBoxHomeView: View {
     @StateObject private var login = JetBoxLoginModel()
     @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
     private var styleRaw = JetBoxStyle.fallback.rawValue
-    #if DEBUG
     @EnvironmentObject private var jetbox: JetBoxOnboarding
-    #endif
 
     private var box: JetBoxBox? { JetBoxStore.currentBox }
     /// Сборка США без подключения: вместо пустого состояния — вход по email.
@@ -86,6 +84,8 @@ struct JetBoxHomeView: View {
         return Group {
             if showsEmailLogin {
                 JetBoxEmailLoginView(model: login, onSettings: { showsSettings = true })
+                    // Код подтверждён — дальше обычный сценарий ссылки /connect.
+                    .onAppear { login.onConnect = { [weak jetbox = jetbox] url in jetbox?.handle(url) } }
             } else {
                 layout(power: power, state: state)
             }
