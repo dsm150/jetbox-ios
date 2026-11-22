@@ -100,6 +100,46 @@ enum JetBoxTunnelState {
     }
 }
 
+/// JetBox, сборка США: единственный выход, через который ядро может пустить
+/// весь интернет (`NB_ALLOWED_EXIT`, патч ядра 0004). Приложение пишет `e` своей
+/// коробки файлом в контейнер App Group — синхронно, при сохранении коробки и
+/// при запуске; расширение читает его при каждом старте клиента ядра. Файл, а
+/// не UserDefaults App Group: их расширение видит с опозданием (баг 1.0 (14)).
+/// Нет файла или он пуст — пустая строка: ядро не пропустит ни одного 0.0.0.0/0.
+enum JetBoxAllowedExit {
+    static let fileName = "jetbox-allowed-exit"
+    /// Сообщение расширению: файл изменился, перезапусти клиента ядра.
+    static let changedMessage = "JetBoxAllowedExitChanged"
+
+    static func defaultURL() -> URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: GlobalConstants.userPreferencesSuiteName)?
+            .appendingPathComponent(fileName)
+    }
+
+    static func read(at url: URL? = defaultURL()) -> String {
+        guard let url, let data = try? Data(contentsOf: url) else { return "" }
+        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    /// Записывает выход (nil или пусто — убирает файл). Возвращает true, если
+    /// значение изменилось.
+    @discardableResult
+    static func write(_ exit: String?, at url: URL? = defaultURL()) -> Bool {
+        guard let url else { return false }
+        let value = exit?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard value != read(at: url) || (value.isEmpty && FileManager.default.fileExists(atPath: url.path)) else {
+            return false
+        }
+        if value.isEmpty {
+            try? FileManager.default.removeItem(at: url)
+        } else {
+            try? Data(value.utf8).write(to: url, options: .atomic)
+        }
+        return true
+    }
+}
+
 /// JetBox: адреса серверов. Значения — из Info.plist, а туда из
 /// `Config/JetBoxEdition.xcconfig` по редакции (США / русская): в коде адресов
 /// нет, в бинарник сборки США чужие адреса не попадают.

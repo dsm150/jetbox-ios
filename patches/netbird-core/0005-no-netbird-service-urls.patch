@@ -1,0 +1,169 @@
+--- a/client/internal/metrics/env.go
++++ b/client/internal/metrics/env.go
+@@ -31,7 +31,7 @@
+ 	// Format: duration string like "1h", "30m", "4h"
+ 	EnvMetricsInterval = "NB_METRICS_INTERVAL"
+ 
+-	defaultMetricsConfigURL = "https://ingest.netbird.io/config"
++	defaultMetricsConfigURL = ""
+ )
+ 
+ // IsMetricsPushEnabled returns true if metrics push is enabled via NB_METRICS_PUSH_ENABLED env var.
+--- a/client/internal/metrics/push.go
++++ b/client/internal/metrics/push.go
+@@ -21,13 +21,10 @@
+ 	defaultPushInterval = 5 * time.Minute
+ )
+ 
+-// defaultMetricsServerURL is used as fallback when NB_METRICS_FORCE_SENDING is true
++// defaultMetricsServerURL is used as fallback when NB_METRICS_FORCE_SENDING is true.
++// There is no default metrics server: push needs NB_METRICS_SERVER_URL or NB_METRICS_CONFIG_URL.
+ var defaultMetricsServerURL *url.URL
+ 
+-func init() {
+-	defaultMetricsServerURL, _ = url.Parse("https://ingest.netbird.io")
+-}
+-
+ // PushConfig holds configuration for metrics push
+ type PushConfig struct {
+ 	// ServerAddress is the metrics server URL. If nil, uses remote config server_url.
+--- a/client/internal/metrics/metrics.go
++++ b/client/internal/metrics/metrics.go
+@@ -259,6 +259,11 @@
+ 
+ // startPushLocked starts push. Caller must hold pushMu.
+ func (c *ClientMetrics) startPushLocked(ctx context.Context, config PushConfig) {
++	if config.ServerAddress == nil && getMetricsConfigURL() == "" {
++		log.Infof("metrics push has no server configured, not starting")
++		return
++	}
++
+ 	c.mu.RLock()
+ 	agentVersion := c.agentInfo.Version
+ 	peerID := c.agentInfo.peerID
+--- a/upload-server/types/upload.go
++++ b/upload-server/types/upload.go
+@@ -8,7 +8,9 @@
+ 	// GetURLPath is the path for the GetURL request
+ 	GetURLPath = "/upload-url"
+ 
+-	DefaultBundleURL = "https://upload.debug.netbird.io" + GetURLPath
++	// DefaultBundleURL is empty: there is no default upload service, so a
++	// debug bundle is uploaded only to a URL the caller passes explicitly.
++	DefaultBundleURL = ""
+ )
+ 
+ // GetURLResponse is the response for the GetURL request
+--- a/client/internal/debug/upload.go
++++ b/client/internal/debug/upload.go
+@@ -65,6 +65,9 @@
+ }
+ 
+ func UploadDebugBundle(ctx context.Context, url, managementURL, filePath string, insecure bool) (key string, err error) {
++	if url == "" {
++		return "", fmt.Errorf("debug bundle upload service is not configured")
++	}
+ 	if !insecure {
+ 		if err := requireHTTPS("upload service URL", url); err != nil {
+ 			return "", err
+--- a/client/internal/updater/installer/repourl_prod.go
++++ b/client/internal/updater/installer/repourl_prod.go
+@@ -3,5 +3,5 @@
+ package installer
+ 
+ const (
+-	DefaultSigningKeysBaseURL = "https://publickeys.netbird.io/artifact-signatures"
++	DefaultSigningKeysBaseURL = ""
+ )
+--- a/client/internal/updater/reposign/verify.go
++++ b/client/internal/updater/reposign/verify.go
+@@ -41,6 +41,9 @@
+ }
+ 
+ func newArtifactVerify(keysBaseURL string, allKeys []PublicKey) (*ArtifactVerify, error) {
++	if keysBaseURL == "" {
++		return nil, fmt.Errorf("signing keys URL is not set")
++	}
+ 	ku, err := url.Parse(keysBaseURL)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("invalid keys base URL %q: %v", keysBaseURL, err)
+--- a/client/internal/auth/oauth.go
++++ b/client/internal/auth/oauth.go
+@@ -115,8 +115,7 @@
+ 		switch s, ok := gstatus.FromError(err); {
+ 		case ok && s.Code() == codes.NotFound:
+ 			return nil, fmt.Errorf("no SSO provider returned from management. " +
+-				"Please proceed with setting up this device using setup keys " +
+-				"https://docs.netbird.io/how-to/register-machines-using-setup-keys")
++				"Please proceed with setting up this device using setup keys")
+ 		case ok && s.Code() == codes.Unimplemented:
+ 			return nil, fmt.Errorf("the management server, %s, does not support SSO providers, "+
+ 				"please update your server or use Setup Keys to login", config.ManagementURL)
+--- a/client/internal/dns/server.go
++++ b/client/internal/dns/server.go
+@@ -676,7 +676,7 @@
+ 
+ 	if s.service.RuntimePort() != DefaultPort && !s.hostManager.supportCustomPort() {
+ 		log.Warnf("the DNS manager of this peer doesn't support custom port. Disabling primary DNS setup. " +
+-			"Learn more at: https://docs.netbird.io/how-to/manage-dns-in-your-network#local-resolver")
++			"See the local resolver section of the NetBird DNS documentation.")
+ 		s.currentConfig.RouteAll = false
+ 	}
+ 
+--- /dev/null
++++ b/client/internal/debug/upload_default_test.go
+@@ -0,0 +1,19 @@
++package debug
++
++import (
++	"context"
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++	"github.com/stretchr/testify/require"
++
++	"github.com/netbirdio/netbird/upload-server/types"
++)
++
++func TestUploadDebugBundle_NoDefaultService(t *testing.T) {
++	assert.Empty(t, types.DefaultBundleURL, "there must be no built-in upload service")
++
++	_, err := UploadDebugBundle(context.Background(), types.DefaultBundleURL, "https://mgm.example", "/nonexistent", false)
++	require.Error(t, err)
++	assert.Contains(t, err.Error(), "not configured", "upload without a URL is refused before any request")
++}
+--- /dev/null
++++ b/client/internal/metrics/default_server_test.go
+@@ -0,0 +1,17 @@
++package metrics
++
++import (
++	"os"
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++	"github.com/stretchr/testify/require"
++)
++
++func TestMetrics_NoDefaultServer(t *testing.T) {
++	t.Setenv(EnvMetricsConfigURL, "")
++	require.NoError(t, os.Unsetenv(EnvMetricsConfigURL))
++
++	assert.Empty(t, getMetricsConfigURL(), "no built-in metrics config server")
++	assert.Nil(t, defaultMetricsServerURL, "no built-in metrics ingest server")
++}
+--- /dev/null
++++ b/client/internal/updater/reposign/no_default_keys_test.go
+@@ -0,0 +1,12 @@
++package reposign
++
++import (
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++)
++
++func TestNewArtifactVerify_EmptyKeysURLFailsClosed(t *testing.T) {
++	_, err := newArtifactVerify("", nil)
++	assert.Error(t, err, "an empty signing keys URL must refuse verification, not skip it")
++}

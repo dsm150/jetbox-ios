@@ -31,7 +31,12 @@ struct JetBoxConnectionSheet: View {
     private var snapshot: JetBoxLiveStats.Snapshot? { demo ?? stats.box }
     private var since: Date? { demoSince ?? stats.connectedSince }
     /// «Только дом» (JetBoxEdition): выбора выхода нет.
+    #if JETBOX_US
+    /// Сборка США: выбора выхода нет — разрешён только выход своей коробки.
+    private var showsExit: Bool { false }
+    #else
     private var showsExit: Bool { !JetBoxEdition.homeOnly && isConnected && routes.exitNodes.count > 1 }
+    #endif
 
     var body: some View {
         VStack(spacing: 18) {

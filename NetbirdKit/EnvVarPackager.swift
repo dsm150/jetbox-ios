@@ -9,6 +9,10 @@ import Foundation
 import NetBirdSDK
 
 class EnvVarPackager {
+    /// Разрешённый выход, с которым последний раз запускался клиент ядра
+    /// (в процессе расширения). nil — ещё не запускался.
+    static var lastAllowedExit: String?
+
     static func getEnvironmentVariables(defaults: UserDefaults) -> NetBirdSDKEnvList? {
         guard let envList = NetBirdSDKEnvList() else {
             return nil
@@ -38,6 +42,12 @@ class EnvVarPackager {
         // relay, ни к TURN клиент не подключается, даже если сервер пришлёт их
         // адреса; соединение с JetBox — только напрямую, P2P через STUN.
         envList.put(NetBirdSDKGetEnvKeyNBDisableRelay(), value: "true")
+        // Сборка 1.0 (20): ядро пропускает 0.0.0.0/0 и ::/0 только с этим
+        // именем выхода (патч 0004) — чужой выход отбрасывается ещё до туннеля.
+        // Пусто — ни одного маршрута по умолчанию.
+        let allowedExit = JetBoxAllowedExit.read()
+        envList.put(NetBirdSDKGetEnvKeyNBAllowedExit(), value: allowedExit)
+        lastAllowedExit = allowedExit
         #endif
         // JetBox: метрики ядра на ingest.netbird.io не отправляем никогда —
         // переменная окружения главнее настройки сервера управления.

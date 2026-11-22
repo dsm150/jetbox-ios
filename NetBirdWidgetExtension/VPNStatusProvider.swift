@@ -8,7 +8,7 @@ struct VPNStatusProvider: TimelineProvider {
             date: Date(),
             status: .disconnected,
             ip: "100.x.x.x",
-            fqdn: "device.netbird.cloud",
+            fqdn: "JetBox",
             needsAppSetup: false,
             loginRequired: false
         )

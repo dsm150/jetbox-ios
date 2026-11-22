@@ -161,7 +161,8 @@ final class JetBoxRouteTests: XCTestCase {
         XCTAssertEqual(stats.box?.connected, false)
     }
 
-    func testNotDirectText() {
+    func testNotDirectText() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "английские тексты — сборка США")
         XCTAssertEqual(JBText.route(.notDirect), "Can't reach your JetBox directly")
         XCTAssertEqual(JBText.route(.notDirect, compact: true), "No direct link")
         XCTAssertEqual(JBText.route(.relayed, compact: true), "Relay")
@@ -181,6 +182,67 @@ final class JetBoxRouteTests: XCTestCase {
 
     func testUSBuildHasNoRelayRoute() {
         XCTAssertEqual(JetBoxLiveStats.route(snapshot(connected: true, relayed: true)), .notDirect)
+    }
+    #endif
+}
+
+/// Сборка 1.0 (20): разрешённый выход для ядра (NB_ALLOWED_EXIT, патч 0004)
+/// берётся из записи коробки и доходит до переменной окружения клиента.
+final class JetBoxAllowedExitTests: XCTestCase {
+
+    private var tempURL: URL!
+
+    override func setUp() {
+        super.setUp()
+        tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("allowed-exit-\(UUID().uuidString)")
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: tempURL)
+        super.tearDown()
+    }
+
+    func testFileRoundTripAndChangeDetection() {
+        XCTAssertEqual(JetBoxAllowedExit.read(at: tempURL), "", "нет файла — пусто, ни одного выхода")
+        XCTAssertTrue(JetBoxAllowedExit.write("sv-demo-us-exit", at: tempURL))
+        XCTAssertEqual(JetBoxAllowedExit.read(at: tempURL), "sv-demo-us-exit")
+        XCTAssertFalse(JetBoxAllowedExit.write("sv-demo-us-exit", at: tempURL), "то же значение — не изменение")
+        XCTAssertTrue(JetBoxAllowedExit.write(nil, at: tempURL))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: tempURL.path), "без выхода файл убирается")
+    }
+
+    #if JETBOX_US
+    /// Запись коробки → файл в App Group → переменная NB_ALLOWED_EXIT для ядра.
+    func testEnvironmentGetsOwnExitFromBoxRecord() throws {
+        let saved = JetBoxStore.currentBox
+        let savedFile = JetBoxAllowedExit.read()
+        defer {
+            JetBoxStore.currentBox = saved
+            JetBoxAllowedExit.write(savedFile)
+        }
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "JetBoxAllowedExitTest"))
+        defer { defaults.removePersistentDomain(forName: "JetBoxAllowedExitTest") }
+
+        JetBoxStore.currentBox = JetBoxBox(managementURL: "https://net.jetbox.ai-boss.us",
+                                           exitNodeName: "sv-demo-us-exit", selectedExitNode: "sv-demo-us-exit",
+                                           boxName: "Demo Home", registeredAt: Date())
+        XCTAssertEqual(JetBoxAllowedExit.read(), "sv-demo-us-exit", "файл пишется синхронно с записью коробки")
+        var env = try XCTUnwrap(EnvVarPackager.getEnvironmentVariables(defaults: defaults))
+        XCTAssertEqual(NetBirdSDKGetEnvKeyNBAllowedExit(), "NB_ALLOWED_EXIT")
+        XCTAssertEqual(env.get("NB_ALLOWED_EXIT"), "sv-demo-us-exit")
+
+        JetBoxStore.currentBox = nil
+        env = try XCTUnwrap(EnvVarPackager.getEnvironmentVariables(defaults: defaults))
+        XCTAssertEqual(env.get("NB_ALLOWED_EXIT"), "", "нет коробки — ядро не пропустит ни одного выхода")
+    }
+
+    /// В сборке США нет ветки русской редакции: выход — всегда `e` своей коробки.
+    func testUSBuildAlwaysPinsOwnExit() {
+        XCTAssertTrue(JetBoxEdition.homeOnly)
+        let box = JetBoxBox(managementURL: "https://net.jetbox.ai-boss.us", exitNodeName: "sv-demo-us-exit",
+                            selectedExitNode: nil, boxName: nil, registeredAt: Date())
+        XCTAssertEqual(JetBoxStore.ownExitToAllow(for: box, homeOnly: false), "sv-demo-us-exit",
+                       "параметр homeOnly в сборке США ни на что не влияет")
     }
     #endif
 }

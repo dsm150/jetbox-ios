@@ -91,12 +91,15 @@ enum JetBoxLinkIdentity {
         return host + "|"
     }
 
+    #if !JETBOX_US
     /// Общий выход облака: один `e` у всех абонентов (пространство `cl-` в
     /// NetBird, сейчас только `cl-exit`). Без `n` такой `e` абонента не
     /// различает, поэтому сравнение «без имени» для него запрещено.
+    /// Только русская сборка: в сборке США общего выхода нет.
     static func isSharedExit(_ exitNode: String) -> Bool {
         exitNode.hasPrefix("cl-")
     }
+    #endif
 
     /// Удостоверение без `n` — для записей, где имени нет (ссылка была без `n`).
     static func withoutName(managementURL: String, exitNode: String?) -> String {

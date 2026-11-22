@@ -452,6 +452,17 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 }
             }
             login(completionHandler: completionHandler)
+        #if JETBOX_US
+        case JetBoxAllowedExit.changedMessage:
+            // Приложение сменило разрешённый выход (новая коробка или первый
+            // запуск после обновления): клиент ядра перечитает его при старте.
+            let current = JetBoxAllowedExit.read()
+            if let last = EnvVarPackager.lastAllowedExit, last != current {
+                AppLogger.shared.log("JetBox: allowed exit changed — restarting client")
+                restartClient()
+            }
+            completionHandler("true".data(using: .utf8))
+        #endif
         case "Status":
             getStatus(completionHandler: completionHandler)
         case "GetRoutes":

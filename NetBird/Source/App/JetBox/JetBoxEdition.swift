@@ -19,6 +19,12 @@
 import Foundation
 
 enum JetBoxEdition {
+    #if JETBOX_US
+    /// Сборка США — всегда «только дом»: ветки русской сборки (выход по `x`,
+    /// общий выход облака `cl-…`) в неё не компилируются (сборка 1.0 (20),
+    /// требование SiteDev и Алексея).
+    static let homeOnly = true
+    #else
     static let infoKey = "JetBoxHomeOnly"
 
     /// Флаг из Info.plist. Нет ключа или не подставилось значение — считаем
@@ -31,19 +37,30 @@ enum JetBoxEdition {
               !text.isEmpty, !text.hasPrefix("$(") else { return true }
         return !["NO", "FALSE", "0"].contains(text)
     }
+    #endif
 
     /// Включать ли выход из ссылки после подключения. «Только дом» — всегда,
     /// если это выход своей коробки, `x` не смотрим; иначе — если ссылка не
     /// запрещает (`x=0`).
     static func appliesExit(payload: JetBoxLinkPayload, homeOnly: Bool) -> Bool {
+        #if JETBOX_US
+        return ownExit(payload.exitNodeName) != nil
+        #else
         if homeOnly { return ownExit(payload.exitNodeName) != nil }
         return payload.enablesDefaultExit
+        #endif
     }
 
     /// Выход своей коробки: имя `e`, пришедшее от Кабинета с этим профилем.
-    /// Общие выходы облака (`cl-…`) своими не считаются.
+    /// В сборке США других выходов нет: ядро пропускает 0.0.0.0/0 только с
+    /// этим именем (NB_ALLOWED_EXIT, патч 0004). В русской общие выходы облака
+    /// (`cl-…`) своими не считаются.
     static func ownExit(_ name: String?) -> String? {
+        #if JETBOX_US
+        guard let name, !name.isEmpty else { return nil }
+        #else
         guard let name, !name.isEmpty, !JetBoxLinkIdentity.isSharedExit(name) else { return nil }
+        #endif
         return name
     }
 

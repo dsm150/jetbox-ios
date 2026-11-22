@@ -21,14 +21,20 @@ enum JetBoxHomeOnlyGuard {
     /// Что сделать с выходами: включить выход своей коробки (`allowed`), если
     /// он есть в маршрутах, но не выбран. Нет своего выхода — ничего.
     static func plan(selectedExit: String?, available: [String], allowed: String?, homeOnly: Bool) -> Plan {
+        #if JETBOX_US
+        guard let allowed, selectedExit != allowed, available.contains(allowed) else { return Plan() }
+        #else
         guard homeOnly, let allowed, selectedExit != allowed, available.contains(allowed) else { return Plan() }
+        #endif
         return Plan(select: allowed)
     }
 
     /// Маршруты после подключения приходят не сразу — ждём их до ~5 с.
     @MainActor
     static func enforce(routes: RoutesViewModel, homeOnly: Bool = JetBoxEdition.homeOnly) async {
+        #if !JETBOX_US
         guard homeOnly else { return }
+        #endif
         for _ in 0..<6 {
             routes.getRoutes()
             try? await Task.sleep(nanoseconds: 800_000_000)

@@ -541,11 +541,15 @@ final class JetBoxOnboarding: ObservableObject {
     /// только в «техно».
     nonisolated static func stepForAmbiguousExit(payload: JetBoxLinkPayload, options: [String], style: JetBoxStyle,
                                                  homeOnly: Bool = false) -> Step {
+        #if JETBOX_US
+        return .protected(exitNode: nil)
+        #else
         if homeOnly { return .protected(exitNode: nil) }
         switch style {
         case .simple: return .protected(exitNode: nil)
         case .techno: return .chooseExit(payload, options: options)
         }
+        #endif
     }
 
     private enum ExitOutcome {
@@ -583,6 +587,10 @@ final class JetBoxOnboarding: ObservableObject {
         }
 
         // «Только дом»: никаких догадок — своего выхода нет в маршрутах, значит без выхода.
+        #if JETBOX_US
+        AppLogger.shared.log("JetBox: home only — own box exit not in routes (\(nodes.count) others)")
+        return .none
+        #else
         if JetBoxEdition.homeOnly {
             AppLogger.shared.log("JetBox: home only — own box exit not in routes (\(nodes.count) others)")
             return .none
@@ -598,6 +606,7 @@ final class JetBoxOnboarding: ObservableObject {
         // 3. Ноль или больше одного — спрашиваем человека.
         AppLogger.shared.log("JetBox: exit from link not found, showing picker (\(nodes.count) options)")
         return .ambiguous(nodes.map(\.name))
+        #endif
     }
 
     private func applyExitNode(named name: String, viewModel: ViewModel) async {

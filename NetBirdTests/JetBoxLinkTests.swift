@@ -225,6 +225,7 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertNil(stored("Дом").named(by: link))
     }
 
+    #if !JETBOX_US
     func testSharedCloudExitNeverMatchesWithoutName() {
         // Общий e облака: запись без имени не считаем «тем же» ни для какой ссылки.
         let cloudNoName = JetBoxBox(managementURL: "https://mgmt.jet-net.net", exitNodeName: "cl-exit",
@@ -234,6 +235,7 @@ final class JetBoxLinkTests: XCTestCase {
         XCTAssertTrue(JetBoxLinkIdentity.isSharedExit("cl-exit"))
         XCTAssertFalse(JetBoxLinkIdentity.isSharedExit("sv-acme-exit"))
     }
+    #endif
 
     func testOtherBoxLinkIsNotSameConnection() {
         let link = payload("jetbox://connect#k=\(key)&m=https://mgmt.jet-net.net&e=two&n=Other")!
@@ -261,6 +263,11 @@ final class JetBoxLinkTests: XCTestCase {
         let vectors = try JSONDecoder().decode(Vectors.self, from: Data(contentsOf: url))
         XCTAssertFalse(vectors.compare.isEmpty)
         for c in vectors.compare {
+            #if JETBOX_US
+            // Общий выход облака (cl-…) есть только в русской редакции; в сборке
+            // США правила для него нет (1.0 (20)), векторы облака к ней не относятся.
+            if c.stored.e?.hasPrefix("cl-") == true { continue }
+            #endif
             let box = JetBoxBox(managementURL: c.stored.m, exitNodeName: c.stored.e, selectedExitNode: c.stored.e,
                                 boxName: c.stored.n, registeredAt: Date(timeIntervalSince1970: 0))
             let link = try XCTUnwrap(payload(c.link), c.about)
@@ -456,10 +463,12 @@ final class JetBoxSimpleStyleExitTests: XCTestCase {
         XCTAssertEqual(step, .protected(exitNode: nil))
     }
 
+    #if !JETBOX_US
     func testTechnoStyleStillAsksForExit() {
         let step = JetBoxOnboarding.stepForAmbiguousExit(payload: payload, options: ["А", "Б"], style: .techno)
         XCTAssertEqual(step, .chooseExit(payload, options: ["А", "Б"]))
     }
+    #endif
 }
 
 // MARK: - «Только дом»: выходы скрыты (английская сборка, 21.11.2026)
@@ -485,7 +494,9 @@ final class JetBoxHomeOnlyTests: XCTestCase {
     }
 
     func testHomeOnlyNeverAppliesSharedOrMissingExit() {
+        #if !JETBOX_US
         XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(), homeOnly: true), "облако cl-…")
+        #endif
         XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(exit: nil), homeOnly: true), "без e")
         XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(exit: ""), homeOnly: true))
     }
@@ -496,16 +507,22 @@ final class JetBoxHomeOnlyTests: XCTestCase {
         var shared = own; shared.exitNodeName = "cl-exit"
         var none = own; none.exitNodeName = nil
         XCTAssertEqual(JetBoxStore.ownExitToAllow(for: own, homeOnly: true), "home-ivanov", "и без выбора — всегда")
+        #if !JETBOX_US
         XCTAssertNil(JetBoxStore.ownExitToAllow(for: own, homeOnly: false), "русская сборка — свой выбор выхода")
         XCTAssertNil(JetBoxStore.ownExitToAllow(for: shared, homeOnly: true))
+        #else
+        _ = shared
+        #endif
         XCTAssertNil(JetBoxStore.ownExitToAllow(for: none, homeOnly: true))
         XCTAssertNil(JetBoxStore.ownExitToAllow(for: nil, homeOnly: true))
     }
 
+    #if !JETBOX_US
     func testWithoutFlagExitFromLinkAppliesAsBefore() {
         XCTAssertTrue(JetBoxEdition.appliesExit(payload: payload(), homeOnly: false))
         XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(x: false), homeOnly: false))
     }
+    #endif
 
     func testHomeOnlyNeverShowsExitChoiceInEitherStyle() {
         for style in JetBoxStyle.allCases {
@@ -515,12 +532,15 @@ final class JetBoxHomeOnlyTests: XCTestCase {
         }
     }
 
+    #if !JETBOX_US
     func testWithoutFlagTechnoStillShowsExitChoice() {
         XCTAssertEqual(JetBoxOnboarding.stepForAmbiguousExit(payload: payload(), options: ["A", "B"],
                                                              style: .techno, homeOnly: false),
                        .chooseExit(payload(), options: ["A", "B"]))
     }
+    #endif
 
+    #if !JETBOX_US
     func testFlagParsing() {
         XCTAssertTrue(JetBoxEdition.parse("YES"))
         XCTAssertFalse(JetBoxEdition.parse("NO"))
@@ -528,6 +548,7 @@ final class JetBoxHomeOnlyTests: XCTestCase {
         XCTAssertTrue(JetBoxEdition.parse(nil), "нет ключа — безопасный «только дом»")
         XCTAssertTrue(JetBoxEdition.parse("$(JETBOX_HOME_ONLY)"), "не подставилось — «только дом»")
     }
+    #endif
 
     /// По умолчанию проект собирается как сборка США; русская — явным
     /// `JETBOX_HOME_ONLY=NO`. Проверяем сам проект, а не текущую сборку.
@@ -567,10 +588,12 @@ final class JetBoxHomeOnlyGuardTests: XCTestCase {
                        Plan())
     }
 
+    #if !JETBOX_US
     func testWithoutFlagNothingHappens() {
         XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: nil, available: ["home-ivanov"], allowed: "home-ivanov", homeOnly: false),
                        Plan())
     }
+    #endif
 }
 
 // MARK: - Вход по email (сборка США, схема 22.11.2026)
@@ -1128,12 +1151,14 @@ final class JetBoxOwnExitRememberTests: XCTestCase {
         XCTAssertTrue(JetBoxStore.allInternetHome)
     }
 
+    #if !JETBOX_US
     func testCloudExitNeverTurnsOn() throws {
         try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
         JetBoxStore.remember(payload(x: true, exit: "cl-exit"))
         XCTAssertNil(JetBoxStore.currentBox?.selectedExitNode)
         XCTAssertFalse(JetBoxStore.allInternetHome)
     }
+    #endif
 
     /// Записи 12–15: выход мог быть не выбран (x=0 или тумблер) — при запуске выбираем.
     func testOldRecordGetsOwnExitSelected() throws {
@@ -1152,7 +1177,8 @@ final class JetBoxOwnExitRememberTests: XCTestCase {
         XCTAssertFalse(JBText.allInternetHome(expected: false, inTunnel: true), "нет выхода своей коробки")
     }
 
-    func testWarningWhenExpectedExitIsNotInTunnel() {
+    func testWarningWhenExpectedExitIsNotInTunnel() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "английские тексты — сборка США")
         XCTAssertEqual(JBText.exitWarning(expected: true, inTunnel: false),
                        "Internet isn’t going through your JetBox right now.")
         XCTAssertNil(JBText.exitWarning(expected: true, inTunnel: true))
@@ -1335,7 +1361,8 @@ final class JetBoxAccountDeleteTests: XCTestCase {
         XCTAssertNil(JetBoxAppToken.load(service: service))
     }
 
-    func testLoginNoticeShowsOnCleanEmailScreen() {
+    func testLoginNoticeShowsOnCleanEmailScreen() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "английские тексты — сборка США")
         let model = JetBoxLoginModel()
         model.reset()
         model.showNotice(JBText.deleteSignInAgain)

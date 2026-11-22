@@ -120,6 +120,10 @@ enum JetBoxStartup {
         // Выход своей коробки включён всегда (1.0 (16)).
         JetBoxStore.selectOwnExitIfNeeded()
         JetBoxStore.removeLegacyExitShare()
+        #if JETBOX_US
+        // Первый запуск после обновления до 1.0 (20): файла ещё нет.
+        JetBoxStore.syncAllowedExit(for: JetBoxStore.currentBox)
+        #endif
         #if DEBUG && os(iOS)
         JetBoxStyle.applyLaunchOverride()
         #endif

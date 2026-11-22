@@ -12,6 +12,9 @@
 //
 
 import Foundation
+#if JETBOX_US
+import NetworkExtension
+#endif
 
 /// Коробка, к которой этот телефон уже привязан.
 struct JetBoxBox: Codable, Equatable {
@@ -59,8 +62,12 @@ struct JetBoxBox: Codable, Equatable {
     func isSameConnection(as payload: JetBoxLinkPayload) -> Bool {
         if payload.boxIdentity == identity { return true }
         let nameMissing = (boxName?.isEmpty ?? true) || (payload.boxName?.isEmpty ?? true)
+        #if JETBOX_US
+        guard nameMissing, let exit = exitNodeName, !exit.isEmpty else { return false }
+        #else
         guard nameMissing, let exit = exitNodeName, !exit.isEmpty,
               !JetBoxLinkIdentity.isSharedExit(exit) else { return false }
+        #endif
         return JetBoxLinkIdentity.withoutName(managementURL: payload.managementURL, exitNode: payload.exitNodeName)
             == JetBoxLinkIdentity.withoutName(managementURL: managementURL, exitNode: exitNodeName)
     }
@@ -84,6 +91,10 @@ enum JetBoxStore {
             return try? JSONDecoder().decode(JetBoxBox.self, from: data)
         }
         set {
+            #if JETBOX_US
+            // Разрешённый выход для ядра — синхронно, до старта туннеля.
+            defer { syncAllowedExit(for: newValue) }
+            #endif
             guard let newValue else {
                 UserDefaults.standard.removeObject(forKey: boxKey)
                 return
@@ -94,9 +105,30 @@ enum JetBoxStore {
         }
     }
 
-    /// Выход своей коробки в сборке США (`e`, не `cl-…`); в русской — nil.
+    #if JETBOX_US
+    /// Файл разрешённого выхода (JetBoxAllowedExit) — по записи коробки. Если
+    /// значение сменилось, а туннель уже поднят, расширение перезапускает клиента
+    /// ядра: переменная NB_ALLOWED_EXIT читается только при его старте.
+    @discardableResult
+    static func syncAllowedExit(for box: JetBoxBox?) -> Bool {
+        guard JetBoxAllowedExit.write(ownExitToAllow(for: box)) else { return false }
+        AppLogger.shared.log("JetBox: allowed exit for the core updated")
+        NETunnelProviderManager.loadAllFromPreferences { managers, _ in
+            guard let session = managers?.first?.connection as? NETunnelProviderSession,
+                  [.connected, .connecting, .reasserting].contains(session.status) else { return }
+            try? session.sendProviderMessage(Data(JetBoxAllowedExit.changedMessage.utf8)) { _ in }
+        }
+        return true
+    }
+    #endif
+
+    /// Выход своей коробки в сборке США (`e` из verify); в русской — nil.
     static func ownExitToAllow(for box: JetBoxBox?, homeOnly: Bool = JetBoxEdition.homeOnly) -> String? {
-        homeOnly ? JetBoxEdition.ownExit(box?.exitNodeName) : nil
+        #if JETBOX_US
+        return JetBoxEdition.ownExit(box?.exitNodeName)
+        #else
+        return homeOnly ? JetBoxEdition.ownExit(box?.exitNodeName) : nil
+        #endif
     }
 
     /// 1.0 (14–17) передавали расширению разрешённый выход (ключ App Group,
