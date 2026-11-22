@@ -296,13 +296,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To set up the encrypted connection between this iPhone and your JetBox. If a direct connection isn’t possible, it passes through our relay server, which can’t read it."
+            "value": "To set up the encrypted connection between this iPhone and your JetBox. Your traffic goes directly between them; our server only helps them find each other."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Чтобы установить зашифрованное соединение между этим iPhone и вашим JetBox. Если напрямую не получается, соединение идёт через наш промежуточный сервер — прочитать его он не может."
+            "value": "Чтобы установить зашифрованное соединение между этим iPhone и вашим JetBox. Трафик идёт напрямую между ними; наш сервер только помогает им найти друг друга."
           }
         }
       }
