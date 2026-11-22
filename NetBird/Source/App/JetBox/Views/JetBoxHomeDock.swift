@@ -103,7 +103,7 @@ struct JetBoxHomeDock: View {
 
     private var subtitle: String {
         switch phase {
-        case .on: return JBText.dockOn
+        case .on: return JBText.dockOnNow
         case .working(let reverse): return reverse ? JBText.homeDisconnecting : JBText.dockConnecting
         case .off: return JBText.dockOff
         case .offline: return JBText.dockOffline

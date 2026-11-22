@@ -195,11 +195,11 @@ struct JetBoxFlowView: View {
 
     private func protectedView(exitNode: String?) -> some View {
         VStack(spacing: 18) {
-            Text(JBText.protectedTitle)
+            Text(JBText.protectedTitle(exitNode: exitNode))
                 .font(.title2.weight(.semibold))
                 .foregroundColor(JBColor.text)
                 .multilineTextAlignment(.center)
-            Text(exitNode.map { JBText.protectedExit($0) } ?? JBText.protectedNoExit)
+            Text(JBText.protectedBody(exitNode: exitNode))
                 .font(.subheadline)
                 .foregroundColor(JBColor.muted)
                 .multilineTextAlignment(.center)

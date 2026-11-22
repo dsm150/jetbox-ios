@@ -108,16 +108,16 @@ struct JetBoxSimpleFlowView: View {
 
         case .protected(let exitNode):
             VStack(spacing: 14) {
-                JBSimpleCircle(phase: .on, diameter: 200, accessibilityLabel: JBText.protectedTitle)
+                JBSimpleCircle(phase: .on, diameter: 200, accessibilityLabel: JBText.protectedTitle(exitNode: exitNode))
                     .padding(.top, 40)
                 // Без отдельной галочки: длинный заголовок переносится, а галочка
                 // уже есть на значке круга.
-                Text(JBText.protectedTitle)
+                Text(JBText.protectedTitle(exitNode: exitNode))
                     .font(JBSimple.font(28, .black))
                     .foregroundColor(JBSimple.accent)
                     .multilineTextAlignment(.center)
                 JBSimpleTrafficLine()
-                Text(exitNode.map { JBText.protectedExit($0) } ?? JBText.protectedNoExit)
+                Text(JBText.protectedBody(exitNode: exitNode))
                     .font(JBSimple.secondary)
                     .foregroundColor(JBSimple.muted)
                     .multilineTextAlignment(.center)

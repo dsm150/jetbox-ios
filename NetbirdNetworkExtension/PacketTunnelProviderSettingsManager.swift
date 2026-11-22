@@ -30,16 +30,35 @@ class PacketTunnelProviderSettingsManager {
         self.packetTunnelProvider = packetTunnelProvider
     }
 
-    /// JetBox «только дом»: ядро прислало маршрут выхода (сервер включил его
-    /// автоматически или его выбрали в расширенном режиме). Снимаем в ядре —
-    /// асинхронно: мы внутри обратного вызова Go, синхронный вызов в ядро
-    /// отсюда может зависнуть.
-    func homeOnlyExitBlocked() {
+    /// JetBox «только дом»: выход своей коробки, который проверка в ядре
+    /// застала включённым и единственным. Только тогда маршрут выхода идёт
+    /// в туннель (NetworkChangeListener).
+    private var verifiedOwnExit: String?
+    private let ownExitLock = NSLock()
+
+    func isOwnExitVerified(_ allowed: String?) -> Bool {
+        guard let allowed else { return false }
+        ownExitLock.lock(); defer { ownExitLock.unlock() }
+        return verifiedOwnExit == allowed
+    }
+
+    /// Приводит выходы в ядре к разрешённому: чужие снимает, свой (если
+    /// разрешён и не включён) включает. Асинхронно: мы внутри обратного вызова
+    /// Go, синхронный вызов в ядро отсюда может зависнуть. Когда свой выход
+    /// впервые подтверждён — `reapply` заново применяет маршруты ядра.
+    func homeOnlyEnforceExit(allowed: String?, reapply: @escaping () -> Void) {
         // Файл общий с tvOS-расширением, где свой PacketTunnelProvider без
         // этого метода; «только дом» там и не включается.
         #if os(iOS)
         DispatchQueue.global(qos: .utility).async { [weak self] in
-            self?.packetTunnelProvider?.deselectExitRoutes()
+            guard let self, let provider = self.packetTunnelProvider else { return }
+            let ownActive = provider.enforceOwnExit(allowed: allowed)
+            let verified = ownActive ? allowed : nil
+            self.ownExitLock.lock()
+            let changed = self.verifiedOwnExit != verified
+            self.verifiedOwnExit = verified
+            self.ownExitLock.unlock()
+            if changed && verified != nil { reapply() }
         }
         #endif
     }

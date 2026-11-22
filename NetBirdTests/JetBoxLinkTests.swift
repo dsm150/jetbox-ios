@@ -466,17 +466,39 @@ final class JetBoxSimpleStyleExitTests: XCTestCase {
 
 final class JetBoxHomeOnlyTests: XCTestCase {
 
-    private func payload(x: Bool = true) -> JetBoxLinkPayload {
+    private func payload(x: Bool = true, exit: String? = "cl-exit") -> JetBoxLinkPayload {
         JetBoxLinkPayload(setupKey: "3f6c2a9e-0d41-4c7b-9a55-8e21b07c4d19",
                           managementURL: "https://mgmt.jet-net.net",
-                          exitNodeName: "cl-exit",
+                          exitNodeName: exit,
                           boxName: "Home",
                           enablesDefaultExit: x)
     }
 
-    func testHomeOnlyNeverAppliesExitFromLink() {
-        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(), homeOnly: true))
-        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(x: false), homeOnly: true))
+    /// 1.0 (14): «только дом» включает выход своей коробки — `e` от Кабинета.
+    func testHomeOnlyAppliesOwnBoxExit() {
+        XCTAssertTrue(JetBoxEdition.appliesExit(payload: payload(exit: "home-ivanov"), homeOnly: true))
+    }
+
+    func testHomeOnlyRespectsXZeroForOwnExit() {
+        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(x: false, exit: "home-ivanov"), homeOnly: true))
+    }
+
+    func testHomeOnlyNeverAppliesSharedOrMissingExit() {
+        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(), homeOnly: true), "облако cl-…")
+        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(exit: nil), homeOnly: true), "без e")
+        XCTAssertFalse(JetBoxEdition.appliesExit(payload: payload(exit: ""), homeOnly: true))
+    }
+
+    func testOwnExitToggleShownOnlyForOwnBoxExitInHomeOnly() {
+        let own = JetBoxBox(managementURL: "https://mgmt.jet-net.net", exitNodeName: "home-ivanov",
+                            selectedExitNode: nil, boxName: "Home", registeredAt: Date())
+        var shared = own; shared.exitNodeName = "cl-exit"
+        var none = own; none.exitNodeName = nil
+        XCTAssertTrue(JetBoxEdition.showsOwnExitToggle(homeOnly: true, box: own))
+        XCTAssertFalse(JetBoxEdition.showsOwnExitToggle(homeOnly: false, box: own), "русская сборка — свой выбор выхода")
+        XCTAssertFalse(JetBoxEdition.showsOwnExitToggle(homeOnly: true, box: shared))
+        XCTAssertFalse(JetBoxEdition.showsOwnExitToggle(homeOnly: true, box: none))
+        XCTAssertFalse(JetBoxEdition.showsOwnExitToggle(homeOnly: true, box: nil))
     }
 
     func testWithoutFlagExitFromLinkAppliesAsBefore() {
@@ -518,17 +540,90 @@ final class JetBoxHomeOnlyTests: XCTestCase {
 }
 
 final class JetBoxHomeOnlyGuardTests: XCTestCase {
+    typealias Plan = JetBoxHomeOnlyGuard.Plan
 
-    func testHomeOnlyDeselectsPreviouslyEnabledExit() {
-        XCTAssertEqual(JetBoxHomeOnlyGuard.exitToDeselect(selectedExit: "cl-exit", homeOnly: true), "cl-exit")
+    func testHomeOnlyDeselectsForeignExit() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "cl-exit", available: ["cl-exit"], allowed: nil, homeOnly: true),
+                       Plan(deselect: "cl-exit", select: nil))
+    }
+
+    func testHomeOnlySwitchesForeignToOwnExit() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "cl-exit", available: ["cl-exit", "home-ivanov"],
+                                                allowed: "home-ivanov", homeOnly: true),
+                       Plan(deselect: "cl-exit", select: "home-ivanov"))
+    }
+
+    func testHomeOnlyEnablesOwnExitWhenToggleOn() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: nil, available: ["home-ivanov"], allowed: "home-ivanov", homeOnly: true),
+                       Plan(deselect: nil, select: "home-ivanov"))
+    }
+
+    func testHomeOnlyKeepsOwnExit() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "home-ivanov", available: ["home-ivanov"],
+                                                allowed: "home-ivanov", homeOnly: true), Plan())
+    }
+
+    func testToggleOffDeselectsOwnExit() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "home-ivanov", available: ["home-ivanov"], allowed: nil, homeOnly: true),
+                       Plan(deselect: "home-ivanov", select: nil))
+    }
+
+    func testOwnExitMissingFromRoutesSelectsNothing() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: nil, available: ["cl-exit"], allowed: "home-ivanov", homeOnly: true),
+                       Plan())
     }
 
     func testHomeOnlyWithoutExitDoesNothing() {
-        XCTAssertNil(JetBoxHomeOnlyGuard.exitToDeselect(selectedExit: nil, homeOnly: true))
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: nil, available: [], allowed: nil, homeOnly: true), Plan())
     }
 
     func testWithoutFlagExitStays() {
-        XCTAssertNil(JetBoxHomeOnlyGuard.exitToDeselect(selectedExit: "cl-exit", homeOnly: false))
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "cl-exit", available: ["cl-exit"], allowed: nil, homeOnly: false),
+                       Plan())
+    }
+}
+
+/// Какой выход приложение разрешает расширению (App Group) — 1.0 (14).
+final class JetBoxOwnExitShareTests: XCTestCase {
+    private var defaults: UserDefaults!
+    private let suite = "jetbox.tests.ownexit"
+
+    override func setUp() {
+        defaults = UserDefaults(suiteName: suite)
+        defaults.removePersistentDomain(forName: suite)
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suite)
+    }
+
+    private func box(exit: String?, selected: String?) -> JetBoxBox {
+        JetBoxBox(managementURL: "https://mgmt.jet-net.net", exitNodeName: exit, selectedExitNode: selected,
+                  boxName: "Home", registeredAt: Date())
+    }
+
+    func testSharesOwnExitWhenEnabled() {
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), defaults: defaults)
+        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(defaults), "home-ivanov")
+    }
+
+    func testToggleOffClearsSharedExit() {
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), defaults: defaults)
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: nil), defaults: defaults)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults))
+    }
+
+    func testNeverSharesForeignOrSharedExit() {
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "other-box"), defaults: defaults)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults), "выбран не выход своей коробки")
+        JetBoxStore.shareOwnExit(box(exit: "cl-exit", selected: "cl-exit"), defaults: defaults)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults), "облако")
+    }
+
+    func testSignOutClearsSharedExit() {
+        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), defaults: defaults)
+        JetBoxStore.shareOwnExit(nil, defaults: defaults)
+        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(defaults))
     }
 }
 
@@ -1073,5 +1168,61 @@ final class JetBoxSignOutTests: XCTestCase {
         // Записи нет — без «переключить?», сразу одна кнопка, как после установки.
         guard case .ready(let payload) = flow.step else { return XCTFail("шаг \(flow.step)") }
         XCTAssertEqual(payload.boxName, "Demo Home")
+    }
+}
+
+/// Вход в сборке США (1.0 (14)): выход своей коробки включается по умолчанию,
+/// `x=0` по-прежнему уважаем. Тестовое приложение собрано с JETBOX_HOME_ONLY=YES.
+final class JetBoxOwnExitRememberTests: XCTestCase {
+    private var savedBox: JetBoxBox?
+
+    override func setUp() {
+        savedBox = JetBoxStore.currentBox
+    }
+
+    override func tearDown() {
+        JetBoxStore.currentBox = savedBox
+    }
+
+    private func payload(x: Bool, exit: String?) -> JetBoxLinkPayload {
+        JetBoxLinkPayload(setupKey: "3f6c2a9e-0d41-4c7b-9a55-8e21b07c4d19",
+                          managementURL: "https://mgmt.jet-net.net", exitNodeName: exit,
+                          boxName: "Lakeview Home", enablesDefaultExit: x)
+    }
+
+    func testLoginTurnsOwnExitOnByDefault() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
+        JetBoxStore.remember(payload(x: true, exit: "home-ivanov"))
+        XCTAssertEqual(JetBoxStore.currentBox?.selectedExitNode, "home-ivanov")
+        XCTAssertTrue(JetBoxStore.ownExitEnabled)
+        XCTAssertTrue(JBText.allInternetHome)
+    }
+
+    func testXZeroLeavesToggleOff() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
+        JetBoxStore.remember(payload(x: false, exit: "home-ivanov"))
+        XCTAssertNil(JetBoxStore.currentBox?.selectedExitNode)
+        XCTAssertFalse(JetBoxStore.ownExitEnabled)
+        XCTAssertEqual(JBText.homeConnectedNow, JBText.homeConnected, "выкл — прежнее «On your home network»")
+    }
+
+    func testCloudExitNeverTurnsOn() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
+        JetBoxStore.remember(payload(x: true, exit: "cl-exit"))
+        XCTAssertNil(JetBoxStore.currentBox?.selectedExitNode)
+        XCTAssertFalse(JetBoxStore.ownExitEnabled)
+    }
+
+    func testStatusTextsFollowToggle() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
+        JetBoxStore.remember(payload(x: true, exit: "home-ivanov"))
+        XCTAssertEqual(JBText.homeConnectedNow, "Protected by your JetBox")
+        XCTAssertEqual(JBText.dockOnNow, "All internet through your home")
+        XCTAssertEqual(JBText.protectedTitle(exitNode: "home-ivanov"), "Protected by your JetBox")
+        XCTAssertEqual(JBText.protectedBody(exitNode: "home-ivanov"), "All internet goes through your home.")
+        JetBoxStore.rememberExitNode(nil)
+        XCTAssertEqual(JBText.homeConnectedNow, "On your home network")
+        XCTAssertEqual(JBText.dockOnNow, "On your home network")
+        XCTAssertEqual(JBText.protectedTitle(exitNode: nil), "On your home network")
     }
 }

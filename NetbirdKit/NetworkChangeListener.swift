@@ -55,14 +55,23 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
                 return
             }
             var routesString = p0 ?? ""
-            // JetBox «только дом» (сборка США): маршрут выхода в туннель не
-            // ставим, а в ядре его снимаем — и при подключении с виджета или
-            // из Пункта управления, когда приложение не открыто.
+            // JetBox «только дом» (сборка США): в туннель идёт только выход
+            // своей коробки, и то при включённом тумблере (1.0 (14)). Чужой
+            // выход в ядре снимаем — и при подключении с виджета или из Пункта
+            // управления, когда приложение не открыто. Пока расширение не
+            // проверило в ядре, что включён именно свой выход, маршрут выхода
+            // не ставим: проверка асинхронная и потом применит маршруты заново.
             if Self.jetBoxHomeOnly {
+                let allowed = Self.jetBoxOwnExit()
                 let (kept, hadExit) = Self.stripExitRoutes(routesString)
-                if hadExit {
+                if hadExit && !tunnelManager.isOwnExitVerified(allowed) {
                     routesString = kept
-                    tunnelManager.homeOnlyExitBlocked()
+                }
+                if hadExit || allowed != nil {
+                    let raw = p0
+                    tunnelManager.homeOnlyEnforceExit(allowed: allowed) { [weak self] in
+                        self?.onNetworkChanged(raw)
+                    }
                 }
             }
             let (v4Routes, v6Routes, containsDefault) = parseRoutesToNESettings(routesString: routesString)
@@ -91,6 +100,15 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
             #endif
         }
         return !["NO", "FALSE", "0"].contains(text)
+    }
+
+    /// Выход своей коробки, который приложение разрешило (App Group). nil —
+    /// тумблер выключен или выхода своей коробки нет.
+    static func jetBoxOwnExit(
+        _ defaults: UserDefaults? = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)
+    ) -> String? {
+        guard let name = defaults?.string(forKey: GlobalConstants.keyJetBoxOwnExit), !name.isEmpty else { return nil }
+        return name
     }
 
     /// Убирает из списка маршрутов ядра (CIDR через запятую) маршруты выхода

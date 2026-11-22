@@ -35,6 +35,16 @@ struct JetBoxSimpleSettingsView: View {
 
     private var boxName: String? { demoBoxName ?? JetBoxStore.currentBox?.displayName }
 
+    /// Тумблер «весь интернет через мой JetBox» (только сборка США, 1.0 (14)).
+    private var showsOwnExitToggle: Bool {
+        demoBoxName == nil && JetBoxEdition.showsOwnExitToggle(box: JetBoxStore.currentBox)
+    }
+
+    private var ownExitBinding: Binding<Bool> {
+        Binding(get: { jetbox.ownExitEnabled },
+                set: { jetbox.setOwnExit(enabled: $0, viewModel: viewModel) })
+    }
+
     private var style: Binding<JetBoxStyle> {
         Binding(get: { JetBoxStyle(rawValue: styleRaw) ?? JetBoxStyle.fallback },
                 set: { styleRaw = $0.rawValue; JetBoxStyle.styleDidChange() })
@@ -50,9 +60,28 @@ struct JetBoxSimpleSettingsView: View {
                     JBSimpleCard {
                         if let boxName {
                             JBSimpleRow(title: JBText.settingsBoxName, value: boxName)
+                            if showsOwnExitToggle {
+                                JBSimpleDivider()
+                                Toggle(isOn: ownExitBinding) {
+                                    Text(JBText.settingsAllInternet)
+                                        .font(JBSimple.font(20, .bold))
+                                        .foregroundColor(JBSimple.ink)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .tint(JBSimple.accent)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 14)
+                            }
                         } else {
                             JBSimpleRow(title: JBText.settingsNoBox)
                         }
+                    }
+                    if showsOwnExitToggle {
+                        Text(JBText.settingsAllInternetFooter)
+                            .font(JBSimple.font(17, .semibold))
+                            .foregroundColor(JBSimple.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 8)
                     }
 
                     JBSimpleSectionLabel(title: JBText.settingsSectionApp)

@@ -84,6 +84,7 @@ enum JetBoxStore {
             return try? JSONDecoder().decode(JetBoxBox.self, from: data)
         }
         set {
+            defer { shareOwnExit(newValue) }
             guard let newValue else {
                 UserDefaults.standard.removeObject(forKey: boxKey)
                 return
@@ -93,6 +94,26 @@ enum JetBoxStore {
             }
         }
     }
+
+    /// Выход своей коробки, который сейчас включён, — для сетевого расширения:
+    /// в «только дом» оно пропускает только его (NetworkChangeListener).
+    static func ownExitToAllow(for box: JetBoxBox?) -> String? {
+        guard let selected = JetBoxEdition.ownExit(box?.selectedExitNode),
+              selected == box?.exitNodeName else { return nil }
+        return selected
+    }
+
+    static func shareOwnExit(_ box: JetBoxBox?,
+                             defaults: UserDefaults? = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)) {
+        if let exit = ownExitToAllow(for: box) {
+            defaults?.set(exit, forKey: GlobalConstants.keyJetBoxOwnExit)
+        } else {
+            defaults?.removeObject(forKey: GlobalConstants.keyJetBoxOwnExit)
+        }
+    }
+
+    /// Тумблер «весь интернет через мой JetBox» включён.
+    static var ownExitEnabled: Bool { ownExitToAllow(for: currentBox) != nil }
 
     /// Экран первого запуска апстрима («подключитесь к облаку NetBird») клиенту
     /// JetBox показывать незачем — коробка приходит ссылкой.
@@ -105,7 +126,7 @@ enum JetBoxStore {
             managementURL: payload.managementURL,
             exitNodeName: payload.exitNodeName,
             // `x=0`: выход из ссылки только разрешён, не включён (контракт 1.2, §2.10).
-            // «Только дом»: выход не включается (JetBoxEdition).
+            // «Только дом»: включается только выход своей коробки (JetBoxEdition).
             selectedExitNode: JetBoxEdition.appliesExit(payload: payload, homeOnly: JetBoxEdition.homeOnly)
                 ? payload.exitNodeName : nil,
             boxName: payload.boxName,

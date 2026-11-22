@@ -35,16 +35,32 @@ struct JetBoxSettingsView: View {
 
     private var box: JetBoxBox? { JetBoxStore.currentBox }
 
+    /// Тумблер «весь интернет через мой JetBox» (только сборка США, 1.0 (14)).
+    private var ownExitBinding: Binding<Bool> {
+        Binding(get: { jetbox.ownExitEnabled },
+                set: { jetbox.setOwnExit(enabled: $0, viewModel: viewModel) })
+    }
+
     var body: some View {
         NavigationView {
             List {
-                Section(JBText.settingsSectionBox) {
+                Section {
                     if let box {
                         JBRow(title: JBText.settingsBoxName, value: box.displayName)
+                        if JetBoxEdition.showsOwnExitToggle(box: box) {
+                            Toggle(JBText.settingsAllInternet, isOn: ownExitBinding)
+                                .tint(JBColor.accent)
+                        }
                     } else {
                         Text(JBText.settingsNoBox)
                             .font(.subheadline)
                             .foregroundColor(JBColor.muted)
+                    }
+                } header: {
+                    Text(JBText.settingsSectionBox)
+                } footer: {
+                    if JetBoxEdition.showsOwnExitToggle(box: box) {
+                        Text(JBText.settingsAllInternetFooter)
                     }
                 }
 

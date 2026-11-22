@@ -20,6 +20,10 @@ struct GlobalConstants {
     static let keyOnDemandCellularPolicy = "netbird.onDemand.cellularPolicy"
     static let keyOnDemandWiFiNetworks = "netbird.onDemand.wifiNetworks"
     static let keyKnownSSIDs = "netbird.knownSSIDs"
+    /// JetBox «только дом»: выход своей коробки, который разрешено держать
+    /// включённым (тумблер «All internet through my JetBox»). Нет значения —
+    /// расширение снимает любой выход. Пишет приложение (JetBoxStore).
+    static let keyJetBoxOwnExit = "jetbox.ownExit"
 
     // Widget shared state keys
     static let keyWidgetVPNStatus = "netbird.widget.vpnStatus"

@@ -1084,17 +1084,36 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
 
-    /// JetBox «только дом»: снять в ядре все выбранные маршруты выхода. Снятие
-    /// ядро сохраняет в файл состояния — после перезапуска выход не вернётся.
-    func deselectExitRoutes() {
+    /// JetBox «только дом»: привести выходы в ядре к разрешённому. Чужие
+    /// выходы снимаем, свой (`allowed`, тумблер включён) включаем, если он
+    /// есть, но не выбран. Выбор и снятие ядро сохраняет в файл состояния.
+    /// IPv6-пара выхода («<имя>-v6») следует за основным маршрутом сама.
+    /// Возвращает true, если свой выход включён и ничего менять не пришлось.
+    func enforceOwnExit(allowed: String?) -> Bool {
         guard let adapter = adapter,
-              let details = try? adapter.client.getRoutesSelectionDetails() else { return }
+              let details = try? adapter.client.getRoutesSelectionDetails() else { return false }
+        var ownPresent = false, ownSelected = false, changed = false
         for index in 0..<details.size() {
-            guard let route = details.get(index), route.selected,
+            guard let route = details.get(index),
                   route.network == "0.0.0.0/0" || route.network == "::/0" else { continue }
-            AppLogger.shared.log("JetBox: «только дом» — снимаю выход \(route.id_) в расширении")
+            if let allowed, route.id_ == allowed || route.id_ == allowed + "-v6" {
+                if route.id_ == allowed {
+                    ownPresent = true
+                    ownSelected = route.selected
+                }
+                continue
+            }
+            guard route.selected else { continue }
+            AppLogger.shared.log("JetBox: «только дом» — снимаю чужой выход \(route.id_) в расширении")
             deselectRoute(id: route.id_)
+            changed = true
         }
+        if let allowed, ownPresent, !ownSelected {
+            AppLogger.shared.log("JetBox: «только дом» — включаю выход своей коробки \(allowed) в расширении")
+            selectRoute(id: allowed)
+            changed = true
+        }
+        return ownSelected && !changed
     }
 
     func deselectRoute(id: String) {

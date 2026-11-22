@@ -392,6 +392,23 @@
         }
       }
     },
+    "jetbox.dock.on_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All internet through your home"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Весь интернет через ваш дом"
+          }
+        }
+      }
+    },
     "jetbox.dock.relayed": {
       "extractionState": "manual",
       "localizations": {
@@ -932,6 +949,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Под защитой"
+          }
+        }
+      }
+    },
+    "jetbox.home.connected_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected by your JetBox"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Под защитой вашего JetBox"
           }
         }
       }
@@ -1752,6 +1786,23 @@
         }
       }
     },
+    "jetbox.protected.all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All internet goes through your home."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Весь интернет идёт через ваш дом."
+          }
+        }
+      }
+    },
     "jetbox.protected.exit": {
       "extractionState": "manual",
       "localizations": {
@@ -1799,6 +1850,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Вы под защитой JetBox"
+          }
+        }
+      }
+    },
+    "jetbox.protected.title_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected by your JetBox"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Под защитой вашего JetBox"
           }
         }
       }
@@ -2022,6 +2090,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расширенные настройки открыты"
+          }
+        }
+      }
+    },
+    "jetbox.settings.all_internet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All internet through my JetBox"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Весь интернет через мой JetBox"
+          }
+        }
+      }
+    },
+    "jetbox.settings.all_internet.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off to send only home traffic through JetBox. Other sites will use your regular connection."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если выключить, через JetBox пойдёт только домашняя сеть, остальные сайты — напрямую, как обычно."
           }
         }
       }

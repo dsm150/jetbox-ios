@@ -280,6 +280,19 @@ final class JetBoxOnboarding: ObservableObject {
         await signOut(stopTunnel: { await JetBoxSignOut.stopTunnel(viewModel) })
     }
 
+    // MARK: - Весь интернет через свой JetBox (сборка США, 1.0 (14))
+
+    /// Счётчик для перерисовки: запись живёт в UserDefaults, SwiftUI её не видит.
+    @Published private(set) var exitRevision = 0
+
+    var ownExitEnabled: Bool { JetBoxStore.ownExitEnabled }
+
+    func setOwnExit(enabled: Bool, viewModel: ViewModel) {
+        JetBoxHomeOnlyGuard.setOwnExit(enabled: enabled, routes: viewModel.routeViewModel,
+                                       isConnected: viewModel.vpnDisplayState == .connected)
+        exitRevision += 1
+    }
+
     // MARK: - Вход по ссылке из письма
 
     private func startLogin(token: String) {
@@ -405,7 +418,7 @@ final class JetBoxOnboarding: ObservableObject {
 
         // 4. Выход в интернет.
         // `x=0` (облако): выход по умолчанию не включаем, клиент включит сам.
-        // «Только дом»: выход не включаем вовсе (JetBoxEdition).
+        // «Только дом»: только выход своей коробки, по имени из `e` (JetBoxEdition).
         let exitOutcome: ExitOutcome
         if JetBoxEdition.appliesExit(payload: payload, homeOnly: JetBoxEdition.homeOnly) {
             step = .selectingExit(payload)
@@ -487,8 +500,8 @@ final class JetBoxOnboarding: ObservableObject {
     /// на сервере `skipAutoApply=false` (routemanager/manager.go,
     /// pickPreferredExitNode); при `skipAutoApply=true` выход только разрешён,
     /// и выбирает его клиент — здесь. Имя маршрута приходит в ссылке (`e=`);
-    /// если его нет или он не нашёлся — работает фолбэк. В «только дом» сюда
-    /// не заходим, а выход снимают JetBoxHomeOnlyGuard и сетевое расширение.
+    /// если его нет или он не нашёлся — работает фолбэк. В «только дом» —
+    /// только имя из ссылки: чужой выход снимут JetBoxHomeOnlyGuard и расширение.
     private func resolveExitNode(payload: JetBoxLinkPayload, viewModel: ViewModel) async -> ExitOutcome {
         let routes = viewModel.routeViewModel
         let deadline = Date().addingTimeInterval(routesTimeout)
@@ -509,6 +522,12 @@ final class JetBoxOnboarding: ObservableObject {
            let match = nodes.first(where: { $0.name == wanted }) {
             await select(match, in: routes)
             return .selected(match.name)
+        }
+
+        // «Только дом»: никаких догадок — своего выхода нет в маршрутах, значит без выхода.
+        if JetBoxEdition.homeOnly {
+            AppLogger.shared.log("JetBox: «только дом» — выхода своей коробки нет в маршрутах (\(nodes.count) других)")
+            return .none
         }
 
         // 2. Ровно один выход — выбираем его.

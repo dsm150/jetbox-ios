@@ -93,6 +93,14 @@ enum JBText {
     static var protectedTitle: String { t("jetbox.protected.title") }
     static func protectedExit(_ name: String) -> String { t("jetbox.protected.exit", name) }
     static var protectedNoExit: String { t("jetbox.protected.no_exit") }
+    /// Экран «готово»: в сборке США с выходом своей коробки — «весь интернет через дом».
+    static func protectedTitle(exitNode: String?) -> String {
+        JetBoxEdition.homeOnly && exitNode != nil ? t("jetbox.protected.title_all") : protectedTitle
+    }
+    static func protectedBody(exitNode: String?) -> String {
+        guard let exitNode else { return protectedNoExit }
+        return JetBoxEdition.homeOnly ? t("jetbox.protected.all") : protectedExit(exitNode)
+    }
 
     // MARK: Выбор выхода
 
@@ -122,6 +130,9 @@ enum JBText {
     // MARK: Главный экран
 
     static var homeConnected: String { t("jetbox.home.connected") }
+    /// Сборка США, тумблер «All internet through my JetBox» включён.
+    static var allInternetHome: Bool { JetBoxEdition.homeOnly && JetBoxStore.ownExitEnabled }
+    static var homeConnectedNow: String { allInternetHome ? t("jetbox.home.connected_all") : homeConnected }
     static var homeConnecting: String { t("jetbox.home.connecting") }
     static var homeDisconnecting: String { t("jetbox.home.disconnecting") }
     static var homeDisconnected: String { t("jetbox.home.disconnected") }
@@ -142,6 +153,8 @@ enum JBText {
     static var settingsExit: String { t("jetbox.settings.exit") }
     static var settingsNoBox: String { t("jetbox.settings.no_box") }
     static var settingsSignOut: String { t("jetbox.settings.sign_out") }
+    static var settingsAllInternet: String { t("jetbox.settings.all_internet") }
+    static var settingsAllInternetFooter: String { t("jetbox.settings.all_internet.footer") }
     static var settingsSignOutTitle: String { t("jetbox.settings.sign_out.confirm_title") }
     static var settingsSignOutBody: String { t("jetbox.settings.sign_out.confirm_body") }
     static var settingsSectionApp: String { t("jetbox.settings.section.app") }
@@ -175,6 +188,7 @@ enum JBText {
     // MARK: Нижняя панель и подробности подключения
 
     static var dockOn: String { t("jetbox.dock.on") }
+    static var dockOnNow: String { allInternetHome ? t("jetbox.dock.on_all") : dockOn }
     static var dockConnecting: String { t("jetbox.dock.connecting") }
     static var dockOff: String { t("jetbox.dock.off") }
     static var dockOffline: String { t("jetbox.dock.offline") }

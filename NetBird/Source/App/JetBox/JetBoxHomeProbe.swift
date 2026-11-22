@@ -112,6 +112,8 @@ enum JetBoxStartup {
     static func run() {
         JetBoxAdvancedAccess.migrateLegacyFlagIfNeeded()
         JetBoxConnectionDefaults.applyDirectByDefaultIfNeeded()
+        // Расширению — какой выход своей коробки разрешён (и для установок до 1.0 (14)).
+        JetBoxStore.shareOwnExit(JetBoxStore.currentBox)
         #if DEBUG && os(iOS)
         JetBoxStyle.applyLaunchOverride()
         #endif

@@ -116,7 +116,7 @@ struct JetBoxHomeView: View {
             // Разрешение на уведомления — когда защита впервые включилась,
             // а не при запуске: тогда понятно, о чём будут уведомления.
             if state == .connected { JetBoxNotifications.requestIfNeeded() }
-            // «Только дом»: выход, оставшийся с прежней сборки, снимаем.
+            // «Только дом»: чужой выход снимаем, свой при включённом тумблере включаем.
             if state == .connected { Task { await JetBoxHomeOnlyGuard.enforce(routes: routes) } }
         }
         .onAppear {
@@ -142,7 +142,7 @@ struct JetBoxHomeView: View {
 
     static func statusText(for state: VPNDisplayState, online: Bool) -> String {
         switch state {
-        case .connected: return online ? JBText.homeConnected : JBText.homeOffline
+        case .connected: return online ? JBText.homeConnectedNow : JBText.homeOffline
         case .connecting: return JBText.homeConnecting
         case .disconnecting: return JBText.homeDisconnecting
         case .disconnected: return JBText.homeDisconnected
