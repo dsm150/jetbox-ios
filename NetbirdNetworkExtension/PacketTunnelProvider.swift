@@ -456,8 +456,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         case JetBoxAllowedExit.changedMessage:
             // Приложение сменило разрешённый выход (новая коробка или первый
             // запуск после обновления): клиент ядра перечитает его при старте.
-            let current = JetBoxAllowedExit.read()
-            if let last = EnvVarPackager.lastAllowedExit, last != current {
+            let exitChanged = EnvVarPackager.lastAllowedExit.map { $0 != JetBoxAllowedExit.read() } ?? false
+            let peerChanged = EnvVarPackager.lastAllowedPeer.map { $0 != JetBoxAllowedPeer.read() } ?? false
+            if exitChanged || peerChanged {
                 AppLogger.shared.log("JetBox: allowed exit changed — restarting client")
                 restartClient()
             }

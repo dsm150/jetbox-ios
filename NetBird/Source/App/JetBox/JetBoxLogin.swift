@@ -215,9 +215,11 @@ struct JetBoxLoginAPI {
     /// случаях дальше её проверяет `JetBoxLink.parse` — маска сервера и ключ.
     static func connectURL(from data: Data) -> URL? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        // 1.0 (21): mesh-адрес пира коробки — параметром `b` той же ссылки.
+        let boxParam = JetBoxLink.validIP(json["box_ip"] as? String).map { "&b=" + escape($0) } ?? ""
         if let raw = json["connect_url"] as? String, let url = URL(string: raw),
            case .payload = JetBoxLink.parse(url) {
-            return url
+            return boxParam.isEmpty ? url : (URL(string: raw + boxParam) ?? url)
         }
         guard let key = json["setup_key"] as? String, !key.isEmpty else { return nil }
         var fragment = "k=" + escape(key)
@@ -226,6 +228,7 @@ struct JetBoxLoginAPI {
         }
         if let exit = json["exit_node"] as? String, !exit.isEmpty { fragment += "&e=" + escape(exit) }
         if let name = json["site_name"] as? String, !name.isEmpty { fragment += "&n=" + escape(name) }
+        fragment += boxParam
         return URL(string: "\(JetBoxConfig.customScheme)://connect#\(fragment)")
     }
 

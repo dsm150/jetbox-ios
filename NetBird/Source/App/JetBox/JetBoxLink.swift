@@ -12,6 +12,7 @@
 //
 
 import Foundation
+import Network
 
 // MARK: - Константы контракта
 
@@ -56,6 +57,9 @@ struct JetBoxLinkPayload: Equatable, Codable {
     var appToken: String? = nil
     /// `x=0`: выход в интернет по умолчанию не включать (облачный тариф).
     var enablesDefaultExit: Bool = true
+    /// `b`: mesh-адрес пира своей коробки (поле `box_ip` ответа verify, 1.0 (21)).
+    /// Ядро говорит только с пиром с этим адресом (NB_ALLOWED_PEER_IP, патч 0004).
+    var boxIP: String? = nil
 
     /// Маска ключа для экрана и логов: видны только последние 4 символа.
     var maskedKey: String {
@@ -166,8 +170,22 @@ enum JetBoxLink {
             exitNodeName: params["e"].flatMap { $0.isEmpty ? nil : $0 },
             boxName: params["n"].flatMap { $0.isEmpty ? nil : $0 },
             appToken: params["t"].flatMap { $0.isEmpty ? nil : $0 },
-            enablesDefaultExit: params["x"] != "0"
+            enablesDefaultExit: params["x"] != "0",
+            boxIP: validIP(params["b"])
         ))
+    }
+
+    /// Адрес пира коробки: только IPv4/IPv6 без маски (маску, если сервер
+    /// её прислал, отрезаем). Иначе nil — тогда ядро не пустит ни одного пира.
+    static func validIP(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let bare = String(raw.trimmingCharacters(in: .whitespaces).split(separator: "/").first ?? "")
+        // IPv4Address принимает и сокращённые формы («100.79.115»), а нам нужен
+        // ровно тот адрес, что в карте сети: четыре октета.
+        if bare.split(separator: ".", omittingEmptySubsequences: false).count == 4,
+           let v4 = IPv4Address(bare) { return "\(v4)" }
+        if bare.contains(":"), let v6 = IPv6Address(bare) { return "\(v6)" }
+        return nil
     }
 
     /// Универсальная ссылка Кабинета либо своя схема.

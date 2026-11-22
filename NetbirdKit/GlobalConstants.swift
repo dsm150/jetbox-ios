@@ -108,26 +108,46 @@ enum JetBoxTunnelState {
 /// Нет файла или он пуст — пустая строка: ядро не пропустит ни одного 0.0.0.0/0.
 enum JetBoxAllowedExit {
     static let fileName = "jetbox-allowed-exit"
-    /// Сообщение расширению: файл изменился, перезапусти клиента ядра.
+    /// Сообщение расширению: файл выхода или пира изменился, перезапусти клиента ядра.
     static let changedMessage = "JetBoxAllowedExitChanged"
 
-    static func defaultURL() -> URL? {
+    static func defaultURL() -> URL? { JetBoxCorePinFile.url(fileName) }
+    static func read(at url: URL? = defaultURL()) -> String { JetBoxCorePinFile.read(at: url) }
+    @discardableResult
+    static func write(_ exit: String?, at url: URL? = defaultURL()) -> Bool { JetBoxCorePinFile.write(exit, at: url) }
+}
+
+/// JetBox, сборка США, 1.0 (21): mesh-адрес пира своей коробки (`box_ip` из
+/// verify). Ядро говорит только с этим пиром и принимает маршруты только от
+/// него (`NB_ALLOWED_PEER_IP`, патч 0004). Тот же путь, что у выхода: файл в
+/// App Group, пишется синхронно до первого Connect. Нет файла — ни одного пира.
+enum JetBoxAllowedPeer {
+    static let fileName = "jetbox-allowed-peer-ip"
+
+    static func defaultURL() -> URL? { JetBoxCorePinFile.url(fileName) }
+    static func read(at url: URL? = defaultURL()) -> String { JetBoxCorePinFile.read(at: url) }
+    @discardableResult
+    static func write(_ ip: String?, at url: URL? = defaultURL()) -> Bool { JetBoxCorePinFile.write(ip, at: url) }
+}
+
+/// Маленький текстовый файл в контейнере App Group для ядра.
+enum JetBoxCorePinFile {
+    static func url(_ name: String) -> URL? {
         FileManager.default
             .containerURL(forSecurityApplicationGroupIdentifier: GlobalConstants.userPreferencesSuiteName)?
-            .appendingPathComponent(fileName)
+            .appendingPathComponent(name)
     }
 
-    static func read(at url: URL? = defaultURL()) -> String {
+    static func read(at url: URL?) -> String {
         guard let url, let data = try? Data(contentsOf: url) else { return "" }
         return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
 
-    /// Записывает выход (nil или пусто — убирает файл). Возвращает true, если
-    /// значение изменилось.
+    /// Записывает значение (nil или пусто — убирает файл). true — если изменилось.
     @discardableResult
-    static func write(_ exit: String?, at url: URL? = defaultURL()) -> Bool {
+    static func write(_ raw: String?, at url: URL?) -> Bool {
         guard let url else { return false }
-        let value = exit?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let value = raw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard value != read(at: url) || (value.isEmpty && FileManager.default.fileExists(atPath: url.path)) else {
             return false
         }

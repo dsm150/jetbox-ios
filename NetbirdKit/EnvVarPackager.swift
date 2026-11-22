@@ -12,6 +12,8 @@ class EnvVarPackager {
     /// Разрешённый выход, с которым последний раз запускался клиент ядра
     /// (в процессе расширения). nil — ещё не запускался.
     static var lastAllowedExit: String?
+    /// Адрес пира коробки, с которым последний раз запускался клиент ядра.
+    static var lastAllowedPeer: String?
 
     static func getEnvironmentVariables(defaults: UserDefaults) -> NetBirdSDKEnvList? {
         guard let envList = NetBirdSDKEnvList() else {
@@ -48,6 +50,11 @@ class EnvVarPackager {
         let allowedExit = JetBoxAllowedExit.read()
         envList.put(NetBirdSDKGetEnvKeyNBAllowedExit(), value: allowedExit)
         lastAllowedExit = allowedExit
+        // 1.0 (21): только пир своей коробки (по mesh-адресу) и только его
+        // маршруты (патч 0004). Пусто — ни одного удалённого пира.
+        let allowedPeer = JetBoxAllowedPeer.read()
+        envList.put(NetBirdSDKGetEnvKeyNBAllowedPeerIP(), value: allowedPeer)
+        lastAllowedPeer = allowedPeer
         #endif
         // JetBox: метрики ядра на ingest.netbird.io не отправляем никогда —
         // переменная окружения главнее настройки сервера управления.

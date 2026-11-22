@@ -89,6 +89,7 @@ NetBird (описание и статус апстрима — в `README.md` т
 | `cb7ca8e` + `0001` + `0002` | `0.78.0+cb7ca8e.jetbox2` | промежуточная: без адресов облака NetBird по умолчанию |
 | `cb7ca8e` + `0001`…`0003` | `0.78.0+cb7ca8e.jetbox3` | 1.0 (18)–(19): + выключатель relay `NB_DISABLE_RELAY` |
 | `cb7ca8e` + `0001`…`0005` | `0.78.0+cb7ca8e.jetbox4` | 1.0 (20): + единственный разрешённый выход `NB_ALLOWED_EXIT`, без адресов сервисов NetBird |
+| `cb7ca8e` + `0001`…`0005` (0004 расширен) | `0.78.0+cb7ca8e.jetbox5` | 1.0 (21): + только пир своей коробки `NB_ALLOWED_PEER_IP` |
 
 ## 2. Приложение
 
@@ -348,6 +349,15 @@ APP=build/Build/Products/Debug-iphonesimulator/NetBird.app
 strings -a $APP/NetBird.debug.dylib | grep -E "jet-net|xn--80aswg|api\.netbird\.io"
 find $APP -name ru.lproj
 ```
+
+С 1.0 (21) ядро — `0.78.0+cb7ca8e.jetbox5`: патч `0004` дополнен `NB_ALLOWED_PEER_IP` — в начале
+engine.updateNetworkMap (после проверки serial, до firewall/DNS/маршрутов/пиров) на копии карты
+остаётся только пир, у которого в AllowedIPs ровно этот адрес (/32 или /128), и только маршруты
+(сети и домены), чей route.Peer — WG-ключ этого пира; дальше на 0/0 — фильтр `NB_ALLOWED_EXIT`.
+Пира нет или адрес пуст — ни пиров, ни маршрутов. DNS-конфиг не трогается (nameserver коробки
+работает). Адрес приходит полем `box_ip` ответа verify → параметр `b` ссылки →
+`JetBoxBox.boxIP` → файл `jetbox-allowed-peer-ip` в App Group. Записи до 21 без `box_ip` —
+нужен новый вход.
 
 С 1.0 (20) ядро — `0.78.0+cb7ca8e.jetbox4` (патчи `0001`–`0005`). Патч `0004`: при заданной
 `NB_ALLOWED_EXIT` ядро сразу после разбора карты сети (engine.updateNetworkMap, до route

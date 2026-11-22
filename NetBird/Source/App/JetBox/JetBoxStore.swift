@@ -31,6 +31,9 @@ struct JetBoxBox: Codable, Equatable {
     /// Отпечаток setup key, по которому телефон зарегистрирован. nil — запись
     /// сделана сборкой до 1.0 (9).
     var setupKeyFingerprint: String?
+    /// Mesh-адрес пира коробки (`box_ip` из verify, 1.0 (21)). nil — запись
+    /// сделана до 21: ядро тогда не пустит ни одного пира, нужен новый вход.
+    var boxIP: String? = nil
 
     var displayName: String {
         if let boxName, !boxName.isEmpty { return boxName }
@@ -106,13 +109,17 @@ enum JetBoxStore {
     }
 
     #if JETBOX_US
-    /// Файл разрешённого выхода (JetBoxAllowedExit) — по записи коробки. Если
-    /// значение сменилось, а туннель уже поднят, расширение перезапускает клиента
-    /// ядра: переменная NB_ALLOWED_EXIT читается только при его старте.
+    /// Файлы для ядра по записи коробки: разрешённый выход (JetBoxAllowedExit)
+    /// и адрес пира коробки (JetBoxAllowedPeer, 1.0 (21)). Если значение
+    /// сменилось, а туннель уже поднят, расширение перезапускает клиента ядра:
+    /// NB_ALLOWED_EXIT и NB_ALLOWED_PEER_IP читаются только при его старте.
     @discardableResult
     static func syncAllowedExit(for box: JetBoxBox?) -> Bool {
-        guard JetBoxAllowedExit.write(ownExitToAllow(for: box)) else { return false }
-        AppLogger.shared.log("JetBox: allowed exit for the core updated")
+        let exitChanged = JetBoxAllowedExit.write(ownExitToAllow(for: box))
+        let peerChanged = JetBoxAllowedPeer.write(box?.boxIP)
+        guard exitChanged || peerChanged else { return false }
+        AppLogger.shared.log("JetBox: allowed exit for the core updated (exit \(exitChanged ? "changed" : "same"), "
+                             + "box peer \(peerChanged ? "changed" : "same"))")
         NETunnelProviderManager.loadAllFromPreferences { managers, _ in
             guard let session = managers?.first?.connection as? NETunnelProviderSession,
                   [.connected, .connecting, .reasserting].contains(session.status) else { return }
@@ -170,7 +177,8 @@ enum JetBoxStore {
                 ? payload.exitNodeName : nil,
             boxName: payload.boxName,
             registeredAt: Date(),
-            setupKeyFingerprint: JetBoxIdentity.fingerprint(of: payload.setupKey)
+            setupKeyFingerprint: JetBoxIdentity.fingerprint(of: payload.setupKey),
+            boxIP: payload.boxIP
         )
     }
 

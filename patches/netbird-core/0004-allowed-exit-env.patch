@@ -1,6 +1,17 @@
 --- a/client/internal/engine.go
 +++ b/client/internal/engine.go
-@@ -1630,6 +1630,9 @@
+@@ -1586,6 +1586,10 @@
+ 	if e.networkSerial > serial {
+ 		log.Debugf("received outdated NetworkMap with serial %d, ignoring", serial)
+ 		return nil
++	}
++
++	if addr, pinned := allowedPeerFromEnv(); pinned {
++		networkMap = pinNetworkMapToPeer(networkMap, addr)
+ 	}
+ 
+ 	// Only update the flag when the sync carries a peer config; a nil peer config
+@@ -1630,6 +1634,9 @@
  	// apply routes first, route related actions might depend on routing being enabled
  	done = e.phase("routes_classify")
  	routes := toRoutes(networkMap.GetRoutes())
@@ -20,7 +31,7 @@
  	"github.com/netbirdio/netbird/client/internal/lazyconn"
  	"github.com/netbirdio/netbird/client/internal/peer"
  )
-@@ -41,6 +42,11 @@
+@@ -41,6 +42,16 @@
  	return peer.EnvKeyNBDisableRelay
  }
  
@@ -29,21 +40,29 @@
 +	return internal.EnvAllowedExit
 +}
 +
++// GetEnvKeyNBAllowedPeerIP Exports the environment variable for the iOS client
++func GetEnvKeyNBAllowedPeerIP() string {
++	return internal.EnvAllowedPeerIP
++}
++
  // GetEnvKeyNBLazyConn Exports the environment variable for the iOS client
  func GetEnvKeyNBLazyConn() string {
  	return lazyconn.EnvLazyConn
 --- /dev/null
 +++ b/client/internal/exit_allowlist.go
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,166 @@
 +package internal
 +
 +import (
++	"net/netip"
 +	"os"
 +	"strings"
 +
 +	log "github.com/sirupsen/logrus"
++	"google.golang.org/protobuf/proto"
 +
 +	"github.com/netbirdio/netbird/route"
++	mgmProto "github.com/netbirdio/netbird/shared/management/proto"
 +)
 +
 +// EnvAllowedExit pins the only exit node the agent may route default traffic
@@ -51,6 +70,13 @@
 +// management are kept only if their NetID is this value or its "-v6" pair;
 +// set but empty means no default route at all. Unset keeps upstream behavior.
 +const EnvAllowedExit = "NB_ALLOWED_EXIT"
++
++// EnvAllowedPeerIP pins the only remote peer the agent may talk to: the peer
++// whose overlay address is this IP. When the variable is set, the network map
++// keeps only that peer and only routes whose routing peer is that peer; set but
++// empty or unparseable means no remote peers and no routes at all. Unset keeps
++// upstream behavior.
++const EnvAllowedPeerIP = "NB_ALLOWED_PEER_IP"
 +
 +// allowedExitFromEnv returns the pinned exit NetID and whether pinning is on.
 +func allowedExitFromEnv() (route.NetID, bool) {
@@ -85,14 +111,121 @@
 +	}
 +	return kept
 +}
++
++// allowedPeerFromEnv returns the pinned peer overlay address and whether
++// pinning is on. An invalid address is returned as the zero Addr, which
++// matches no peer.
++func allowedPeerFromEnv() (netip.Addr, bool) {
++	val, ok := os.LookupEnv(EnvAllowedPeerIP)
++	if !ok {
++		return netip.Addr{}, false
++	}
++	val = strings.TrimSpace(val)
++	if i := strings.IndexByte(val, '/'); i >= 0 {
++		val = val[:i]
++	}
++	addr, err := netip.ParseAddr(val)
++	if err != nil {
++		if val != "" {
++			log.Warnf("failed to parse %s: %v", EnvAllowedPeerIP, err)
++		}
++		return netip.Addr{}, true
++	}
++	return addr.Unmap(), true
++}
++
++// peerHasOverlayAddr reports whether one of the peer's allowed IPs is exactly
++// addr as a single-host prefix.
++func peerHasOverlayAddr(p *mgmProto.RemotePeerConfig, addr netip.Addr) bool {
++	if !addr.IsValid() {
++		return false
++	}
++	for _, s := range p.GetAllowedIps() {
++		prefix, err := netip.ParsePrefix(s)
++		if err != nil {
++			continue
++		}
++		if prefix.Addr().Unmap() == addr && prefix.Bits() == prefix.Addr().BitLen() {
++			return true
++		}
++	}
++	return false
++}
++
++// findPinnedPeer returns the WireGuard key of the only remote peer with the
++// pinned overlay address, or "" when there is none or more than one.
++func findPinnedPeer(peers []*mgmProto.RemotePeerConfig, addr netip.Addr) string {
++	key := ""
++	for _, p := range peers {
++		if !peerHasOverlayAddr(p, addr) {
++			continue
++		}
++		if key != "" && key != p.GetWgPubKey() {
++			log.Warnf("more than one peer has the pinned address %s, refusing all", addr)
++			return ""
++		}
++		key = p.GetWgPubKey()
++	}
++	return key
++}
++
++// pinNetworkMapToPeer returns a copy of the network map that keeps only the
++// pinned peer (online or offline) and only routes whose routing peer is that
++// peer, both prefix and domain routes. Without the pinned peer the copy has no
++// remote peers and no routes. DNS settings are kept, so a nameserver on the
++// pinned peer keeps working.
++func pinNetworkMapToPeer(nm *mgmProto.NetworkMap, addr netip.Addr) *mgmProto.NetworkMap {
++	pinned := proto.Clone(nm).(*mgmProto.NetworkMap)
++
++	key := findPinnedPeer(nm.GetRemotePeers(), addr)
++	offlineKey := ""
++	if key == "" {
++		offlineKey = findPinnedPeer(nm.GetOfflinePeers(), addr)
++	}
++	pinned.RemotePeers = keepPeer(pinned.GetRemotePeers(), key)
++	pinned.OfflinePeers = keepPeer(pinned.GetOfflinePeers(), offlineKey)
++
++	routeKey := key
++	if routeKey == "" {
++		routeKey = offlineKey
++	}
++	routes := make([]*mgmProto.Route, 0, len(pinned.GetRoutes()))
++	for _, r := range pinned.GetRoutes() {
++		if routeKey != "" && r.GetPeer() == routeKey {
++			routes = append(routes, r)
++			continue
++		}
++		log.Infof("dropping route %s (%s%v): routing peer is not the pinned peer", r.GetNetID(), r.GetNetwork(), r.GetDomains())
++	}
++	pinned.Routes = routes
++
++	if key == "" && offlineKey == "" {
++		log.Warnf("pinned peer %s is not in the network map: no remote peers and no routes", addr)
++	}
++	return pinned
++}
++
++func keepPeer(peers []*mgmProto.RemotePeerConfig, key string) []*mgmProto.RemotePeerConfig {
++	kept := make([]*mgmProto.RemotePeerConfig, 0, 1)
++	if key == "" {
++		return kept
++	}
++	for _, p := range peers {
++		if p.GetWgPubKey() == key {
++			kept = append(kept, p)
++		}
++	}
++	return kept
++}
 --- /dev/null
 +++ b/client/internal/exit_allowlist_test.go
-@@ -0,0 +1,156 @@
+@@ -0,0 +1,296 @@
 +package internal
 +
 +import (
 +	"context"
 +	"fmt"
++	"net"
 +	"net/netip"
 +	"os"
 +	"sort"
@@ -103,9 +236,12 @@
 +	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 +
 +	"github.com/netbirdio/netbird/client/iface"
++	"github.com/netbirdio/netbird/client/iface/udpmux"
 +	"github.com/netbirdio/netbird/client/iface/wgaddr"
 +	"github.com/netbirdio/netbird/client/internal/dns"
 +	"github.com/netbirdio/netbird/client/internal/peer"
++	"github.com/netbirdio/netbird/client/internal/peer/guard"
++	icemaker "github.com/netbirdio/netbird/client/internal/peer/ice"
 +	"github.com/netbirdio/netbird/client/internal/routemanager"
 +	"github.com/netbirdio/netbird/client/internal/stdnet"
 +	"github.com/netbirdio/netbird/route"
@@ -137,6 +273,14 @@
 +// netIDsPassedToManager runs updateNetworkMap on a real engine with a mock route
 +// manager and returns the NetIDs the route manager received for the tunnel.
 +func netIDsPassedToManager(t *testing.T, n int, nm *mgmtProto.NetworkMap) []string {
++	t.Helper()
++	got, _ := applyNetworkMap(t, n, nm)
++	return got
++}
++
++// applyNetworkMap returns the route NetIDs handed to the route manager and the
++// WireGuard keys of the peers the engine created connections for.
++func applyNetworkMap(t *testing.T, n int, nm *mgmtProto.NetworkMap) ([]string, []string) {
 +	t.Helper()
 +	key, err := wgtypes.GeneratePrivateKey()
 +	require.NoError(t, err)
@@ -190,13 +334,19 @@
 +		},
 +	}
 +	engine.dnsServer = &dns.MockServer{}
++	udpConn, err := net.ListenUDP("udp4", nil)
++	require.NoError(t, err)
++	engine.udpMux = udpmux.NewUniversalUDPMuxDefault(udpmux.UniversalUDPMuxParams{UDPConn: udpConn, MTU: 1280})
++	engine.srWatcher = guard.NewSRWatcher(nil, nil, nil, icemaker.Config{})
 +	engine.connMgr = NewConnMgr(engine.config, engine.statusRecorder, engine.peerStore, engine.wgInterface)
 +	engine.connMgr.Start(ctx)
 +	t.Cleanup(func() { _ = engine.Stop() })
 +
 +	require.NoError(t, engine.updateNetworkMap(nm))
 +	sort.Strings(got)
-+	return got
++	peers := engine.peerStore.PeersPubKey()
++	sort.Strings(peers)
++	return got, peers
 +}
 +
 +func TestEngine_AllowedExit_OnlyOwnExitReachesTunnel(t *testing.T) {
@@ -243,4 +393,126 @@
 +		"only the pinned exit and its exact -v6 pair survive")
 +	assert.Equal(t, []string{"own-lan", "dyn"}, names(filterExitRoutes(routes, "")),
 +		"empty pin drops every default route")
++}
++
++// The phone's box and a foreign peer in the same network map. The foreign peer
++// advertises a route with the box exit's own name, a public prefix and a
++// domain route; only the box (by overlay address) and its routes may pass.
++func pinnedTestNetworkMap(t *testing.T) (*mgmtProto.NetworkMap, string, string) {
++	t.Helper()
++	boxKey, err := wgtypes.GeneratePrivateKey()
++	require.NoError(t, err)
++	evilKey, err := wgtypes.GeneratePrivateKey()
++	require.NoError(t, err)
++	box, evil := boxKey.PublicKey().String(), evilKey.PublicKey().String()
++
++	r := func(id, network, netID, peer string, domains ...string) *mgmtProto.Route {
++		return &mgmtProto.Route{ID: id, Network: network, NetID: netID, Peer: peer, NetworkType: 1,
++			Masquerade: true, Domains: domains}
++	}
++	nm := &mgmtProto.NetworkMap{
++		Serial: 9,
++		RemotePeers: []*mgmtProto.RemotePeerConfig{
++			{WgPubKey: box, AllowedIps: []string{"100.79.115.162/32"}, Fqdn: "jetbox-demo-ny.netbird.selfhosted"},
++			{WgPubKey: evil, AllowedIps: []string{"100.79.1.2/32"}, Fqdn: "evil.netbird.selfhosted"},
++		},
++		Routes: []*mgmtProto.Route{
++			r("own4", "0.0.0.0/0", "sv-demo-us-exit", box),
++			r("own6", "::/0", "sv-demo-us-exit-v6", box),
++			r("lan", "192.168.60.0/24", "sv-demo-us-lan", box),
++			r("evil-exit", "0.0.0.0/0", "sv-demo-us-exit", evil),
++			r("evil-net", "8.8.8.0/24", "public-dns", evil),
++			r("evil-dom", "", "evil-domains", evil, "example.com"),
++		},
++	}
++	return nm, box, evil
++}
++
++func TestEngine_PinnedPeer_OnlyBoxAndItsRoutes(t *testing.T) {
++	t.Setenv(EnvAllowedExit, "sv-demo-us-exit")
++	t.Setenv(EnvAllowedPeerIP, "100.79.115.162")
++	nm, box, _ := pinnedTestNetworkMap(t)
++
++	routes, peers := applyNetworkMap(t, 3, nm)
++	assert.Equal(t, []string{box}, peers, "only the box peer gets a connection; the extra peer is never connected")
++	assert.Equal(t, []string{"sv-demo-us-exit", "sv-demo-us-exit-v6", "sv-demo-us-lan"}, routes,
++		"own exit and LAN pass in the same update; the foreign peer's exit with the same name, "+
++			"8.8.8.0/24 and its domain route are dropped")
++}
++
++func TestEngine_PinnedPeer_NotInMapMeansNothing(t *testing.T) {
++	t.Setenv(EnvAllowedExit, "sv-demo-us-exit")
++	t.Setenv(EnvAllowedPeerIP, "100.79.200.200")
++	nm, _, _ := pinnedTestNetworkMap(t)
++
++	routes, peers := applyNetworkMap(t, 4, nm)
++	assert.Empty(t, peers, "box not in the map: no remote peers at all")
++	assert.Empty(t, routes, "box not in the map: no routes at all")
++}
++
++func TestEngine_PinnedPeer_EmptyMeansNothing(t *testing.T) {
++	t.Setenv(EnvAllowedExit, "sv-demo-us-exit")
++	t.Setenv(EnvAllowedPeerIP, "")
++	nm, _, _ := pinnedTestNetworkMap(t)
++
++	routes, peers := applyNetworkMap(t, 5, nm)
++	assert.Empty(t, peers)
++	assert.Empty(t, routes)
++}
++
++func TestPinNetworkMapToPeer(t *testing.T) {
++	nm, box, evil := pinnedTestNetworkMap(t)
++	addr := netip.MustParseAddr("100.79.115.162")
++
++	nm.DNSConfig = &mgmtProto.DNSConfig{ServiceEnable: true, NameServerGroups: []*mgmtProto.NameServerGroup{{
++		NameServers: []*mgmtProto.NameServer{{IP: "100.79.115.162", NSType: 1, Port: 53}}, Primary: true,
++	}}}
++	pinned := pinNetworkMapToPeer(nm, addr)
++	require.Len(t, pinned.GetDNSConfig().GetNameServerGroups(), 1, "the box nameserver group passes")
++	assert.Equal(t, "100.79.115.162", pinned.GetDNSConfig().GetNameServerGroups()[0].GetNameServers()[0].GetIP())
++	require.Len(t, pinned.GetRemotePeers(), 1)
++	assert.Equal(t, box, pinned.GetRemotePeers()[0].GetWgPubKey())
++	for _, r := range pinned.GetRoutes() {
++		assert.Equal(t, box, r.GetPeer(), "route %s must be routed by the box", r.GetNetID())
++	}
++	assert.Len(t, pinned.GetRoutes(), 3)
++	assert.Len(t, nm.GetRemotePeers(), 2, "the original map is not modified")
++
++	// A peer whose allowed IP is a wider prefix containing the box address is not the box.
++	wide := &mgmtProto.NetworkMap{RemotePeers: []*mgmtProto.RemotePeerConfig{
++		{WgPubKey: evil, AllowedIps: []string{"100.79.0.0/16"}},
++	}}
++	assert.Empty(t, pinNetworkMapToPeer(wide, addr).GetRemotePeers(), "only an exact /32 matches")
++
++	// Two peers claiming the same address: refuse both.
++	dup := &mgmtProto.NetworkMap{RemotePeers: []*mgmtProto.RemotePeerConfig{
++		{WgPubKey: box, AllowedIps: []string{"100.79.115.162/32"}},
++		{WgPubKey: evil, AllowedIps: []string{"100.79.115.162/32"}},
++	}}
++	assert.Empty(t, pinNetworkMapToPeer(dup, addr).GetRemotePeers(), "ambiguous address: no peer")
++
++	// Offline box: kept in the offline list, its routes still pass.
++	off := &mgmtProto.NetworkMap{
++		OfflinePeers: []*mgmtProto.RemotePeerConfig{{WgPubKey: box, AllowedIps: []string{"100.79.115.162/32", "fd00::5/128"}}},
++		Routes:       []*mgmtProto.Route{{ID: "lan", Network: "192.168.60.0/24", NetID: "lan", Peer: box}},
++	}
++	pinnedOff := pinNetworkMapToPeer(off, addr)
++	assert.Len(t, pinnedOff.GetOfflinePeers(), 1)
++	assert.Len(t, pinnedOff.GetRoutes(), 1)
++}
++
++func TestAllowedPeerFromEnv(t *testing.T) {
++	t.Setenv(EnvAllowedPeerIP, "100.79.115.162/32")
++	addr, on := allowedPeerFromEnv()
++	assert.True(t, on)
++	assert.Equal(t, netip.MustParseAddr("100.79.115.162"), addr, "a mask from the server is cut off")
++
++	t.Setenv(EnvAllowedPeerIP, "not-an-ip")
++	addr, on = allowedPeerFromEnv()
++	assert.True(t, on, "set but invalid still pins")
++	assert.False(t, addr.IsValid(), "invalid address matches no peer")
++
++	require.NoError(t, os.Unsetenv(EnvAllowedPeerIP))
++	_, on = allowedPeerFromEnv()
++	assert.False(t, on, "unset keeps upstream behavior")
 +}

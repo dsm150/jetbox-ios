@@ -223,17 +223,56 @@ final class JetBoxAllowedExitTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: "JetBoxAllowedExitTest"))
         defer { defaults.removePersistentDomain(forName: "JetBoxAllowedExitTest") }
 
+        let savedPeer = JetBoxAllowedPeer.read()
+        defer { JetBoxAllowedPeer.write(savedPeer) }
         JetBoxStore.currentBox = JetBoxBox(managementURL: "https://net.jetbox.ai-boss.us",
                                            exitNodeName: "sv-demo-us-exit", selectedExitNode: "sv-demo-us-exit",
-                                           boxName: "Demo Home", registeredAt: Date())
+                                           boxName: "Demo Home", registeredAt: Date(), boxIP: "100.79.115.162")
         XCTAssertEqual(JetBoxAllowedExit.read(), "sv-demo-us-exit", "файл пишется синхронно с записью коробки")
+        XCTAssertEqual(JetBoxAllowedPeer.read(), "100.79.115.162", "адрес пира — тоже синхронно")
         var env = try XCTUnwrap(EnvVarPackager.getEnvironmentVariables(defaults: defaults))
         XCTAssertEqual(NetBirdSDKGetEnvKeyNBAllowedExit(), "NB_ALLOWED_EXIT")
+        XCTAssertEqual(NetBirdSDKGetEnvKeyNBAllowedPeerIP(), "NB_ALLOWED_PEER_IP")
         XCTAssertEqual(env.get("NB_ALLOWED_EXIT"), "sv-demo-us-exit")
+        XCTAssertEqual(env.get("NB_ALLOWED_PEER_IP"), "100.79.115.162")
+
+        // Запись до 1.0 (21) — без box_ip: ни одного пира (нужен новый вход).
+        JetBoxStore.currentBox?.boxIP = nil
+        env = try XCTUnwrap(EnvVarPackager.getEnvironmentVariables(defaults: defaults))
+        XCTAssertEqual(env.get("NB_ALLOWED_PEER_IP"), "")
 
         JetBoxStore.currentBox = nil
         env = try XCTUnwrap(EnvVarPackager.getEnvironmentVariables(defaults: defaults))
         XCTAssertEqual(env.get("NB_ALLOWED_EXIT"), "", "нет коробки — ядро не пропустит ни одного выхода")
+        XCTAssertEqual(env.get("NB_ALLOWED_PEER_IP"), "", "нет коробки — ни одного пира")
+    }
+
+    /// verify → ссылка с `b` → полезная нагрузка → запись коробки.
+    func testVerifyBoxIPReachesBoxRecord() throws {
+        let json = #"{"setup_key":"11111111-2222-4333-8444-555555555555","management_url":"https://net.jetbox.ai-boss.us","exit_node":"sv-demo-us-exit","site_name":"Demo Home","box_ip":"100.79.115.162"}"#
+        let url = try XCTUnwrap(JetBoxLoginAPI.connectURL(from: Data(json.utf8)))
+        guard case .payload(let payload) = JetBoxLink.parse(url) else { return XCTFail("ссылка не разобралась") }
+        XCTAssertEqual(payload.boxIP, "100.79.115.162")
+        XCTAssertEqual(payload.exitNodeName, "sv-demo-us-exit")
+    }
+    #endif
+
+    func testBoxIPValidation() {
+        XCTAssertEqual(JetBoxLink.validIP("100.79.115.162"), "100.79.115.162")
+        XCTAssertEqual(JetBoxLink.validIP(" 100.79.115.162/32 "), "100.79.115.162", "маску отрезаем")
+        XCTAssertNil(JetBoxLink.validIP("100.79.115"))
+        XCTAssertNil(JetBoxLink.validIP("box.example"))
+        XCTAssertNil(JetBoxLink.validIP(nil))
+    }
+
+    #if JETBOX_US
+    func testPeerFileRoundTrip() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("peer-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: url) }
+        XCTAssertEqual(JetBoxAllowedPeer.read(at: url), "")
+        XCTAssertTrue(JetBoxAllowedPeer.write("100.79.115.162", at: url))
+        XCTAssertEqual(JetBoxAllowedPeer.read(at: url), "100.79.115.162")
+        XCTAssertFalse(JetBoxAllowedPeer.write("100.79.115.162", at: url))
     }
 
     /// В сборке США нет ветки русской редакции: выход — всегда `e` своей коробки.
