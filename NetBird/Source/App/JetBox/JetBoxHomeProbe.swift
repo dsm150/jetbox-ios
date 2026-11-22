@@ -117,9 +117,9 @@ enum JetBoxStartup {
         JetBoxBackup.dropOrphanedBoxIfNeeded()
         JetBoxBackup.excludeProfileFiles()
         #endif
-        // Выход своей коробки включён всегда (1.0 (16)); расширению — какой разрешён.
+        // Выход своей коробки включён всегда (1.0 (16)).
         JetBoxStore.selectOwnExitIfNeeded()
-        JetBoxStore.shareOwnExit(JetBoxStore.currentBox)
+        JetBoxStore.removeLegacyExitShare()
         #if DEBUG && os(iOS)
         JetBoxStyle.applyLaunchOverride()
         #endif

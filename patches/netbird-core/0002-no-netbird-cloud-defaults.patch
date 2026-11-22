@@ -1,0 +1,84 @@
+--- a/client/internal/profilemanager/config.go
++++ b/client/internal/profilemanager/config.go
+@@ -33,12 +33,15 @@
+ 	// managementLegacyPortString is the port that was used before by the Management gRPC server.
+ 	// It is used for backward compatibility now.
+ 	managementLegacyPortString = "33073"
+-	// DefaultManagementURL points to the NetBird's cloud management endpoint
+-	DefaultManagementURL = "https://api.netbird.io:443"
+-	// oldDefaultManagementURL points to the NetBird's old cloud management endpoint
+-	oldDefaultManagementURL = "https://api.wiretrustee.com:443"
+-	// DefaultAdminURL points to NetBird's cloud management console
+-	DefaultAdminURL = "https://app.netbird.io:443"
++	// DefaultManagementURL is empty in JetBox: the app always sets its own
++	// management server, and a config without one must fail instead of
++	// silently registering with NetBird's cloud.
++	DefaultManagementURL = ""
++	// oldDefaultManagementURL is empty in JetBox (no legacy cloud migration).
++	oldDefaultManagementURL = ""
++	// DefaultAdminURL is empty in JetBox: the admin URL falls back to the
++	// management server's origin.
++	DefaultAdminURL = ""
+ )
+ 
+ // mgmProber is the subset of management client needed for URL migration probes.
+@@ -329,16 +332,16 @@
+ 			updated = true
+ 		}
+ 	}
+-	if config.ManagementURL == nil {
++	if config.ManagementURL == nil && DefaultManagementURL != "" {
+ 		log.Infof("using default Management URL %s", DefaultManagementURL)
+ 		config.ManagementURL, err = parseURL("Management URL", DefaultManagementURL)
+ 		if err != nil {
+ 			return false, err
+ 		}
+ 	}
+-	if input.ManagementURL != "" && input.ManagementURL != config.ManagementURL.String() {
++	if input.ManagementURL != "" && (config.ManagementURL == nil || input.ManagementURL != config.ManagementURL.String()) {
+ 		log.Infof("new Management URL provided, updated to %#v (old value %#v)",
+-			input.ManagementURL, config.ManagementURL.String())
++			input.ManagementURL, config.ManagementURL)
+ 		URL, err := parseURL("Management URL", input.ManagementURL)
+ 		if err != nil {
+ 			return false, err
+@@ -346,18 +349,19 @@
+ 		config.ManagementURL = URL
+ 		updated = true
+ 	} else if config.ManagementURL == nil {
+-		log.Infof("using default Management URL %s", DefaultManagementURL)
+-		config.ManagementURL, err = parseURL("Management URL", DefaultManagementURL)
+-		if err != nil {
+-			return false, err
+-		}
++		return false, fmt.Errorf("management URL is not set")
+ 	}
+ 
+ 	if config.AdminURL == nil {
+-		log.Infof("using default Admin URL %s", DefaultAdminURL)
+-		config.AdminURL, err = parseURL("Admin URL", DefaultAdminURL)
+-		if err != nil {
+-			return false, err
++		if DefaultAdminURL != "" {
++			log.Infof("using default Admin URL %s", DefaultAdminURL)
++			config.AdminURL, err = parseURL("Admin URL", DefaultAdminURL)
++			if err != nil {
++				return false, err
++			}
++		} else {
++			adminURL := *config.ManagementURL
++			config.AdminURL = &adminURL
+ 		}
+ 	}
+ 	if input.AdminURL != "" && input.AdminURL != config.AdminURL.String() {
+@@ -999,6 +1003,10 @@
+ // If it can switch, then it updates the config and returns a new one. Otherwise, it returns the provided config.
+ // The check is performed only for the NetBird's managed version.
+ func UpdateOldManagementURL(ctx context.Context, config *Config, configPath string) (*Config, error) {
++	if DefaultManagementURL == "" || oldDefaultManagementURL == "" {
++		// JetBox: no NetBird cloud, nothing to migrate.
++		return config, nil
++	}
+ 	defaultManagementURL, err := parseURL("Management URL", DefaultManagementURL)
+ 	if err != nil {
+ 		return nil, err

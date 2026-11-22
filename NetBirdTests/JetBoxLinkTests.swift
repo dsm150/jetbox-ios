@@ -543,30 +543,23 @@ final class JetBoxHomeOnlyTests: XCTestCase {
 final class JetBoxHomeOnlyGuardTests: XCTestCase {
     typealias Plan = JetBoxHomeOnlyGuard.Plan
 
-    func testHomeOnlyDeselectsForeignExit() {
-        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "cl-exit", available: ["cl-exit"], allowed: nil, homeOnly: true),
-                       Plan(deselect: "cl-exit", select: nil))
-    }
-
-    func testHomeOnlySwitchesForeignToOwnExit() {
-        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "cl-exit", available: ["cl-exit", "home-ivanov"],
-                                                allowed: "home-ivanov", homeOnly: true),
-                       Plan(deselect: "cl-exit", select: "home-ivanov"))
-    }
-
-    func testHomeOnlyEnablesOwnExitWhenToggleOn() {
+    func testOwnExitIsSelectedWhenNotSelected() {
         XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: nil, available: ["home-ivanov"], allowed: "home-ivanov", homeOnly: true),
-                       Plan(deselect: nil, select: "home-ivanov"))
+                       Plan(select: "home-ivanov"))
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "other", available: ["other", "home-ivanov"],
+                                                allowed: "home-ivanov", homeOnly: true),
+                       Plan(select: "home-ivanov"))
     }
 
-    func testHomeOnlyKeepsOwnExit() {
+    func testOwnExitAlreadySelectedChangesNothing() {
         XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "home-ivanov", available: ["home-ivanov"],
                                                 allowed: "home-ivanov", homeOnly: true), Plan())
     }
 
-    func testToggleOffDeselectsOwnExit() {
-        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "home-ivanov", available: ["home-ivanov"], allowed: nil, homeOnly: true),
-                       Plan(deselect: "home-ivanov", select: nil))
+    /// 1.0 (18): чужие выходы не снимаем — «один в один как русская».
+    func testForeignExitIsNotDeselected() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "cl-exit", available: ["cl-exit"], allowed: nil, homeOnly: true),
+                       Plan())
     }
 
     func testOwnExitMissingFromRoutesSelectsNothing() {
@@ -574,129 +567,9 @@ final class JetBoxHomeOnlyGuardTests: XCTestCase {
                        Plan())
     }
 
-    func testHomeOnlyWithoutExitDoesNothing() {
-        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: nil, available: [], allowed: nil, homeOnly: true), Plan())
-    }
-
-    func testWithoutFlagExitStays() {
-        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: "cl-exit", available: ["cl-exit"], allowed: nil, homeOnly: false),
+    func testWithoutFlagNothingHappens() {
+        XCTAssertEqual(JetBoxHomeOnlyGuard.plan(selectedExit: nil, available: ["home-ivanov"], allowed: "home-ivanov", homeOnly: false),
                        Plan())
-    }
-}
-
-/// Какой выход приложение разрешает расширению — файл в App Group (1.0 (15)).
-final class JetBoxOwnExitShareTests: XCTestCase {
-    private var file: URL!
-
-    override func setUp() {
-        file = FileManager.default.temporaryDirectory.appendingPathComponent("jetbox-own-exit-\(UUID().uuidString)")
-    }
-
-    override func tearDown() {
-        try? FileManager.default.removeItem(at: file)
-    }
-
-    private func box(exit: String?, selected: String?) -> JetBoxBox {
-        JetBoxBox(managementURL: "https://mgmt.jet-net.net", exitNodeName: exit, selectedExitNode: selected,
-                  boxName: "Home", registeredAt: Date())
-    }
-
-    func testSharesOwnExitAlways() throws {
-        try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: nil), file: file)
-        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(file), "home-ivanov", "выход своей коробки — всегда")
-    }
-
-    /// Баг 1.0 (14): выключили тумблер — расширение всё ещё видело старое
-    /// значение и включало выход обратно. Каждое чтение — свежее.
-    func testChangeIsSeenOnTheVeryNextRead() throws {
-        try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), file: file)
-        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(file), "home-ivanov")
-        JetBoxStore.shareOwnExit(box(exit: "home-other", selected: "home-other"), file: file)
-        XCTAssertEqual(NetworkChangeListener.jetBoxOwnExit(file), "home-other", "новая коробка — сразу")
-        JetBoxStore.shareOwnExit(nil, file: file)
-        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(file))
-    }
-
-    func testNeverSharesForeignOrSharedExit() {
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "other-box"), file: file)
-        XCTAssertNotEqual(NetworkChangeListener.jetBoxOwnExit(file), "other-box", "чужой выход не разрешаем")
-        JetBoxStore.shareOwnExit(box(exit: "cl-exit", selected: "cl-exit"), file: file)
-        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(file), "облако")
-    }
-
-    func testSignOutClearsSharedExit() {
-        JetBoxStore.shareOwnExit(box(exit: "home-ivanov", selected: "home-ivanov"), file: file)
-        JetBoxStore.shareOwnExit(nil, file: file)
-        XCTAssertNil(NetworkChangeListener.jetBoxOwnExit(file))
-    }
-}
-
-/// Решение расширения по выходам ядра (PacketTunnelProvider.enforceOwnExit).
-final class JetBoxExtensionExitActionsTests: XCTestCase {
-    typealias R = NetworkChangeListener.ExitRoute
-
-    func testToggleOffDeselectsOwnExitAndItsV6Pair() {
-        let a = NetworkChangeListener.exitActions([R(id: "home-ivanov", selected: true),
-                                                   R(id: "home-ivanov-v6", selected: true)], allowed: nil)
-        XCTAssertEqual(a.deselect, ["home-ivanov", "home-ivanov-v6"])
-        XCTAssertNil(a.select, "выключенный тумблер свой выход не включает")
-        XCTAssertFalse(a.ownActive)
-    }
-
-    func testToggleOnSelectsOwnExit() {
-        let a = NetworkChangeListener.exitActions([R(id: "home-ivanov", selected: false)], allowed: "home-ivanov")
-        XCTAssertEqual(a.select, "home-ivanov")
-        XCTAssertFalse(a.ownActive, "маршрут 0.0.0.0/0 пустим после следующей проверки")
-    }
-
-    func testOwnExitActiveKeepsRoute() {
-        let a = NetworkChangeListener.exitActions([R(id: "home-ivanov", selected: true),
-                                                   R(id: "home-ivanov-v6", selected: true)], allowed: "home-ivanov")
-        XCTAssertEqual(a, NetworkChangeListener.ExitActions(deselect: [], select: nil, ownActive: true))
-    }
-
-    func testForeignExitSwappedForOwn() {
-        let a = NetworkChangeListener.exitActions([R(id: "cl-exit", selected: true),
-                                                   R(id: "home-ivanov", selected: false)], allowed: "home-ivanov")
-        XCTAssertEqual(a.deselect, ["cl-exit"])
-        XCTAssertEqual(a.select, "home-ivanov")
-    }
-
-    func testOwnExitMissingSelectsNothing() {
-        let a = NetworkChangeListener.exitActions([R(id: "cl-exit", selected: false)], allowed: "home-ivanov")
-        XCTAssertEqual(a, NetworkChangeListener.ExitActions())
-    }
-}
-
-/// Страховка «только дом» в сетевом расширении: маршрут выхода в туннель не
-/// ставится, даже если ядро его включило (подключение с виджета, расширенный режим).
-final class JetBoxExtensionHomeOnlyTests: XCTestCase {
-
-    func testStripsIPv4AndIPv6ExitRoutes() {
-        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes("100.64.0.0/16,0.0.0.0/0,192.168.60.0/24,::/0")
-        XCTAssertTrue(hadExit)
-        XCTAssertEqual(kept, "100.64.0.0/16,192.168.60.0/24")
-    }
-
-    func testKeepsHomeRoutesWhenNoExit() {
-        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes("100.64.0.0/16,192.168.60.0/24")
-        XCTAssertFalse(hadExit)
-        XCTAssertEqual(kept, "100.64.0.0/16,192.168.60.0/24")
-    }
-
-    func testEmptyRoutes() {
-        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes("")
-        XCTAssertFalse(hadExit)
-        XCTAssertEqual(kept, "")
-    }
-
-    func testExtensionFlagParsing() {
-        XCTAssertTrue(NetworkChangeListener.parseJetBoxHomeOnly("YES"))
-        XCTAssertFalse(NetworkChangeListener.parseJetBoxHomeOnly("NO"))
-        XCTAssertTrue(NetworkChangeListener.parseJetBoxHomeOnly(nil), "на iOS без ключа — «только дом»")
-        XCTAssertTrue(NetworkChangeListener.parseJetBoxHomeOnly("$(JETBOX_HOME_ONLY)"))
     }
 }
 
@@ -789,7 +662,7 @@ final class JetBoxLoginAPITests: XCTestCase {
     private let key = "11111111-2222-4333-8444-555555555555"
 
     private var okBody: String {
-        #"{"setup_key":"\#(key)","management_url":"https://\#(JBT.mgmtHost)","exit_node":"home-1","site_name":"Lakeview Home","connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&e=home-1&n=Lakeview%20Home"}"#
+        #"{"setup_key":"\#(key)","management_url":"https://\#(JBT.mgmtHost)","exit_node":"home-1","site_name":"Lakeview Home","connect_url":"jetbox://connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&e=home-1&n=Lakeview%20Home"}"#
     }
 
     func testRequestSendsEmailLanguageAndPlatform() async {
@@ -843,7 +716,7 @@ final class JetBoxLoginAPITests: XCTestCase {
     func testVerifyResponseWithForeignServerIsNotTrusted() async {
         // Ответ всё равно проходит маску *.jet-net.net: ключ на чужой сервер не уйдёт.
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2Fevil.example"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&m=https%3A%2F%2Fevil.example"}"#)
         let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
         XCTAssertEqual(outcome, .unavailable)
     }
@@ -956,7 +829,7 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
 
     func testLoginLinkLeadsToTheConnectScreen() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Lakeview%20Home"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Lakeview%20Home"}"#)
         let flow = JetBoxOnboarding()
         flow.needsDataConsent = { false }
         flow.loginAPI = stub.api()
@@ -1010,7 +883,7 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
 final class JetBoxLoginCodeTests: XCTestCase {
     private let key = "11111111-2222-4333-8444-555555555555"
     private var connectBody: String {
-        #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Demo%20Home"}"#
+        #"{"connect_url":"jetbox://connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Demo%20Home"}"#
     }
 
     private func sentModel(_ stub: JetBoxLoginStub, email: String = "alex@example.com") async -> JetBoxLoginModel {
@@ -1211,7 +1084,7 @@ final class JetBoxSignOutTests: XCTestCase {
         model.enterCodeManually()
         var received: URL?
         model.onConnect = { received = $0 }
-        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Demo%20Home"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Demo%20Home"}"#)
         model.code = "246810"
         await model.submitCode()
 
@@ -1313,23 +1186,6 @@ final class JetBoxTunnelDefaultRouteTests: XCTestCase {
         XCTAssertTrue(JetBoxTunnelState.defaultRouteInTunnel(at: file))
         JetBoxTunnelState.write(defaultRouteInTunnel: false, at: file)
         XCTAssertFalse(JetBoxTunnelState.defaultRouteInTunnel(at: file))
-    }
-
-    /// Причина бага 16: маршрут выхода срезался, пока асинхронная проверка
-    /// не «подтвердит» выход, а её сбой при перезапуске движка оставлял его
-    /// срезанным. Теперь с выходом своей коробки маршруты ядра идут как есть.
-    func testOwnExitKeepsDefaultRouteWithoutWaiting() {
-        let routes = "100.79.0.0/16,192.168.60.0/24,0.0.0.0/0,::/0"
-        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes(routes)
-        XCTAssertEqual(NetworkChangeListener.homeOnlyRoutes(routes, stripped: kept, hadExit: hadExit,
-                                                            allowed: "home-ivanov"), routes)
-    }
-
-    func testNoOwnExitStripsDefaultRoute() {
-        let routes = "100.79.0.0/16,0.0.0.0/0"
-        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes(routes)
-        XCTAssertEqual(NetworkChangeListener.homeOnlyRoutes(routes, stripped: kept, hadExit: hadExit, allowed: nil),
-                       "100.79.0.0/16")
     }
 
     func testReadinessWaitsForDefaultRouteOnlyWhenExitExpected() {
@@ -1447,7 +1303,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
 
     func testVerifyStoresAppTokenButNotInLink() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&n=Demo%20Home","app_token":"tok-1"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&n=Demo%20Home","app_token":"tok-1"}"#)
         var api = stub.api()
         var stored: [String?] = []
         api.storeAppToken = { stored.append($0) }
@@ -1460,7 +1316,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
 
     func testVerifyWithoutTokenClearsOldOne() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&n=Demo%20Home"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&n=Demo%20Home"}"#)
         var api = stub.api()
         var stored: [String?] = ["old"]
         api.storeAppToken = { stored.append($0) }
@@ -1559,7 +1415,6 @@ extension JetBoxLinkRules {
 /// Адреса редакции, под которую собраны тесты: сценарии входа идут через код
 /// приложения, а он берёт хосты из Info.plist (Config/JetBoxEdition.xcconfig).
 enum JBT {
-    static var connect: String { JetBoxConfig.universalLinkHost }
     static var mgmtHost: String { URL(string: JetBoxConfig.defaultManagementURL)?.host ?? "" }
     static var api: String { JetBoxConfig.loginAPIBase.absoluteString }
 }
@@ -1586,7 +1441,7 @@ final class JetBoxDataConsentTests: XCTestCase {
 
     func testLoginLinkWaitsForConsentAndDoesNotGoOnline() async {
         let stub = JetBoxLoginStub()
-        stub.replies["verify"] = (200, #"{"connect_url":"https://\#(JBT.connect)/connect#k=\#(key)&n=Demo%20Home"}"#)
+        stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&n=Demo%20Home"}"#)
         let flow = JetBoxOnboarding()
         flow.loginAPI = stub.api()
         var consent = false
@@ -1618,7 +1473,7 @@ final class JetBoxDataConsentTests: XCTestCase {
 final class JetBoxServersTests: XCTestCase {
     func testAddressesComeFromTheEditionConfig() {
         for value in [JetBoxServers.managementURL, JetBoxServers.managementSuffix, JetBoxServers.apiBaseURL,
-                      JetBoxServers.connectLinkHost, JetBoxServers.loginLinkHost, JetBoxServers.probeName] {
+                      JetBoxServers.loginLinkHost, JetBoxServers.probeName] {
             XCTAssertFalse(value.isEmpty)
             XCTAssertFalse(value.contains("$("), "настройка сборки не подставилась: \(value)")
         }
@@ -1630,13 +1485,23 @@ final class JetBoxServersTests: XCTestCase {
     #if JETBOX_US
     func testUSBuildHasNoRussianOrUpstreamAddresses() {
         let all = [JetBoxServers.managementURL, JetBoxServers.managementSuffix, JetBoxServers.apiBaseURL,
-                   JetBoxServers.connectLinkHost, JetBoxServers.loginLinkHost, JetBoxServers.probeName,
+                   JetBoxServers.loginLinkHost, JetBoxServers.probeName,
                    JetBoxConfig.defaultManagementURL, JetBoxConfig.loginAPIBase.absoluteString]
         for value in all {
             XCTAssertFalse(value.contains("jet-net"), value)
             XCTAssertFalse(value.contains("xn--"), value)
             XCTAssertFalse(value.contains("netbird.io"), value)
             XCTAssertTrue(value.contains("ai-boss.us"), value)
+        }
+    }
+
+    /// Универсальной ссылки /connect в США нет: подключение — из полей verify.
+    func testUSBuildHasNoConnectUniversalLink() {
+        XCTAssertTrue(JetBoxServers.connectLinkHost.isEmpty)
+        XCTAssertEqual(JetBoxLink.parse(URL(string: "https://jetbox.ai-boss.us/connect#k=11111111-2222-4333-8444-555555555555")!),
+                       .notOurs)
+        guard case .payload = JetBoxLink.parse(URL(string: "jetbox://connect#k=11111111-2222-4333-8444-555555555555")!) else {
+            return XCTFail("своя схема по-прежнему наша")
         }
     }
 

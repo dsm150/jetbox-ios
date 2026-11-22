@@ -1087,36 +1087,6 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
 
-    /// JetBox «только дом»: привести выходы в ядре к разрешённому. Чужие
-    /// выходы снимаем, свой (`allowed`, тумблер включён) включаем, если он
-    /// есть, но не выбран. Выбор и снятие ядро сохраняет в файл состояния.
-    /// IPv6-пара выхода («<имя>-v6») следует за основным маршрутом сама.
-    /// Возвращает true, если свой выход включён и ничего менять не пришлось;
-    /// nil — ядро не ответило (повторить позже).
-    func enforceOwnExit(allowed: String?) -> Bool? {
-        guard let adapter = adapter,
-              let details = try? adapter.client.getRoutesSelectionDetails() else {
-            AppLogger.shared.log("JetBox: home only — core returned no routes, will check exit later")
-            return nil
-        }
-        var exits: [NetworkChangeListener.ExitRoute] = []
-        for index in 0..<details.size() {
-            guard let route = details.get(index),
-                  route.network == "0.0.0.0/0" || route.network == "::/0" else { continue }
-            exits.append(.init(id: route.id_, selected: route.selected))
-        }
-        let actions = NetworkChangeListener.exitActions(exits, allowed: allowed)
-        for id in actions.deselect {
-            AppLogger.shared.log("JetBox: home only — deselecting exit \(id) in extension (allowed: \(allowed ?? "none"))")
-            deselectRoute(id: id)
-        }
-        if let id = actions.select {
-            AppLogger.shared.log("JetBox: home only — selecting own box exit \(id) in extension")
-            selectRoute(id: id)
-        }
-        return actions.ownActive
-    }
-
     func deselectRoute(id: String) {
         guard let adapter = adapter else { return }
         do {

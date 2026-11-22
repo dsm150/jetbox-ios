@@ -33,6 +33,9 @@ class EnvVarPackager {
         #endif
 
         envList.put(NetBirdSDKGetEnvKeyNBForceRelay(), value: String(forceRelayConnection))
+        // JetBox: метрики ядра на ingest.netbird.io не отправляем никогда —
+        // переменная окружения главнее настройки сервера управления.
+        envList.put("NB_METRICS_PUSH_ENABLED", value: "false")
 
         return envList
     }

@@ -50,5 +50,9 @@
 	<string>$(JETBOX_LOGIN_LINK_HOST)</string>
 	<key>JetBoxProbeName</key>
 	<string>$(JETBOX_PROBE_NAME)</string>
+	<!-- JetBox: шифрование только стандартное, освобождённое от документов экспорта
+	     (ответ Apple: Yes, standard only; решение руководителя 22.11.2026). -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

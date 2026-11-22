@@ -9,12 +9,12 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).PacketTunnelProvider</string>
 	</dict>
-	<!-- JetBox: «только дом» (сборка США) — расширение само срезает маршрут
-	     выхода и снимает его в ядре. Значение — настройка сборки JETBOX_HOME_ONLY. -->
-	<key>JetBoxHomeOnly</key>
-	<string>$(JETBOX_HOME_ONLY)</string>
 	<!-- JetBox: management по умолчанию — из Config/JetBoxEdition.xcconfig. -->
 	<key>JetBoxManagementURL</key>
 	<string>https://$(JETBOX_MANAGEMENT_HOST)</string>
+	<!-- JetBox: шифрование только стандартное, освобождённое от документов экспорта
+	     (ответ Apple: Yes, standard only; решение руководителя 22.11.2026). -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

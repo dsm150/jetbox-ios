@@ -9,6 +9,7 @@
 | Патч | Что | Апстрим |
 |---|---|---|
 | `0001-ios-refresh-wireguard-stats.patch` | `GetStatusDetails` в iOS SDK обновляет счётчики WireGuard перед выдачей статуса — иначе трафик пиров всегда 0. Та же строка, что в Android `PeersList` и в демоне ПК. | PR готовится (см. `JetBox_iOS/docs/netbird-pr-ios-wg-stats.md`), отправка — по слову владельца |
+| `0002-no-netbird-cloud-defaults.patch` | `DefaultManagementURL`/`DefaultAdminURL` пустые: конфиг без адреса сервера — ошибка «management URL is not set», а не регистрация в облаке NetBird; AdminURL — от адреса management; миграция со старого облака (wiretrustee) выключена. Падают тесты апстрима `profilemanager`, которые рассчитывают на адрес по умолчанию, — ожидаемо. | Не предлагается: поведение только для JetBox (1.0 (18), решение руководителя 22.11.2026) |
 
 Наложить:
 

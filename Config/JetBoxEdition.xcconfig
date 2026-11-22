@@ -27,7 +27,9 @@ JETBOX_API_HOST = $(JETBOX_API_HOST_$(JETBOX_HOME_ONLY))
 JETBOX_API_PATH = /api/app/v1/
 
 // Хост универсальной ссылки подключения (`/connect#k=…`), есть в AASA.
-JETBOX_CONNECT_LINK_HOST_YES = api.jetbox.ai-boss.us
+// США: нет — приложение собирает подключение из полей ответа verify,
+// универсальной ссылки /connect там нет (решение руководителя 22.11.2026).
+JETBOX_CONNECT_LINK_HOST_YES =
 JETBOX_CONNECT_LINK_HOST_NO = box.jet-net.net
 JETBOX_CONNECT_LINK_HOST = $(JETBOX_CONNECT_LINK_HOST_$(JETBOX_HOME_ONLY))
 
@@ -49,6 +51,12 @@ SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(JETBOX_SWIFT_EDITION_$(JETB
 JETBOX_APP_INFOPLIST_YES = NetBird/Info-US.plist
 JETBOX_APP_INFOPLIST_NO = NetBird/Info.plist
 JETBOX_APP_INFOPLIST = $(JETBOX_APP_INFOPLIST_$(JETBOX_HOME_ONLY))
+
+// Entitlements приложения: в США associated domains — только сайт JetBox
+// (ссылка входа из письма, /auth/*).
+JETBOX_APP_ENTITLEMENTS_YES = NetBird/NetBird-US.entitlements
+JETBOX_APP_ENTITLEMENTS_NO = NetBird/NetBird.entitlements
+JETBOX_APP_ENTITLEMENTS = $(JETBOX_APP_ENTITLEMENTS_$(JETBOX_HOME_ONLY))
 
 // Экраны NetBird, которых в сборке США нет вовсе (не скрыты, а не собираются):
 // ручной выбор сервера, профили, расширенный режим (7 нажатий) со всеми его

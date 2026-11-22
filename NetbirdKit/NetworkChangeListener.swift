@@ -54,103 +54,13 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
             guard self.isValid, let tunnelManager = self.tunnelManager else {
                 return
             }
-            var routesString = p0 ?? ""
-            // JetBox «только дом» (сборка США): выход своей коробки включён
-            // всегда (1.0 (16)), маршрут по умолчанию от ядра идёт в туннель
-            // сразу. Нет своего выхода — маршрут выхода не ставим вовсе. Чужой
-            // выход в ядре снимает асинхронная проверка (и при подключении с
-            // виджета, когда приложение не открыто).
-            // 1.0 (14–16) ждали «подтверждения» проверки, и её сбой при
-            // перезапуске движка (смена сети) оставлял 0.0.0.0/0 вне туннеля
-            // до следующих маршрутов: «Protected», а трафик мимо дома (баг 16).
-            if Self.jetBoxHomeOnly {
-                let allowed = Self.jetBoxOwnExit()
-                let (kept, hadExit) = Self.stripExitRoutes(routesString)
-                routesString = Self.homeOnlyRoutes(routesString, stripped: kept, hadExit: hadExit, allowed: allowed)
-                if hadExit || allowed != nil {
-                    tunnelManager.homeOnlyEnforceExit(allowed: allowed)
-                }
-            }
+            let routesString = p0 ?? ""
             let (v4Routes, v6Routes, containsDefault) = parseRoutesToNESettings(routesString: routesString)
             if v4Routes.isEmpty && v6Routes.isEmpty && self.interfaceIP == nil {
                 return
             }
             tunnelManager.setRoutes(v4Routes: v4Routes, v6Routes: v6Routes, containsDefault: containsDefault)
         }
-    }
-
-    // MARK: - JetBox «только дом»
-
-    /// Флаг редакции из Info.plist расширения (`JetBoxHomeOnly`, настройка
-    /// сборки `JETBOX_HOME_ONLY`). Нет ключа — на iOS «только дом» (безопаснее
-    /// не выпустить трафик лишний раз), на tvOS — нет: там ключа и не бывает.
-    static let jetBoxHomeOnly: Bool = parseJetBoxHomeOnly(Bundle.main.object(forInfoDictionaryKey: "JetBoxHomeOnly"))
-
-    static func parseJetBoxHomeOnly(_ raw: Any?) -> Bool {
-        if let flag = raw as? Bool { return flag }
-        guard let text = (raw as? String)?.trimmingCharacters(in: .whitespaces).uppercased(),
-              !text.isEmpty, !text.hasPrefix("$(") else {
-            #if os(tvOS)
-            return false
-            #else
-            return true
-            #endif
-        }
-        return !["NO", "FALSE", "0"].contains(text)
-    }
-
-    /// Выход своей коробки, который приложение разрешило (файл в App Group,
-    /// читается заново каждый раз — JetBoxSharedExit). nil — тумблер выключен
-    /// или выхода своей коробки нет.
-    static func jetBoxOwnExit(_ file: URL? = JetBoxSharedExit.defaultURL()) -> String? {
-        JetBoxSharedExit.read(at: file)
-    }
-
-    /// Какие маршруты ставить в «только дом»: с выходом своей коробки — как
-    /// прислало ядро; без него — без маршрутов выхода.
-    static func homeOnlyRoutes(_ routes: String, stripped: String, hadExit: Bool, allowed: String?) -> String {
-        hadExit && allowed == nil ? stripped : routes
-    }
-
-    struct ExitRoute: Equatable {
-        var id: String
-        var selected: Bool
-    }
-
-    struct ExitActions: Equatable {
-        var deselect: [String] = []
-        var select: String?
-        /// Свой выход включён, и менять ничего не пришлось — можно пускать 0.0.0.0/0.
-        var ownActive = false
-    }
-
-    /// Что сделать с маршрутами выхода ядра: чужие снять, свой (`allowed`)
-    /// включить, если он есть, но не выбран. `allowed == nil` (тумблер
-    /// выключен) — снять любой выход. IPv6-пара «<имя>-v6» следует за основным.
-    static func exitActions(_ routes: [ExitRoute], allowed: String?) -> ExitActions {
-        var actions = ExitActions()
-        var ownPresent = false, ownSelected = false
-        for route in routes {
-            if let allowed, route.id == allowed || route.id == allowed + "-v6" {
-                if route.id == allowed {
-                    ownPresent = true
-                    ownSelected = route.selected
-                }
-                continue
-            }
-            if route.selected { actions.deselect.append(route.id) }
-        }
-        if let allowed, ownPresent, !ownSelected { actions.select = allowed }
-        actions.ownActive = ownSelected && actions.deselect.isEmpty && actions.select == nil
-        return actions
-    }
-
-    /// Убирает из списка маршрутов ядра (CIDR через запятую) маршруты выхода
-    /// 0.0.0.0/0 и ::/0. Возвращает остаток и был ли выход.
-    static func stripExitRoutes(_ routes: String) -> (String, Bool) {
-        let all = routes.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-        let kept = all.filter { $0 != "0.0.0.0/0" && $0 != "::/0" }
-        return (kept.joined(separator: ","), kept.count != all.count)
     }
 
     func setInterfaceIP(_ p0: String?) {

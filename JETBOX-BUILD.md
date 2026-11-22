@@ -86,6 +86,7 @@ NetBird (описание и статус апстрима — в `README.md` т
 | `23a1487` | — (собрано 05.09 без аргумента) | 1.0 (1) |
 | `cb7ca8e` | `0.78.0+cb7ca8e` | 1.0 (2)–1.0 (4), апстрим v0.4.1 |
 | `cb7ca8e` + `0001` | `0.78.0+cb7ca8e.jetbox1` | 1.0 (5): трафик пиров на iOS |
+| `cb7ca8e` + `0001` + `0002` | `0.78.0+cb7ca8e.jetbox2` | 1.0 (18): без адресов облака NetBird по умолчанию |
 
 ## 2. Приложение
 
@@ -318,9 +319,10 @@ xcodebuild -project NetBird.xcodeproj -scheme NetBird … archive JETBOX_HOME_ON
 | management (`JETBOX_MANAGEMENT_HOST`) | `net.jetbox.ai-boss.us` (заглушка до сервера в США) | `netbird.jet-net.net` |
 | маска `m` в ссылке | `.jetbox.ai-boss.us` | `.jet-net.net` |
 | API входа и удаления | `api.jetbox.ai-boss.us/api/app/v1/` (заглушка) | `box.jet-net.net/api/app/v1/` |
-| универсальная ссылка `/connect` | `api.jetbox.ai-boss.us` (заглушка) | `box.jet-net.net` |
+| универсальная ссылка `/connect` | нет: подключение из полей verify | `box.jet-net.net` |
 | ссылка входа из письма | `jetbox.ai-boss.us` | `jetbox.ai-boss.us` |
 | Info.plist приложения | `NetBird/Info-US.plist` (без схемы `netbird://`) | `NetBird/Info.plist` |
+| entitlements приложения | `NetBird/NetBird-US.entitlements` (applinks только `jetbox.ai-boss.us`) | `NetBird/NetBird.entitlements` |
 | условие Swift | `JETBOX_US` | `JETBOX_RU` |
 
 Адреса доходят до кода через Info.plist (`JetBoxManagementURL`, `JetBoxAPIBaseURL`, …) и
@@ -341,9 +343,14 @@ strings -a $APP/NetBird.debug.dylib | grep -E "jet-net|xn--80aswg|api\.netbird\.
 find $APP -name ru.lproj
 ```
 
-⚠️ Ядро Go (`NetBirdSDK`) несёт свои строки по умолчанию `https://api.netbird.io:443` и
-`https://app.netbird.io:443`. Они срабатывают, только если в конфиге нет адреса сервера, а
-JetBox его всегда задаёт. Убрать их можно только патчем ядра.
+Ядро с 1.0 (18) — `0.78.0+cb7ca8e.jetbox2`: патч `0002` убирает адреса облака NetBird по
+умолчанию (api/app.netbird.io). Конфиг без адреса сервера теперь ошибка, а не регистрация в
+облаке NetBird; AdminURL берётся от адреса management. Отправка метрик ядра на
+ingest.netbird.io выключена переменной `NB_METRICS_PUSH_ENABLED=false` (`EnvVarPackager`).
+Сторожа выхода в сетевом расширении нет (1.0 (18), «один в один как русская»): приложение
+лишь включает выход своей коробки при подключении, если он не выбран; «Protected» — по факту
+маршрута 0.0.0.0/0 в применённых настройках туннеля (`JetBoxTunnelState`).
+`ITSAppUsesNonExemptEncryption = NO` — в Info.plist приложения и расширения.
 
 ## 6. Как не отставать от апстрима
 

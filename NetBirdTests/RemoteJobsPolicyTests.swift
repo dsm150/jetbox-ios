@@ -107,6 +107,12 @@ final class RemoteJobsPolicyTests: XCTestCase {
             MDMRestrictions.current() == .empty,
             "the environment reports a policy for an unmanaged device"
         )
+        // JetBox: ядро с патчем 0002 не создаёт конфиг без адреса сервера,
+        // а в чистом симуляторе конфига (входа) нет — записать нечего.
+        try XCTSkipUnless(
+            Preferences.configFile().map { FileManager.default.fileExists(atPath: $0) } ?? false,
+            "no config file yet: JetBox core refuses to create one without a management URL"
+        )
 
         viewModel.loadRemoteJobsSettings()
         let original = viewModel.remoteJobsAllowed

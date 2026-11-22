@@ -84,7 +84,6 @@ enum JetBoxStore {
             return try? JSONDecoder().decode(JetBoxBox.self, from: data)
         }
         set {
-            defer { shareOwnExit(newValue) }
             guard let newValue else {
                 UserDefaults.standard.removeObject(forKey: boxKey)
                 return
@@ -95,17 +94,21 @@ enum JetBoxStore {
         }
     }
 
-    /// Выход своей коробки — для сетевого расширения: в «только дом» оно
-    /// пропускает только его, и он включён всегда (1.0 (16), тумблера нет).
+    /// Выход своей коробки в сборке США (`e`, не `cl-…`); в русской — nil.
     static func ownExitToAllow(for box: JetBoxBox?, homeOnly: Bool = JetBoxEdition.homeOnly) -> String? {
         homeOnly ? JetBoxEdition.ownExit(box?.exitNodeName) : nil
     }
 
-    static func shareOwnExit(_ box: JetBoxBox?, file: URL? = JetBoxSharedExit.defaultURL()) {
-        JetBoxSharedExit.write(ownExitToAllow(for: box), at: file)
-        // Ключ 1.0 (14) больше не читается — убираем, чтобы не путал.
-        UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)?
-            .removeObject(forKey: GlobalConstants.keyJetBoxOwnExit)
+    /// 1.0 (14–17) передавали расширению разрешённый выход (ключ App Group,
+    /// потом файл `jetbox-own-exit`). С 1.0 (18) сторожа в расширении нет —
+    /// остатки убираем при запуске.
+    static func removeLegacyExitShare() {
+        UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName)?.removeObject(forKey: "jetbox.ownExit")
+        if let url = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: GlobalConstants.userPreferencesSuiteName)?
+            .appendingPathComponent("jetbox-own-exit") {
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 
     /// Весь интернет идёт через свою коробку (сборка США, есть `e` своей коробки).

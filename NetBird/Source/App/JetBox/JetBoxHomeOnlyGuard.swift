@@ -2,12 +2,11 @@
 //  JetBoxHomeOnlyGuard.swift
 //  JetBox
 //
-//  «Только дом» (JetBoxEdition): при подключении приводим выход в порядок.
-//  Чужой выход (нода JetNet, облако, остаток с русской сборки на этом же
-//  телефоне) снимаем — Terms обещают только JetBox пользователя (решение
-//  владельца 21.11.2026). Выход своей коробки включаем, если его нет: он
-//  включён всегда (1.0 (16), решение владельца 22.11.2026). То же самое
-//  делает и сетевое расширение — оно работает и без приложения (виджет, Пункт управления).
+//  «Только дом» (JetBoxEdition): при каждом подключении выход своей коробки
+//  (`e` от Кабинета) включается, если он не выбран. Больше ничего: чужих
+//  выходов у американского сервера нет, а сторож в сетевом расширении убран
+//  в 1.0 (18) — «один в один как русская» (решение руководителя 22.11.2026).
+//  Статус «Protected» — по факту маршрута 0.0.0.0/0 в туннеле (JetBoxTunnelState).
 //
 
 #if os(iOS)
@@ -16,18 +15,14 @@ import Foundation
 enum JetBoxHomeOnlyGuard {
 
     struct Plan: Equatable {
-        var deselect: String?
         var select: String?
     }
 
-    /// Что сделать с выходами. `allowed` — выход своей коробки, nil — его нет
-    /// (тогда снимается любой выход).
+    /// Что сделать с выходами: включить выход своей коробки (`allowed`), если
+    /// он есть в маршрутах, но не выбран. Нет своего выхода — ничего.
     static func plan(selectedExit: String?, available: [String], allowed: String?, homeOnly: Bool) -> Plan {
-        guard homeOnly else { return Plan() }
-        var plan = Plan()
-        if let selectedExit, selectedExit != allowed { plan.deselect = selectedExit }
-        if let allowed, selectedExit != allowed, available.contains(allowed) { plan.select = allowed }
-        return plan
+        guard homeOnly, let allowed, selectedExit != allowed, available.contains(allowed) else { return Plan() }
+        return Plan(select: allowed)
     }
 
     /// Маршруты после подключения приходят не сразу — ждём их до ~5 с.
@@ -42,13 +37,9 @@ enum JetBoxHomeOnlyGuard {
         let allowed = JetBoxStore.ownExitToAllow(for: JetBoxStore.currentBox)
         let plan = plan(selectedExit: routes.selectedExitNode?.name,
                         available: routes.exitNodes.map(\.name), allowed: allowed, homeOnly: homeOnly)
-        // Выбор выхода в RoutesViewModel сам снимает остальные выходы.
         if let name = plan.select, let node = routes.exitNodes.first(where: { $0.name == name }) {
             AppLogger.shared.log("JetBox: home only — selecting own box exit \(name)")
             routes.setExitNode(node)
-        } else if let name = plan.deselect {
-            AppLogger.shared.log("JetBox: home only — deselecting exit \(name)")
-            routes.setExitNode(nil)
         }
         // Проверка по ядру, а не по записи: какой выход там выбран на самом деле.
         try? await Task.sleep(nanoseconds: 2_000_000_000)
