@@ -63,7 +63,10 @@ final class JetBoxHomeReadiness: ObservableObject {
             while !Task.isCancelled {
                 let peers = await Self.fetchPeers(adapter)
                 if Task.isCancelled { return }
-                if let peer = Self.homePeer(in: peers) {
+                // Выход своей коробки должен быть — ждём и маршрут по умолчанию в туннеле.
+                let exitOK = Self.exitReady(expected: JetBoxStore.allInternetHome,
+                                            inTunnel: JetBoxTunnelState.defaultRouteInTunnel())
+                if exitOK, let peer = Self.homePeer(in: peers) {
                     if Self.isConnected(peer) { reason = "пир коробки Connected"; break }
                     let ip = JetBoxHomeProbe.bareIP(peer.ip)
                     if !ip.isEmpty, await Self.dnsAnswers(ip) { reason = "ответ DNS коробки"; break }
@@ -74,7 +77,7 @@ final class JetBoxHomeReadiness: ObservableObject {
             guard !Task.isCancelled, let self else { return }
             let seconds = Int(Date().timeIntervalSince(started))
             if reason == "потолок" {
-                AppLogger.shared.log("JetBox: дом не ответил за \(seconds) с — показываем «подключено» по туннелю")
+                AppLogger.shared.log("JetBox: дом не ответил за \(seconds) с — показываем «подключено» по туннелю; маршрут по умолчанию в туннеле: \(JetBoxTunnelState.defaultRouteInTunnel() ? "да" : "нет")")
             } else {
                 AppLogger.shared.log("JetBox: дом отвечает через \(seconds) с после туннеля (\(reason))")
             }
@@ -109,6 +112,11 @@ final class JetBoxHomeReadiness: ObservableObject {
         if let box = JetBoxLiveStats.boxPeer(in: peers) { return box }
         let routed = peers.filter { !$0.routes.isEmpty }
         return routed.first(where: isConnected) ?? routed.first
+    }
+
+    /// Выход не ожидается — не ждём; ожидается — только когда он в туннеле.
+    nonisolated static func exitReady(expected: Bool, inTunnel: Bool) -> Bool {
+        !expected || inTunnel
     }
 
     nonisolated static func isConnected(_ peer: PeerInfo) -> Bool {

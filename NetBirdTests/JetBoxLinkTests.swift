@@ -1263,13 +1263,19 @@ final class JetBoxOwnExitRememberTests: XCTestCase {
         XCTAssertEqual(JetBoxStore.currentBox?.selectedExitNode, "home-ivanov")
     }
 
-    func testStatusTextsWithOwnExit() throws {
-        try XCTSkipUnless(JetBoxEdition.homeOnly, "проверка сборки США")
-        JetBoxStore.remember(payload(x: false, exit: "home-ivanov"))
-        XCTAssertEqual(JBText.homeConnectedNow, "Protected by your JetBox")
-        XCTAssertEqual(JBText.dockOnNow, "All internet through your home")
-        XCTAssertEqual(JBText.protectedTitle(exitNode: nil), "Protected by your JetBox", "даже если ядро ещё не выбрало")
-        XCTAssertEqual(JBText.protectedBody(exitNode: "home-ivanov"), "All internet goes through your home.")
+    /// Баг 1.0 (16): «Protected» горел при трафике мимо дома. Теперь — только
+    /// когда маршрут по умолчанию стоит в применённых настройках туннеля.
+    func testProtectedOnlyWhenDefaultRouteIsInTunnel() {
+        XCTAssertTrue(JBText.allInternetHome(expected: true, inTunnel: true))
+        XCTAssertFalse(JBText.allInternetHome(expected: true, inTunnel: false), "выход выбран, а маршрута нет")
+        XCTAssertFalse(JBText.allInternetHome(expected: false, inTunnel: true), "нет выхода своей коробки")
+    }
+
+    func testWarningWhenExpectedExitIsNotInTunnel() {
+        XCTAssertEqual(JBText.exitWarning(expected: true, inTunnel: false),
+                       "Internet isn’t going through your JetBox right now.")
+        XCTAssertNil(JBText.exitWarning(expected: true, inTunnel: true))
+        XCTAssertNil(JBText.exitWarning(expected: false, inTunnel: false), "без `e` — просто «On your home network»")
     }
 
     func testStatusTextsWithoutExit() throws {
@@ -1278,6 +1284,50 @@ final class JetBoxOwnExitRememberTests: XCTestCase {
         XCTAssertEqual(JBText.homeConnectedNow, "On your home network")
         XCTAssertEqual(JBText.dockOnNow, "On your home network")
         XCTAssertEqual(JBText.protectedTitle(exitNode: nil), "On your home network")
+    }
+}
+
+/// Маршрут по умолчанию в туннеле: что ставит расширение и что видит приложение.
+final class JetBoxTunnelDefaultRouteTests: XCTestCase {
+    private var file: URL!
+
+    override func setUp() {
+        file = FileManager.default.temporaryDirectory.appendingPathComponent("jetbox-tunnel-\(UUID().uuidString)")
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: file)
+    }
+
+    func testStateRoundTripAndFreshRead() {
+        XCTAssertFalse(JetBoxTunnelState.defaultRouteInTunnel(at: file), "нет файла — маршрута нет")
+        JetBoxTunnelState.write(defaultRouteInTunnel: true, at: file)
+        XCTAssertTrue(JetBoxTunnelState.defaultRouteInTunnel(at: file))
+        JetBoxTunnelState.write(defaultRouteInTunnel: false, at: file)
+        XCTAssertFalse(JetBoxTunnelState.defaultRouteInTunnel(at: file))
+    }
+
+    /// Причина бага 16: маршрут выхода срезался, пока асинхронная проверка
+    /// не «подтвердит» выход, а её сбой при перезапуске движка оставлял его
+    /// срезанным. Теперь с выходом своей коробки маршруты ядра идут как есть.
+    func testOwnExitKeepsDefaultRouteWithoutWaiting() {
+        let routes = "100.79.0.0/16,192.168.60.0/24,0.0.0.0/0,::/0"
+        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes(routes)
+        XCTAssertEqual(NetworkChangeListener.homeOnlyRoutes(routes, stripped: kept, hadExit: hadExit,
+                                                            allowed: "home-ivanov"), routes)
+    }
+
+    func testNoOwnExitStripsDefaultRoute() {
+        let routes = "100.79.0.0/16,0.0.0.0/0"
+        let (kept, hadExit) = NetworkChangeListener.stripExitRoutes(routes)
+        XCTAssertEqual(NetworkChangeListener.homeOnlyRoutes(routes, stripped: kept, hadExit: hadExit, allowed: nil),
+                       "100.79.0.0/16")
+    }
+
+    func testReadinessWaitsForDefaultRouteOnlyWhenExitExpected() {
+        XCTAssertFalse(JetBoxHomeReadiness.exitReady(expected: true, inTunnel: false))
+        XCTAssertTrue(JetBoxHomeReadiness.exitReady(expected: true, inTunnel: true))
+        XCTAssertTrue(JetBoxHomeReadiness.exitReady(expected: false, inTunnel: false))
     }
 }
 

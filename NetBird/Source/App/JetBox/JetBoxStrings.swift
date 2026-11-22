@@ -99,7 +99,10 @@ enum JBText {
         return protectedTitle
     }
     static func protectedBody(exitNode: String?) -> String {
-        if JetBoxEdition.homeOnly { return allInternetHome ? t("jetbox.protected.all") : protectedNoExit }
+        if JetBoxEdition.homeOnly {
+            if allInternetHome { return t("jetbox.protected.all") }
+            return exitWarning ?? protectedNoExit
+        }
         return exitNode.map(protectedExit) ?? protectedNoExit
     }
 
@@ -132,7 +135,19 @@ enum JBText {
 
     static var homeConnected: String { t("jetbox.home.connected") }
     /// Сборка США, тумблер «All internet through my JetBox» включён.
-    static var allInternetHome: Bool { JetBoxStore.allInternetHome }
+    /// «Protected by your JetBox» — только когда весь интернет правда идёт через
+    /// дом: у записи есть выход своей коробки И маршрут по умолчанию стоит в
+    /// применённых настройках туннеля (JetBoxTunnelState, пишет расширение).
+    /// Одной записи или выбора в ядре мало — баг 1.0 (16).
+    static var allInternetHome: Bool { allInternetHome(expected: JetBoxStore.allInternetHome) }
+    static func allInternetHome(expected: Bool, inTunnel: Bool = JetBoxTunnelState.defaultRouteInTunnel()) -> Bool {
+        expected && inTunnel
+    }
+    /// Выход своей коробки должен быть, а маршрута по умолчанию в туннеле нет.
+    static var exitWarning: String? { exitWarning(expected: JetBoxStore.allInternetHome) }
+    static func exitWarning(expected: Bool, inTunnel: Bool = JetBoxTunnelState.defaultRouteInTunnel()) -> String? {
+        expected && !inTunnel ? t("jetbox.home.exit_missing") : nil
+    }
     static var homeConnectedNow: String { allInternetHome ? t("jetbox.home.connected_all") : homeConnected }
     static var homeConnecting: String { t("jetbox.home.connecting") }
     static var homeDisconnecting: String { t("jetbox.home.disconnecting") }
@@ -192,7 +207,7 @@ enum JBText {
     // MARK: Нижняя панель и подробности подключения
 
     static var dockOn: String { t("jetbox.dock.on") }
-    static var dockOnNow: String { allInternetHome ? t("jetbox.dock.on_all") : dockOn }
+    static var dockOnNow: String { allInternetHome ? t("jetbox.dock.on_all") : (exitWarning ?? dockOn) }
     static var dockConnecting: String { t("jetbox.dock.connecting") }
     static var dockOff: String { t("jetbox.dock.off") }
     static var dockOffline: String { t("jetbox.dock.offline") }

@@ -55,23 +55,20 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
                 return
             }
             var routesString = p0 ?? ""
-            // JetBox «только дом» (сборка США): в туннель идёт только выход
-            // своей коробки, и то при включённом тумблере (1.0 (14)). Чужой
-            // выход в ядре снимаем — и при подключении с виджета или из Пункта
-            // управления, когда приложение не открыто. Пока расширение не
-            // проверило в ядре, что включён именно свой выход, маршрут выхода
-            // не ставим: проверка асинхронная и потом применит маршруты заново.
+            // JetBox «только дом» (сборка США): выход своей коробки включён
+            // всегда (1.0 (16)), маршрут по умолчанию от ядра идёт в туннель
+            // сразу. Нет своего выхода — маршрут выхода не ставим вовсе. Чужой
+            // выход в ядре снимает асинхронная проверка (и при подключении с
+            // виджета, когда приложение не открыто).
+            // 1.0 (14–16) ждали «подтверждения» проверки, и её сбой при
+            // перезапуске движка (смена сети) оставлял 0.0.0.0/0 вне туннеля
+            // до следующих маршрутов: «Protected», а трафик мимо дома (баг 16).
             if Self.jetBoxHomeOnly {
                 let allowed = Self.jetBoxOwnExit()
                 let (kept, hadExit) = Self.stripExitRoutes(routesString)
-                if hadExit && !tunnelManager.isOwnExitVerified(allowed) {
-                    routesString = kept
-                }
+                routesString = Self.homeOnlyRoutes(routesString, stripped: kept, hadExit: hadExit, allowed: allowed)
                 if hadExit || allowed != nil {
-                    let raw = p0
-                    tunnelManager.homeOnlyEnforceExit(allowed: allowed) { [weak self] in
-                        self?.onNetworkChanged(raw)
-                    }
+                    tunnelManager.homeOnlyEnforceExit(allowed: allowed)
                 }
             }
             let (v4Routes, v6Routes, containsDefault) = parseRoutesToNESettings(routesString: routesString)
@@ -107,6 +104,12 @@ class NetworkChangeListener: NSObject, NetBirdSDKNetworkChangeListenerProtocol {
     /// или выхода своей коробки нет.
     static func jetBoxOwnExit(_ file: URL? = JetBoxSharedExit.defaultURL()) -> String? {
         JetBoxSharedExit.read(at: file)
+    }
+
+    /// Какие маршруты ставить в «только дом»: с выходом своей коробки — как
+    /// прислало ядро; без него — без маршрутов выхода.
+    static func homeOnlyRoutes(_ routes: String, stripped: String, hadExit: Bool, allowed: String?) -> String {
+        hadExit && allowed == nil ? stripped : routes
     }
 
     struct ExitRoute: Equatable {

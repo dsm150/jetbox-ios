@@ -1055,6 +1055,23 @@
         }
       }
     },
+    "jetbox.home.exit_missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internet isn’t going through your JetBox right now."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сейчас интернет идёт не через ваш JetBox."
+          }
+        }
+      }
+    },
     "jetbox.home.exit_none": {
       "extractionState": "manual",
       "localizations": {

@@ -27,6 +27,9 @@ final class JetBoxLiveStats: ObservableObject {
     /// Когда поднят туннель — от системы, а не от нас: переживает перезапуск
     /// приложения.
     @Published private(set) var connectedSince: Date?
+    /// Маршрут по умолчанию в применённых настройках туннеля (JetBoxTunnelState):
+    /// меняется — главный экран перерисовывает «Protected» / предупреждение.
+    @Published private(set) var defaultRouteInTunnel = false
 
     /// Последний замер «до дома» (JetBoxHomeProbe). Ядро меряет задержку
     /// только на прямом соединении — его цифра идёт лишь запасной.
@@ -48,6 +51,8 @@ final class JetBoxLiveStats: ObservableObject {
         }
         if snapshot != box { box = snapshot }
         if connectedSince != self.connectedSince { self.connectedSince = connectedSince }
+        let inTunnel = JetBoxTunnelState.defaultRouteInTunnel()
+        if inTunnel != defaultRouteInTunnel { defaultRouteInTunnel = inTunnel }
     }
 
     private func probe(host: String) {

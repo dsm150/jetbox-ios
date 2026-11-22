@@ -54,7 +54,7 @@ enum JetBoxHomeOnlyGuard {
         try? await Task.sleep(nanoseconds: 2_000_000_000)
         routes.getRoutes()
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        AppLogger.shared.log("JetBox: выход в ядре после подключения — \(routes.selectedExitNode?.name ?? "нет") (свой: \(allowed ?? "нет"))")
+        AppLogger.shared.log("JetBox: выход в ядре после подключения — \(routes.selectedExitNode?.name ?? "нет") (свой: \(allowed ?? "нет")); маршрут по умолчанию в туннеле: \(JetBoxTunnelState.defaultRouteInTunnel() ? "да" : "нет")")
     }
 }
 #endif

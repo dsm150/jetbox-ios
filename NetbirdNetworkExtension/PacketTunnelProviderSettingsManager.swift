@@ -30,35 +30,20 @@ class PacketTunnelProviderSettingsManager {
         self.packetTunnelProvider = packetTunnelProvider
     }
 
-    /// JetBox «только дом»: выход своей коробки, который проверка в ядре
-    /// застала включённым и единственным. Только тогда маршрут выхода идёт
-    /// в туннель (NetworkChangeListener).
-    private var verifiedOwnExit: String?
-    private let ownExitLock = NSLock()
-
-    func isOwnExitVerified(_ allowed: String?) -> Bool {
-        guard let allowed else { return false }
-        ownExitLock.lock(); defer { ownExitLock.unlock() }
-        return verifiedOwnExit == allowed
-    }
-
-    /// Приводит выходы в ядре к разрешённому: чужие снимает, свой (если
-    /// разрешён и не включён) включает. Асинхронно: мы внутри обратного вызова
-    /// Go, синхронный вызов в ядро отсюда может зависнуть. Когда свой выход
-    /// впервые подтверждён — `reapply` заново применяет маршруты ядра.
-    func homeOnlyEnforceExit(allowed: String?, reapply: @escaping () -> Void) {
+    /// JetBox «только дом»: привести выходы в ядре к разрешённому — чужие
+    /// снять, свой включить, если он есть, но не выбран. Асинхронно: мы внутри
+    /// обратного вызова Go, синхронный вызов в ядро отсюда может зависнуть.
+    /// Ядро не ответило (перезапуск движка) — повторяем, до ~10 с.
+    func homeOnlyEnforceExit(allowed: String?, attempt: Int = 0) {
         // Файл общий с tvOS-расширением, где свой PacketTunnelProvider без
         // этого метода; «только дом» там и не включается.
         #if os(iOS)
-        DispatchQueue.global(qos: .utility).async { [weak self] in
+        let delay: TimeInterval = attempt == 0 ? 0 : 2
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self, let provider = self.packetTunnelProvider else { return }
-            let ownActive = provider.enforceOwnExit(allowed: allowed)
-            let verified = ownActive ? allowed : nil
-            self.ownExitLock.lock()
-            let changed = self.verifiedOwnExit != verified
-            self.verifiedOwnExit = verified
-            self.ownExitLock.unlock()
-            if changed && verified != nil { reapply() }
+            if provider.enforceOwnExit(allowed: allowed) == nil, attempt < 5 {
+                self.homeOnlyEnforceExit(allowed: allowed, attempt: attempt + 1)
+            }
         }
         #endif
     }
@@ -119,7 +104,15 @@ class PacketTunnelProviderSettingsManager {
     private func updateTunnel() {
         if let tunnelSettings = createTunnelSettings() {
             if let tunnelProvider = self.packetTunnelProvider {
+                #if os(iOS)
+                // JetBox: что реально применено — для статуса «Protected» в приложении.
+                let hasDefault = Self.hasDefaultRoute(tunnelSettings.ipv4Settings?.includedRoutes)
+                tunnelProvider.setTunnelSettings(tunnelNetworkSettings: tunnelSettings) { applied in
+                    if applied { JetBoxTunnelState.write(defaultRouteInTunnel: hasDefault) }
+                }
+                #else
                 tunnelProvider.setTunnelSettings(tunnelNetworkSettings: tunnelSettings)
+                #endif
             } else {
                 print("Failed to get tunnel provider")
             }
@@ -128,6 +121,10 @@ class PacketTunnelProviderSettingsManager {
         }
     }
     
+    static func hasDefaultRoute(_ routes: [NEIPv4Route]?) -> Bool {
+        (routes ?? []).contains { $0.destinationAddress == "0.0.0.0" && $0.destinationSubnetMask == "0.0.0.0" }
+    }
+
     private func createTunnelSettings() -> NEPacketTunnelNetworkSettings? {
         if let interfaceIP = interfaceIP {
             if let (ipAddress, subnetMask) = extractIPAddressAndSubnet(from: interfaceIP) {

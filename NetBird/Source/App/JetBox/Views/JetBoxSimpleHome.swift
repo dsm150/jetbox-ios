@@ -113,7 +113,8 @@ struct JetBoxSimpleHomeLayout: View {
         switch phase {
         case .off: return box == nil ? "" : JBText.simpleTapToConnect
         case .working: return JBText.simpleWait
-        case .on: return box?.displayName ?? ""
+        // Выход своей коробки должен быть, а его нет в туннеле — говорим прямо.
+        case .on: return box == nil ? "" : (JBText.exitWarning ?? box?.displayName ?? "")
         case .offline: return JBText.simpleOfflineHint
         }
     }

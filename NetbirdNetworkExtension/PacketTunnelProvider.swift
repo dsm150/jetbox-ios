@@ -193,6 +193,8 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
     /// Starts the selected profile's NetBird engine and completes Network Extension startup.
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
+        // JetBox: пока настройки туннеля не применены, маршрута по умолчанию в нём нет.
+        JetBoxTunnelState.write(defaultRouteInTunnel: false)
         armTunnelStartCompletion(completionHandler)
 
         if let options = options, let logLevel = options["logLevel"] as? String {
@@ -346,6 +348,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
     /// Stops monitoring and the NetBird engine before completing tunnel teardown.
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
+        JetBoxTunnelState.write(defaultRouteInTunnel: false)
         // Synchronously, and before adapter.stop(): a restart whose stop
         // completion is still in flight reads this latch off monitorQueue, and
         // a queued write would let it see the old value and restart into the
@@ -1088,10 +1091,14 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     /// выходы снимаем, свой (`allowed`, тумблер включён) включаем, если он
     /// есть, но не выбран. Выбор и снятие ядро сохраняет в файл состояния.
     /// IPv6-пара выхода («<имя>-v6») следует за основным маршрутом сама.
-    /// Возвращает true, если свой выход включён и ничего менять не пришлось.
-    func enforceOwnExit(allowed: String?) -> Bool {
+    /// Возвращает true, если свой выход включён и ничего менять не пришлось;
+    /// nil — ядро не ответило (повторить позже).
+    func enforceOwnExit(allowed: String?) -> Bool? {
         guard let adapter = adapter,
-              let details = try? adapter.client.getRoutesSelectionDetails() else { return false }
+              let details = try? adapter.client.getRoutesSelectionDetails() else {
+            AppLogger.shared.log("JetBox: «только дом» — ядро не отдало маршруты, проверю выход позже")
+            return nil
+        }
         var exits: [NetworkChangeListener.ExitRoute] = []
         for index in 0..<details.size() {
             guard let route = details.get(index),
@@ -1175,13 +1182,16 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
 
-    func setTunnelSettings(tunnelNetworkSettings: NEPacketTunnelNetworkSettings) {
+    func setTunnelSettings(tunnelNetworkSettings: NEPacketTunnelNetworkSettings,
+                           applied: ((Bool) -> Void)? = nil) {
         setTunnelNetworkSettings(tunnelNetworkSettings) { error in
             if let error = error {
                 AppLogger.shared.log("Error assigning routes: \(error.localizedDescription)")
+                applied?(false)
                 return
             }
             AppLogger.shared.log("Routes set successfully.")
+            applied?(true)
         }
     }
 

@@ -108,3 +108,28 @@ enum JetBoxSharedExit {
         }
     }
 }
+
+/// JetBox: стоит ли маршрут по умолчанию (0.0.0.0/0) в последних ПРИМЕНЁННЫХ
+/// настройках туннеля iOS. Пишет сетевое расширение после успешного
+/// setTunnelNetworkSettings, читает приложение: «Protected by your JetBox» —
+/// только когда интернет правда идёт через дом (баг 1.0 (16), 22.11.2026).
+/// Файл, а не UserDefaults App Group: другой процесс видит UserDefaults из кэша.
+enum JetBoxTunnelState {
+    static let fileName = "jetbox-tunnel-default-route"
+
+    static func defaultURL() -> URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: GlobalConstants.userPreferencesSuiteName)?
+            .appendingPathComponent(fileName)
+    }
+
+    static func write(defaultRouteInTunnel: Bool, at url: URL? = defaultURL()) {
+        guard let url else { return }
+        try? Data((defaultRouteInTunnel ? "1" : "0").utf8).write(to: url, options: .atomic)
+    }
+
+    static func defaultRouteInTunnel(at url: URL? = defaultURL()) -> Bool {
+        guard let url, let data = try? Data(contentsOf: url) else { return false }
+        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
+    }
+}
