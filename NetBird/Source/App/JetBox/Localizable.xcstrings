@@ -2094,40 +2094,6 @@
         }
       }
     },
-    "jetbox.settings.all_internet": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All internet through my JetBox"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Весь интернет через мой JetBox"
-          }
-        }
-      }
-    },
-    "jetbox.settings.all_internet.footer": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turn off to send only home traffic through JetBox. Other sites will use your regular connection."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Если выключить, через JetBox пойдёт только домашняя сеть, остальные сайты — напрямую, как обычно."
-          }
-        }
-      }
-    },
     "jetbox.settings.delete_account": {
       "extractionState": "manual",
       "localizations": {

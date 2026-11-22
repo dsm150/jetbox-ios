@@ -95,12 +95,10 @@ enum JetBoxStore {
         }
     }
 
-    /// Выход своей коробки, который сейчас включён, — для сетевого расширения:
-    /// в «только дом» оно пропускает только его (NetworkChangeListener).
-    static func ownExitToAllow(for box: JetBoxBox?) -> String? {
-        guard let selected = JetBoxEdition.ownExit(box?.selectedExitNode),
-              selected == box?.exitNodeName else { return nil }
-        return selected
+    /// Выход своей коробки — для сетевого расширения: в «только дом» оно
+    /// пропускает только его, и он включён всегда (1.0 (16), тумблера нет).
+    static func ownExitToAllow(for box: JetBoxBox?, homeOnly: Bool = JetBoxEdition.homeOnly) -> String? {
+        homeOnly ? JetBoxEdition.ownExit(box?.exitNodeName) : nil
     }
 
     static func shareOwnExit(_ box: JetBoxBox?, file: URL? = JetBoxSharedExit.defaultURL()) {
@@ -110,8 +108,16 @@ enum JetBoxStore {
             .removeObject(forKey: GlobalConstants.keyJetBoxOwnExit)
     }
 
-    /// Тумблер «весь интернет через мой JetBox» включён.
-    static var ownExitEnabled: Bool { ownExitToAllow(for: currentBox) != nil }
+    /// Весь интернет идёт через свою коробку (сборка США, есть `e` своей коробки).
+    static var allInternetHome: Bool { ownExitToAllow(for: currentBox) != nil }
+
+    /// Записи 1.0 (12–15): выход своей коробки мог быть не выбран (x=0 или
+    /// тумблер). С 1.0 (16) он выбран всегда.
+    static func selectOwnExitIfNeeded(homeOnly: Bool = JetBoxEdition.homeOnly) {
+        guard let box = currentBox, let own = ownExitToAllow(for: box, homeOnly: homeOnly),
+              box.selectedExitNode != own else { return }
+        rememberExitNode(own)
+    }
 
     /// Экран первого запуска апстрима («подключитесь к облаку NetBird») клиенту
     /// JetBox показывать незачем — коробка приходит ссылкой.
@@ -124,7 +130,7 @@ enum JetBoxStore {
             managementURL: payload.managementURL,
             exitNodeName: payload.exitNodeName,
             // `x=0`: выход из ссылки только разрешён, не включён (контракт 1.2, §2.10).
-            // «Только дом»: включается только выход своей коробки (JetBoxEdition).
+            // «Только дом»: выход своей коробки — всегда, `x` не смотрим (JetBoxEdition).
             selectedExitNode: JetBoxEdition.appliesExit(payload: payload, homeOnly: JetBoxEdition.homeOnly)
                 ? payload.exitNodeName : nil,
             boxName: payload.boxName,

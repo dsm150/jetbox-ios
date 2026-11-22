@@ -95,11 +95,12 @@ enum JBText {
     static var protectedNoExit: String { t("jetbox.protected.no_exit") }
     /// Экран «готово»: в сборке США с выходом своей коробки — «весь интернет через дом».
     static func protectedTitle(exitNode: String?) -> String {
-        JetBoxEdition.homeOnly && exitNode != nil ? t("jetbox.protected.title_all") : protectedTitle
+        if JetBoxEdition.homeOnly { return allInternetHome ? t("jetbox.protected.title_all") : protectedTitle }
+        return protectedTitle
     }
     static func protectedBody(exitNode: String?) -> String {
-        guard let exitNode else { return protectedNoExit }
-        return JetBoxEdition.homeOnly ? t("jetbox.protected.all") : protectedExit(exitNode)
+        if JetBoxEdition.homeOnly { return allInternetHome ? t("jetbox.protected.all") : protectedNoExit }
+        return exitNode.map(protectedExit) ?? protectedNoExit
     }
 
     // MARK: Выбор выхода
@@ -131,7 +132,7 @@ enum JBText {
 
     static var homeConnected: String { t("jetbox.home.connected") }
     /// Сборка США, тумблер «All internet through my JetBox» включён.
-    static var allInternetHome: Bool { JetBoxEdition.homeOnly && JetBoxStore.ownExitEnabled }
+    static var allInternetHome: Bool { JetBoxStore.allInternetHome }
     static var homeConnectedNow: String { allInternetHome ? t("jetbox.home.connected_all") : homeConnected }
     static var homeConnecting: String { t("jetbox.home.connecting") }
     static var homeDisconnecting: String { t("jetbox.home.disconnecting") }
@@ -158,8 +159,6 @@ enum JBText {
     static var settingsDeleteBody: String { t("jetbox.settings.delete_account.confirm_body") }
     static var settingsDeleteFailed: String { t("jetbox.settings.delete_account.failed") }
     static var deleteSignInAgain: String { t("jetbox.settings.delete_account.sign_in_again") }
-    static var settingsAllInternet: String { t("jetbox.settings.all_internet") }
-    static var settingsAllInternetFooter: String { t("jetbox.settings.all_internet.footer") }
     static var settingsSignOutTitle: String { t("jetbox.settings.sign_out.confirm_title") }
     static var settingsSignOutBody: String { t("jetbox.settings.sign_out.confirm_body") }
     static var settingsSectionApp: String { t("jetbox.settings.section.app") }

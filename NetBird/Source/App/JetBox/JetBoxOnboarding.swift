@@ -324,19 +324,6 @@ final class JetBoxOnboarding: ObservableObject {
         await deleteAccount(stopTunnel: { await JetBoxSignOut.stopTunnel(viewModel) })
     }
 
-    // MARK: - Весь интернет через свой JetBox (сборка США, 1.0 (14))
-
-    /// Счётчик для перерисовки: запись живёт в UserDefaults, SwiftUI её не видит.
-    @Published private(set) var exitRevision = 0
-
-    var ownExitEnabled: Bool { JetBoxStore.ownExitEnabled }
-
-    func setOwnExit(enabled: Bool, viewModel: ViewModel) {
-        JetBoxHomeOnlyGuard.setOwnExit(enabled: enabled, routes: viewModel.routeViewModel,
-                                       isConnected: viewModel.vpnDisplayState == .connected)
-        exitRevision += 1
-    }
-
     // MARK: - Вход по ссылке из письма
 
     private func startLogin(token: String) {
