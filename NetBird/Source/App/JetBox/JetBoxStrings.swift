@@ -153,6 +153,11 @@ enum JBText {
     static var settingsExit: String { t("jetbox.settings.exit") }
     static var settingsNoBox: String { t("jetbox.settings.no_box") }
     static var settingsSignOut: String { t("jetbox.settings.sign_out") }
+    static var settingsDeleteAccount: String { t("jetbox.settings.delete_account") }
+    static var settingsDeleteTitle: String { t("jetbox.settings.delete_account.confirm_title") }
+    static var settingsDeleteBody: String { t("jetbox.settings.delete_account.confirm_body") }
+    static var settingsDeleteFailed: String { t("jetbox.settings.delete_account.failed") }
+    static var deleteSignInAgain: String { t("jetbox.settings.delete_account.sign_in_again") }
     static var settingsAllInternet: String { t("jetbox.settings.all_internet") }
     static var settingsAllInternetFooter: String { t("jetbox.settings.all_internet.footer") }
     static var settingsSignOutTitle: String { t("jetbox.settings.sign_out.confirm_title") }

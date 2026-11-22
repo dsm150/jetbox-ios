@@ -118,6 +118,11 @@ struct JetBoxLoginAPI {
     var transport: Transport = { try await JetBoxLoginAPI.session.data(for: $0) }
     /// Журнал. Сюда уходят только коды ответа — ни токена, ни ключа.
     var log: (String) -> Void = { AppLogger.shared.log($0) }
+    /// Токен приложения из verify (для «Delete account») — в Keychain этого
+    /// устройства. Ответ без токена стирает прежний: он от другого входа.
+    var storeAppToken: (String?) -> Void = { token in
+        if let token { JetBoxAppToken.save(token) } else { JetBoxAppToken.delete() }
+    }
 
     /// Без кэша и cookie: ответы с ключом на диск не ложатся.
     static let session: URLSession = {
@@ -175,7 +180,9 @@ struct JetBoxLoginAPI {
                 log("JetBox: вход по email — ответ без параметров подключения")
                 return .unavailable
             }
-            log("JetBox: вход по email — ссылка подтверждена (200)")
+            let token = Self.appToken(from: data)
+            storeAppToken(token)
+            log("JetBox: вход по email — ссылка подтверждена (200), токен приложения: \(token == nil ? "нет" : "есть")")
             return .connect(url)
         case .response(410, _):
             log("JetBox: вход по email — ссылка устарела или использована (410)")
@@ -344,6 +351,11 @@ final class JetBoxLoginModel: ObservableObject {
     }
 
     /// После «Sign out»: форма как у свежей установки.
+    /// Сообщение на чистом экране входа (после «Delete account» без токена).
+    func showNotice(_ text: String) {
+        message = text
+    }
+
     func reset() {
         phase = .enter
         email = ""

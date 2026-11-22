@@ -2128,6 +2128,91 @@
         }
       }
     },
+    "jetbox.settings.delete_account": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete account"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить аккаунт"
+          }
+        }
+      }
+    },
+    "jetbox.settings.delete_account.confirm_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your devices lose access to your JetBox. To get access back, contact JetBox support."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Все ваши устройства потеряют доступ к JetBox. Чтобы вернуть доступ, свяжитесь с поддержкой JetBox."
+          }
+        }
+      }
+    },
+    "jetbox.settings.delete_account.confirm_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete your JetBox account?"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить аккаунт JetBox?"
+          }
+        }
+      }
+    },
+    "jetbox.settings.delete_account.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t delete the account. Try again."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось удалить аккаунт. Попробуйте ещё раз."
+          }
+        }
+      }
+    },
+    "jetbox.settings.delete_account.sign_in_again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log in again to finish deleting your account."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Войдите снова, чтобы закончить удаление аккаунта."
+          }
+        }
+      }
+    },
     "jetbox.settings.exit": {
       "extractionState": "manual",
       "localizations": {

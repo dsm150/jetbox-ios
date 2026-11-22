@@ -19,6 +19,8 @@ struct JetBoxHomeView: View {
     /// в ExitNodeSelectorCard.
     @ObservedObject var routes: RoutesViewModel
     @ObservedObject private var stats = JetBoxLiveStats.shared
+    /// «Подключено» — когда отвечает дом, а не просто поднят туннель (1.0 (14)).
+    @ObservedObject private var readiness = JetBoxHomeReadiness.shared
     @State private var showsSettings = false
     @State private var showsDetails = false
     @StateObject private var login = JetBoxLoginModel()
@@ -79,8 +81,9 @@ struct JetBoxHomeView: View {
     }
 
     private var live: some View {
-        let state = viewModel.vpnDisplayState
-        let power = JetBoxPowerAction.action(for: state, hasBox: box != nil)
+        let state = readiness.displayState(viewModel.vpnDisplayState)
+        // Пока ждём дом, выключить можно: кнопка — по настоящему состоянию туннеля.
+        let power = JetBoxPowerAction.action(for: viewModel.vpnDisplayState, hasBox: box != nil)
         return Group {
             if showsEmailLogin {
                 JetBoxEmailLoginView(model: login, onSettings: { showsSettings = true })
@@ -105,6 +108,7 @@ struct JetBoxHomeView: View {
             // После выхода — чистая форма входа, как у свежей установки.
             showsDetails = false
             login.reset()
+            if let notice = jetbox.takeLoginNotice() { login.showNotice(notice) }
         }
         .sheet(isPresented: $showsDetails) {
             if let box {
@@ -113,6 +117,7 @@ struct JetBoxHomeView: View {
             }
         }
         .onChange(of: viewModel.vpnDisplayState) { state in
+            readiness.tunnelStateChanged(state, viewModel: viewModel)
             // Разрешение на уведомления — когда защита впервые включилась,
             // а не при запуске: тогда понятно, о чём будут уведомления.
             if state == .connected { JetBoxNotifications.requestIfNeeded() }
@@ -120,6 +125,7 @@ struct JetBoxHomeView: View {
             if state == .connected { Task { await JetBoxHomeOnlyGuard.enforce(routes: routes) } }
         }
         .onAppear {
+            readiness.tunnelStateChanged(viewModel.vpnDisplayState, viewModel: viewModel)
             if viewModel.vpnDisplayState == .connected {
                 Task { await JetBoxHomeOnlyGuard.enforce(routes: routes) }
             }

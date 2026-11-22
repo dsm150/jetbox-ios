@@ -112,6 +112,11 @@ enum JetBoxStartup {
     static func run() {
         JetBoxAdvancedAccess.migrateLegacyFlagIfNeeded()
         JetBoxConnectionDefaults.applyDirectByDefaultIfNeeded()
+        #if os(iOS)
+        // Новый телефон из бэкапа: запись без конфига — вход заново; ключи — не в бэкап.
+        JetBoxBackup.dropOrphanedBoxIfNeeded()
+        JetBoxBackup.excludeProfileFiles()
+        #endif
         // Расширению — какой выход своей коробки разрешён (и для установок до 1.0 (14)).
         JetBoxStore.shareOwnExit(JetBoxStore.currentBox)
         #if DEBUG && os(iOS)

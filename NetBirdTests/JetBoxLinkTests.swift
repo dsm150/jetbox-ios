@@ -1226,3 +1226,212 @@ final class JetBoxOwnExitRememberTests: XCTestCase {
         XCTAssertEqual(JBText.protectedTitle(exitNode: nil), "On your home network")
     }
 }
+
+
+// MARK: - «Delete account» (Apple 5.1.1(v), 1.0 (14))
+
+@MainActor
+final class JetBoxAccountDeleteTests: XCTestCase {
+    private let key = "11111111-2222-4333-8444-555555555555"
+    private var savedBox: JetBoxBox?
+    private var token: String?
+    private var tokenDeleted = 0
+
+    override func setUp() async throws {
+        savedBox = JetBoxStore.currentBox
+        token = nil
+        tokenDeleted = 0
+    }
+
+    override func tearDown() async throws {
+        JetBoxStore.currentBox = savedBox
+    }
+
+    private func flow(_ stub: JetBoxLoginStub) -> JetBoxOnboarding {
+        let flow = JetBoxOnboarding()
+        flow.loginAPI = stub.api()
+        flow.loadAppToken = { [unowned self] in self.token }
+        flow.deleteAppToken = { [unowned self] in self.token = nil; self.tokenDeleted += 1 }
+        JetBoxStore.currentBox = JetBoxBox(managementURL: "https://netbird.jet-net.net", exitNodeName: "home-ivanov",
+                                           selectedExitNode: "home-ivanov", boxName: "Lakeview Home", registeredAt: Date())
+        return flow
+    }
+
+    func testDeleteSendsBearerTokenAndSignsOutOn200() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["delete"] = (200, #"{"ok":true}"#)
+        let flow = flow(stub)
+        token = "app-token-123"
+        var stopped = false
+        let result = await flow.deleteAccount(stopTunnel: { stopped = true }, files: nil)
+
+        XCTAssertEqual(result, .deleted)
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "https://box.jet-net.net/api/app/v1/account/delete")
+        XCTAssertEqual(stub.requests.first?.httpMethod, "POST")
+        XCTAssertEqual(stub.requests.first?.value(forHTTPHeaderField: "Authorization"), "Bearer app-token-123")
+        XCTAssertTrue(stopped)
+        XCTAssertNil(JetBoxStore.currentBox, "дальше — экран email")
+        XCTAssertEqual(flow.signOutCount, 1)
+        XCTAssertNil(token, "токен стёрт вместе с профилем")
+        XCTAssertNil(flow.takeLoginNotice())
+        XCTAssertFalse(stub.logs.joined().contains("app-token-123"), "токен в журнал не пишем")
+    }
+
+    func testRevokedToken401AlsoSignsOut() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["delete"] = (401, #"{"error":"unauthorized"}"#)
+        let flow = flow(stub)
+        token = "old"
+        let result = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .deleted)
+        XCTAssertNil(JetBoxStore.currentBox)
+    }
+
+    func testServerErrorKeepsEverything() async {
+        for code in [500, 502, 429] {
+            let stub = JetBoxLoginStub()
+            stub.replies["delete"] = (code, "")
+            let flow = flow(stub)
+            token = "app-token"
+            var stopped = false
+            let result = await flow.deleteAccount(stopTunnel: { stopped = true }, files: nil)
+            XCTAssertEqual(result, .failed, "\(code)")
+            XCTAssertFalse(stopped, "\(code): туннель не трогаем")
+            XCTAssertNotNil(JetBoxStore.currentBox, "\(code): ничего не стираем")
+            XCTAssertEqual(token, "app-token")
+            XCTAssertEqual(flow.signOutCount, 0)
+        }
+    }
+
+    func testOfflineKeepsEverything() async {
+        let stub = JetBoxLoginStub()
+        stub.error = URLError(.notConnectedToInternet)
+        let flow = flow(stub)
+        token = "app-token"
+        let result = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .failed)
+        XCTAssertNotNil(JetBoxStore.currentBox)
+    }
+
+    func testWithoutTokenSignsOutLocallyAndAsksToSignInAgain() async {
+        let stub = JetBoxLoginStub()
+        let flow = flow(stub)
+        let result = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .signInAgain)
+        XCTAssertTrue(stub.requests.isEmpty, "без токена в Кабинет не ходим")
+        XCTAssertNil(JetBoxStore.currentBox)
+        XCTAssertEqual(flow.takeLoginNotice(), JBText.deleteSignInAgain)
+        XCTAssertNil(flow.takeLoginNotice(), "сообщение показываем один раз")
+    }
+
+    func testSignOutWipesAppToken() async {
+        let stub = JetBoxLoginStub()
+        let flow = flow(stub)
+        token = "app-token"
+        await flow.signOut(stopTunnel: {}, files: nil)
+        XCTAssertNil(token)
+        XCTAssertEqual(tokenDeleted, 1)
+    }
+
+    func testVerifyStoresAppTokenButNotInLink() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&n=Demo%20Home","app_token":"tok-1"}"#)
+        var api = stub.api()
+        var stored: [String?] = []
+        api.storeAppToken = { stored.append($0) }
+        let outcome = await api.verify(email: "a@b.co", code: "123456", deviceName: "iPhone")
+        guard case .connect(let url) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertEqual(stored, ["tok-1"])
+        XCTAssertFalse(url.absoluteString.contains("tok-1"))
+        XCTAssertFalse(stub.logs.joined().contains("tok-1"))
+    }
+
+    func testVerifyWithoutTokenClearsOldOne() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (200, #"{"connect_url":"https://box.jet-net.net/connect#k=\#(key)&n=Demo%20Home"}"#)
+        var api = stub.api()
+        var stored: [String?] = ["old"]
+        api.storeAppToken = { stored.append($0) }
+        _ = await api.verify(email: "a@b.co", code: "123456", deviceName: "iPhone")
+        XCTAssertEqual(stored, ["old", nil])
+    }
+
+    func testKeychainRoundTrip() {
+        let service = "net.jetnet.jetbox.app-token.tests"
+        JetBoxAppToken.delete(service: service)
+        XCTAssertNil(JetBoxAppToken.load(service: service))
+        XCTAssertTrue(JetBoxAppToken.save("tok-A", service: service))
+        XCTAssertTrue(JetBoxAppToken.save("tok-B", service: service), "перезапись")
+        XCTAssertEqual(JetBoxAppToken.load(service: service), "tok-B")
+        JetBoxAppToken.delete(service: service)
+        XCTAssertNil(JetBoxAppToken.load(service: service))
+    }
+
+    func testLoginNoticeShowsOnCleanEmailScreen() {
+        let model = JetBoxLoginModel()
+        model.reset()
+        model.showNotice(JBText.deleteSignInAgain)
+        XCTAssertEqual(model.message, "Log in again to finish deleting your account.")
+        XCTAssertEqual(model.phase, .enter)
+    }
+}
+
+// MARK: - «Подключено» — когда отвечает дом (1.0 (14))
+
+final class JetBoxHomeReadinessTests: XCTestCase {
+    private func peer(_ name: String, status: String = "Connected", routes: [String] = []) -> PeerInfo {
+        PeerInfo(ip: "100.64.0.9/16", fqdn: name, localIceCandidateEndpoint: "", remoteIceCandidateEndpoint: "",
+                 localIceCandidateType: "", remoteIceCandidateType: "", pubKey: "", latency: "0s",
+                 bytesRx: 0, bytesTx: 0, connStatus: status, connStatusUpdate: "", direct: true,
+                 lastWireguardHandshake: "", relayed: false, rosenpassEnabled: false, routes: routes)
+    }
+
+    func testConnectedTunnelShowsConnectingUntilHomeAnswers() {
+        XCTAssertEqual(JetBoxHomeReadiness.displayState(.connected, homeReady: false), .connecting)
+        XCTAssertEqual(JetBoxHomeReadiness.displayState(.connected, homeReady: true), .connected)
+        XCTAssertEqual(JetBoxHomeReadiness.displayState(.disconnected, homeReady: false), .disconnected)
+        XCTAssertEqual(JetBoxHomeReadiness.displayState(.disconnecting, homeReady: true), .disconnecting)
+    }
+
+    func testHomePeerIsTheExitPeer() {
+        let peers = [peer("laptop"), peer("box", status: "Connecting", routes: ["192.168.60.0/24", "0.0.0.0/0"])]
+        let home = JetBoxHomeReadiness.homePeer(in: peers)
+        XCTAssertEqual(home?.fqdn, "box")
+        XCTAssertFalse(JetBoxHomeReadiness.isConnected(home!), "пир коробки ещё не поднялся — ждём")
+    }
+
+    func testHomePeerWithoutExitIsThePeerWithHomeRoutes() {
+        // Выход выключен тумблером: коробку узнаём по сети дома.
+        let peers = [peer("laptop"), peer("box", routes: ["192.168.60.0/24"])]
+        XCTAssertEqual(JetBoxHomeReadiness.homePeer(in: peers)?.fqdn, "box")
+    }
+
+    func testNoHomePeerYet() {
+        XCTAssertNil(JetBoxHomeReadiness.homePeer(in: [peer("laptop")]))
+        XCTAssertNil(JetBoxHomeReadiness.homePeer(in: []))
+    }
+
+    func testCeilingIs90Seconds() {
+        XCTAssertEqual(JetBoxHomeReadiness.timeout, 90)
+    }
+}
+
+// MARK: - Бэкап на новый телефон (1.0 (14))
+
+final class JetBoxBackupTests: XCTestCase {
+    private let box = JetBoxBox(managementURL: "https://netbird.jet-net.net", exitNodeName: nil, selectedExitNode: nil,
+                                boxName: "Home", registeredAt: Date())
+
+    func testRecordWithoutConfigIsOrphaned() {
+        XCTAssertTrue(JetBoxBackup.isOrphaned(box: box, configPath: "/x/netbird.cfg", fileExists: { _ in false }))
+    }
+
+    func testRecordWithConfigStays() {
+        XCTAssertFalse(JetBoxBackup.isOrphaned(box: box, configPath: "/x/netbird.cfg", fileExists: { _ in true }))
+    }
+
+    func testUnknownConfigPathNeverDropsRecord() {
+        XCTAssertFalse(JetBoxBackup.isOrphaned(box: box, configPath: nil, fileExists: { _ in false }))
+        XCTAssertFalse(JetBoxBackup.isOrphaned(box: nil, configPath: "/x/netbird.cfg", fileExists: { _ in false }))
+    }
+}

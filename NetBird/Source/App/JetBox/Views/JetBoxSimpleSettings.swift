@@ -32,6 +32,9 @@ struct JetBoxSimpleSettingsView: View {
     @State private var showsAbout = false
     @State private var confirmsSignOut = false
     @State private var isSigningOut = false
+    @State private var confirmsDelete = false
+    @State private var deleteFailed = false
+    @State private var isDeleting = false
 
     private var boxName: String? { demoBoxName ?? JetBoxStore.currentBox?.displayName }
 
@@ -125,7 +128,25 @@ struct JetBoxSimpleSettingsView: View {
                                             titleColor: JBSimple.error)
                             }
                             .buttonStyle(.plain)
-                            .disabled(isSigningOut)
+                            .disabled(isSigningOut || isDeleting)
+                            JBSimpleDivider()
+                            // Apple 5.1.1(v): удаление аккаунта — под «Sign out».
+                            Button { confirmsDelete = true } label: {
+                                JBSimpleRow(title: isDeleting ? "\(JBText.settingsDeleteAccount)…" : JBText.settingsDeleteAccount,
+                                            titleColor: JBSimple.error)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isSigningOut || isDeleting)
+                            // Свои alert у кнопки: два .alert на одном виде iOS 15 показывает через раз.
+                            .alert(JBText.settingsDeleteTitle, isPresented: $confirmsDelete) {
+                                Button(JBText.settingsDeleteAccount, role: .destructive) { deleteAccount() }
+                                Button(JBText.cancel, role: .cancel) {}
+                            } message: {
+                                Text(JBText.settingsDeleteBody)
+                            }
+                            .alert(JBText.settingsDeleteFailed, isPresented: $deleteFailed) {
+                                Button("OK", role: .cancel) {}
+                            }
                         }
                         .padding(.top, 10)
                     }
@@ -194,6 +215,18 @@ struct JetBoxSimpleSettingsView: View {
             await jetbox.signOut(viewModel: viewModel)
             isSigningOut = false
             dismiss()
+        }
+    }
+
+    /// «Delete account»: Кабинет снимает доступ, дальше — как «Sign out».
+    /// Не вышло (сеть, 5xx) — ничего не стёрто, остаёмся в настройках.
+    private func deleteAccount() {
+        guard demoBoxName == nil else { dismiss(); return }
+        isDeleting = true
+        Task {
+            let result = await jetbox.deleteAccount(viewModel: viewModel)
+            isDeleting = false
+            if result == .failed { deleteFailed = true } else { dismiss() }
         }
     }
 

@@ -272,12 +272,56 @@ final class JetBoxOnboarding: ObservableObject {
         await stopTunnel()
         let removed = files.map { JetBoxSignOut.wipe($0) } ?? 0
         JetBoxStore.currentBox = nil
+        deleteAppToken()
         signOutCount += 1
         AppLogger.shared.log("JetBox: выход — туннель выключен, файлов профиля стёрто: \(removed)")
     }
 
     func signOut(viewModel: ViewModel) async {
         await signOut(stopTunnel: { await JetBoxSignOut.stopTunnel(viewModel) })
+    }
+
+    // MARK: - Удаление аккаунта (Apple 5.1.1(v), 1.0 (14))
+
+    enum AccountDeletion: Equatable {
+        /// Кабинет снял доступ (200) или токен уже погашен (401) — вышли локально.
+        case deleted
+        /// Токена нет (профиль до 1.0 (14)) — вышли локально, просим войти заново.
+        case signInAgain
+        /// 5xx, лимит, нет сети — ничего не стёрто.
+        case failed
+    }
+
+    var loadAppToken: () -> String? = { JetBoxAppToken.load() }
+    var deleteAppToken: () -> Void = { JetBoxAppToken.delete() }
+
+    /// Текст для чистого экрана входа после выхода; забирает главный экран.
+    private(set) var loginNotice: String?
+
+    func takeLoginNotice() -> String? {
+        defer { loginNotice = nil }
+        return loginNotice
+    }
+
+    func deleteAccount(stopTunnel: @MainActor () async -> Void,
+                       files: JetBoxSignOut.Files? = JetBoxSignOut.Files.active()) async -> AccountDeletion {
+        guard let token = loadAppToken() else {
+            AppLogger.shared.log("JetBox: удаление аккаунта — токена нет, выходим локально")
+            loginNotice = JBText.deleteSignInAgain
+            await signOut(stopTunnel: stopTunnel, files: files)
+            return .signInAgain
+        }
+        switch await loginAPI.deleteAccount(token: token) {
+        case .deleted, .unauthorized:
+            await signOut(stopTunnel: stopTunnel, files: files)
+            return .deleted
+        case .failed:
+            return .failed
+        }
+    }
+
+    func deleteAccount(viewModel: ViewModel) async -> AccountDeletion {
+        await deleteAccount(stopTunnel: { await JetBoxSignOut.stopTunnel(viewModel) })
     }
 
     // MARK: - Весь интернет через свой JetBox (сборка США, 1.0 (14))
@@ -402,6 +446,7 @@ final class JetBoxOnboarding: ObservableObject {
         // Фиксация замены: дальше обрыв только прекращает ожидание туннеля.
         JetBoxStore.remember(payload)
         if plan == .fresh { JetBoxIdentity.discardBackup(for: activeConfig) }
+        JetBoxBackup.excludeProfileFiles()
         AppLogger.shared.log("JetBox: устройство зарегистрировано на объекте (\(clock.lap()) мс)")
 
         // 3. Туннель.
@@ -415,6 +460,11 @@ final class JetBoxOnboarding: ObservableObject {
             return
         }
         AppLogger.shared.log("JetBox: туннель поднят (\(clock.lap()) мс)")
+
+        // 3а. Дом. «Готово» — только когда отвечает коробка, до 90 с (JetBoxHomeReadiness).
+        await JetBoxHomeReadiness.shared.waitUntilReady(viewModel: viewModel)
+        if Task.isCancelled { return }
+        AppLogger.shared.log("JetBox: ожидание дома (\(clock.lap()) мс)")
 
         // 4. Выход в интернет.
         // `x=0` (облако): выход по умолчанию не включаем, клиент включит сам.
