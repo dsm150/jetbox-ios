@@ -364,9 +364,11 @@ public class NetBirdAdapter {
                 let connectionListener = ConnectionListener(adapter: self, completionHandler: completionHandler)
                 self.client.setConnectionListener(connectionListener)
 
-                let envList = UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName).flatMap {
-                    EnvVarPackager.getEnvironmentVariables(defaults: $0)
-                }
+                // JetBox: список переменных собираем всегда — в нём выключатель
+                // relay сборки США (NB_DISABLE_RELAY), он не должен пропасть,
+                // если App Group недоступна.
+                let envList = EnvVarPackager.getEnvironmentVariables(
+                    defaults: UserDefaults(suiteName: GlobalConstants.userPreferencesSuiteName) ?? .standard)
 
                 try self.client.run(fd, interfaceName: ifName, envList: envList)
             } catch {

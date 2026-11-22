@@ -291,8 +291,10 @@ struct JetBoxShieldDemoView: View {
                                 registeredAt: Date())
 
     /// Примерные показатели — только для демо.
-    private let sample = JetBoxLiveStats.Snapshot(latencyMs: 24, relayed: false,
-                                                  bytesRx: 48_200_000, bytesTx: 6_100_000)
+    /// `-JetBoxDemoRoute notDirect` — прямое соединение не вышло (сборка США без relay).
+    private let sample = JetBoxLiveStats.Snapshot(
+        latencyMs: 24, relayed: false, bytesRx: 48_200_000, bytesTx: 6_100_000,
+        connected: UserDefaults.standard.string(forKey: "JetBoxDemoRoute") != "notDirect")
 
     @ViewBuilder
     private func layout(_ power: JetBoxPowerAction) -> some View {

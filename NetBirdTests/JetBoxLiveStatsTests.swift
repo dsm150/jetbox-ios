@@ -7,6 +7,7 @@
 //
 
 import XCTest
+import NetBirdSDK
 @testable import NetBird
 
 final class JetBoxLiveStatsTests: XCTestCase {
@@ -118,4 +119,68 @@ final class JetBoxConnectionDefaultsTests: XCTestCase {
         JetBoxConnectionDefaults.applyDirectByDefaultIfNeeded(defaults: defaults)
         XCTAssertTrue(defaults.bool(forKey: GlobalConstants.keyForceRelayConnection))
     }
+}
+
+/// Строка Connection: в сборке США relay выключен в ядре (этап 1) — либо
+/// Direct, либо «Can't reach your JetBox directly», но не Relay.
+final class JetBoxRouteTests: XCTestCase {
+
+    private func snapshot(connected: Bool, relayed: Bool) -> JetBoxLiveStats.Snapshot {
+        JetBoxLiveStats.Snapshot(latencyMs: nil, relayed: relayed, bytesRx: 0, bytesTx: 0, connected: connected)
+    }
+
+    func testWithoutRelayConnectedDirectIsDirect() {
+        XCTAssertEqual(JetBoxLiveStats.route(snapshot(connected: true, relayed: false), relayAllowed: false), .direct)
+    }
+
+    func testWithoutRelayNotConnectedSaysNotDirect() {
+        XCTAssertEqual(JetBoxLiveStats.route(snapshot(connected: false, relayed: false), relayAllowed: false),
+                       .notDirect)
+    }
+
+    func testWithoutRelayNeverSaysRelayed() {
+        XCTAssertEqual(JetBoxLiveStats.route(snapshot(connected: true, relayed: true), relayAllowed: false),
+                       .notDirect)
+    }
+
+    func testWithRelayKeepsRelayed() {
+        XCTAssertEqual(JetBoxLiveStats.route(snapshot(connected: true, relayed: true), relayAllowed: true), .relayed)
+        XCTAssertEqual(JetBoxLiveStats.route(snapshot(connected: true, relayed: false), relayAllowed: true), .direct)
+    }
+
+    func testIngestMarksDisconnectedBoxPeer() {
+        let stats = JetBoxLiveStats()
+        let details = StatusDetails(ip: "", fqdn: "", managementStatus: .connected,
+                                    peerInfo: [PeerInfo(ip: "100.64.0.1", fqdn: "box", localIceCandidateEndpoint: "",
+                                                      remoteIceCandidateEndpoint: "", localIceCandidateType: "",
+                                                      remoteIceCandidateType: "", pubKey: "", latency: "0s",
+                                                      bytesRx: 0, bytesTx: 0, connStatus: "Connecting",
+                                                      connStatusUpdate: "", direct: false, lastWireguardHandshake: "",
+                                                      relayed: false, rosenpassEnabled: false, routes: ["0.0.0.0/0"])])
+        stats.ingest(details, connectedSince: nil)
+        XCTAssertEqual(stats.box?.connected, false)
+    }
+
+    func testNotDirectText() {
+        XCTAssertEqual(JBText.route(.notDirect), "Can't reach your JetBox directly")
+        XCTAssertEqual(JBText.route(.notDirect, compact: true), "No direct link")
+        XCTAssertEqual(JBText.route(.relayed, compact: true), "Relay")
+    }
+
+    #if JETBOX_US
+    /// Выключатель relay уходит в ядро всегда — и не зависит от настроек.
+    func testUSBuildDisablesRelayInCore() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "JetBoxRelayOffTest"))
+        defaults.set(true, forKey: GlobalConstants.keyForceRelayConnection)
+        defer { defaults.removePersistentDomain(forName: "JetBoxRelayOffTest") }
+        let env = try XCTUnwrap(EnvVarPackager.getEnvironmentVariables(defaults: defaults))
+        XCTAssertEqual(NetBirdSDKGetEnvKeyNBDisableRelay(), "NB_DISABLE_RELAY")
+        XCTAssertEqual(env.get("NB_DISABLE_RELAY"), "true")
+        XCTAssertEqual(env.get(NetBirdSDKGetEnvKeyNBForceRelay()), "false")
+    }
+
+    func testUSBuildHasNoRelayRoute() {
+        XCTAssertEqual(JetBoxLiveStats.route(snapshot(connected: true, relayed: true)), .notDirect)
+    }
+    #endif
 }

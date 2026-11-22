@@ -33,6 +33,12 @@ class EnvVarPackager {
         #endif
 
         envList.put(NetBirdSDKGetEnvKeyNBForceRelay(), value: String(forceRelayConnection))
+        #if JETBOX_US
+        // JetBox, сборка США, этап 1: relay выключен в ядре (патч 0003). Ни к
+        // relay, ни к TURN клиент не подключается, даже если сервер пришлёт их
+        // адреса; соединение с JetBox — только напрямую, P2P через STUN.
+        envList.put(NetBirdSDKGetEnvKeyNBDisableRelay(), value: "true")
+        #endif
         // JetBox: метрики ядра на ingest.netbird.io не отправляем никогда —
         // переменная окружения главнее настройки сервера управления.
         envList.put("NB_METRICS_PUSH_ENABLED", value: "false")

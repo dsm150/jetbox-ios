@@ -46,7 +46,7 @@ struct JetBoxConnectionSheet: View {
                     row(JBText.detailsLatency, snapshot?.latencyMs.map(JBText.milliseconds) ?? "—")
                     divider
                     row(JBText.detailsRoute,
-                        snapshot.map { $0.relayed ? JBText.detailsRelayed : JBText.dockDirect } ?? "—")
+                        snapshot.map { JBText.route(JetBoxLiveStats.route($0)) } ?? "—")
                     divider
                     row(JBText.detailsTraffic, traffic)
                 } else {
@@ -132,13 +132,16 @@ struct JetBoxConnectionSheet: View {
                 .font(.body)
                 .foregroundColor(JBColor.muted)
                 .lineLimit(1)
+                .layoutPriority(1)
             Spacer(minLength: 8)
             // Значение не ужимаем: с minimumScaleFactor короткие цифры
-            // («24 мс») рисовались мельче длинного трафика.
+            // («24 мс») рисовались мельче длинного трафика. Длинное
+            // («Can't reach your JetBox directly») переносится на вторую строку.
             Text(value)
                 .font(.body.monospacedDigit())
                 .foregroundColor(JBColor.text)
-                .fixedSize()
+                .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, 14)
     }

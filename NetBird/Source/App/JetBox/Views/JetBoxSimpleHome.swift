@@ -147,7 +147,7 @@ struct JetBoxSimpleHomeLayout: View {
 
     private var routeText: String {
         guard let stats else { return "—" }
-        return stats.relayed ? JBText.dockRelayed : JBText.dockDirect
+        return JBText.route(JetBoxLiveStats.route(stats))
     }
 
     private var circleLabel: String {

@@ -2143,6 +2143,40 @@
         }
       }
     },
+    "jetbox.route.not_direct": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't reach your JetBox directly"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удаётся связаться с JetBox напрямую"
+          }
+        }
+      }
+    },
+    "jetbox.route.not_direct_short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No direct link"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет прямой связи"
+          }
+        }
+      }
+    },
     "jetbox.settings.advanced": {
       "extractionState": "manual",
       "localizations": {

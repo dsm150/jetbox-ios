@@ -1,0 +1,218 @@
+--- a/client/internal/connect.go
++++ b/client/internal/connect.go
+@@ -407,6 +407,10 @@
+ 		if override, ok := peer.OverrideRelayURLs(); ok {
+ 			log.Infof("overriding relay URLs from %s: %v", peer.EnvKeyNBHomeRelayServers, override)
+ 			relayURLs = override
++		}
++		if peer.IsRelayDisabled() {
++			log.Infof("relay disabled by %s, peers connect only directly", peer.EnvKeyNBDisableRelay)
++			relayURLs = nil
+ 		}
+ 		peerConfig := loginResp.GetPeerConfig()
+ 
+--- a/client/internal/engine.go
++++ b/client/internal/engine.go
+@@ -1187,6 +1187,11 @@
+ }
+ 
+ func (e *Engine) handleRelayUpdate(update *mgmProto.RelayConfig) error {
++	if peer.IsRelayDisabled() {
++		e.relayManager.UpdateServerURLs(nil)
++		return nil
++	}
++
+ 	if update != nil {
+ 		// when we receive token we expect valid address list too
+ 		c := &auth.Token{
+@@ -1545,6 +1550,10 @@
+ }
+ 
+ func (e *Engine) updateTURNs(turns []*mgmProto.ProtectedHostConfig) error {
++	if peer.IsRelayDisabled() {
++		e.TURNs = nil
++		return nil
++	}
+ 	if len(turns) == 0 {
+ 		return nil
+ 	}
+--- a/client/internal/peer/env.go
++++ b/client/internal/peer/env.go
+@@ -4,14 +4,26 @@
+ 	"os"
+ 	"runtime"
+ 	"strings"
++
++	icemaker "github.com/netbirdio/netbird/client/internal/peer/ice"
+ )
+ 
+ const (
+ 	EnvKeyNBForceRelay       = "NB_FORCE_RELAY"
+ 	EnvKeyNBHomeRelayServers = "NB_HOME_RELAY_SERVERS"
++	EnvKeyNBDisableRelay     = icemaker.EnvDisableRelay
+ )
+ 
++// IsRelayDisabled reports whether the relay service and TURN are turned off by
++// NB_DISABLE_RELAY. It wins over NB_FORCE_RELAY and NB_HOME_RELAY_SERVERS.
++func IsRelayDisabled() bool {
++	return icemaker.IsRelayDisabled()
++}
++
+ func IsForceRelayed() bool {
++	if IsRelayDisabled() {
++		return false
++	}
+ 	if runtime.GOOS == "js" {
+ 		return true
+ 	}
+--- a/client/internal/peer/ice/env.go
++++ b/client/internal/peer/ice/env.go
+@@ -16,9 +16,27 @@
+ 	envICEFailedTimeoutSec          = "NB_ICE_FAILED_TIMEOUT_SEC"
+ 	envICERelayAcceptanceMinWaitSec = "NB_ICE_RELAY_ACCEPTANCE_MIN_WAIT_SEC"
+ 
++	// EnvDisableRelay turns off the relay service and TURN, so peers connect only directly.
++	EnvDisableRelay = "NB_DISABLE_RELAY"
++
+ 	msgWarnInvalidValue = "invalid value %s set for %s, using default %v"
+ )
+ 
++// IsRelayDisabled reports whether NB_DISABLE_RELAY is set to true. When it is, the
++// agent opens no connection to relay or TURN servers and gathers no relay candidates.
++func IsRelayDisabled() bool {
++	val := os.Getenv(EnvDisableRelay)
++	if val == "" {
++		return false
++	}
++	disabled, err := strconv.ParseBool(val)
++	if err != nil {
++		log.Warnf("failed to parse %s: %v", EnvDisableRelay, err)
++		return false
++	}
++	return disabled
++}
++
+ func hasICEForceRelayConn() bool {
+ 	disconnectedTimeoutEnv := os.Getenv(envICEForceRelayConn)
+ 	return strings.ToLower(disconnectedTimeoutEnv) == "true"
+--- a/client/internal/peer/ice/agent.go
++++ b/client/internal/peer/ice/agent.go
+@@ -125,6 +125,9 @@
+ }
+ 
+ func CandidateTypes() []ice.CandidateType {
++	if IsRelayDisabled() {
++		return CandidateTypesP2P()
++	}
+ 	if hasICEForceRelayConn() {
+ 		return []ice.CandidateType{ice.CandidateTypeRelay}
+ 	}
+--- a/client/ios/NetBirdSDK/env_list.go
++++ b/client/ios/NetBirdSDK/env_list.go
+@@ -36,6 +36,11 @@
+ 	return peer.EnvKeyNBForceRelay
+ }
+ 
++// GetEnvKeyNBDisableRelay Exports the environment variable for the iOS client
++func GetEnvKeyNBDisableRelay() string {
++	return peer.EnvKeyNBDisableRelay
++}
++
+ // GetEnvKeyNBLazyConn Exports the environment variable for the iOS client
+ func GetEnvKeyNBLazyConn() string {
+ 	return lazyconn.EnvLazyConn
+--- /dev/null
++++ b/client/internal/engine_relay_disabled_test.go
+@@ -0,0 +1,57 @@
++package internal
++
++import (
++	"context"
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++	"github.com/stretchr/testify/require"
++
++	"github.com/netbirdio/netbird/client/internal/peer"
++	mgmProto "github.com/netbirdio/netbird/shared/management/proto"
++	relayClient "github.com/netbirdio/netbird/shared/relay/client"
++)
++
++// With NB_DISABLE_RELAY the agent must ignore relay and TURN servers sent by
++// management: no relay URLs in the manager, no TURN URIs for ICE.
++func TestEngine_RelayDisabled_IgnoresManagementRelayAndTURN(t *testing.T) {
++	t.Setenv(peer.EnvKeyNBDisableRelay, "true")
++	t.Setenv(peer.EnvKeyNBHomeRelayServers, "rels://override.example:443")
++	t.Setenv(peer.EnvKeyNBForceRelay, "true")
++
++	ctx, cancel := context.WithCancel(context.Background())
++	t.Cleanup(cancel)
++	e := &Engine{relayManager: relayClient.NewManager(ctx, nil, "peer-key", 1280)}
++
++	err := e.handleRelayUpdate(&mgmProto.RelayConfig{
++		Urls:           []string{"rels://relay.example:443"},
++		TokenPayload:   "payload",
++		TokenSignature: "signature",
++	})
++	require.NoError(t, err)
++	assert.False(t, e.relayManager.HasRelayAddress(), "relay manager must have no server URLs")
++	assert.Empty(t, e.relayManager.ServerURLs(), "relay URLs from management must be dropped")
++	_, _, err = e.relayManager.RelayInstanceAddress()
++	assert.Error(t, err, "no relay connection may be open")
++
++	err = e.updateTURNs([]*mgmProto.ProtectedHostConfig{{
++		HostConfig: &mgmProto.HostConfig{Uri: "turn:turn.example:3478", Protocol: mgmProto.HostConfig_UDP},
++		User:       "user",
++		Password:   "password",
++	}})
++	require.NoError(t, err)
++	assert.Empty(t, e.TURNs, "TURN servers from management must be dropped")
++
++	assert.False(t, peer.IsForceRelayed(), "NB_DISABLE_RELAY wins over NB_FORCE_RELAY")
++}
++
++func TestEngine_RelayEnabled_KeepsManagementTURN(t *testing.T) {
++	t.Setenv(peer.EnvKeyNBDisableRelay, "")
++
++	e := &Engine{}
++	err := e.updateTURNs([]*mgmProto.ProtectedHostConfig{{
++		HostConfig: &mgmProto.HostConfig{Uri: "turn:turn.example:3478", Protocol: mgmProto.HostConfig_UDP},
++	}})
++	require.NoError(t, err)
++	assert.Len(t, e.TURNs, 1, "upstream default keeps TURN servers")
++}
+--- /dev/null
++++ b/client/internal/peer/ice/relay_disabled_test.go
+@@ -0,0 +1,32 @@
++package ice
++
++import (
++	"testing"
++
++	"github.com/pion/ice/v4"
++	"github.com/stretchr/testify/assert"
++)
++
++func TestCandidateTypes_RelayDisabled(t *testing.T) {
++	t.Setenv(EnvDisableRelay, "true")
++	// NB_ICE_FORCE_RELAY_CONN would otherwise leave only relay candidates.
++	t.Setenv(envICEForceRelayConn, "true")
++
++	got := CandidateTypes()
++	assert.NotContains(t, got, ice.CandidateTypeRelay, "relay candidates must not be gathered")
++	assert.ElementsMatch(t, CandidateTypesP2P(), got, "only host and server reflexive candidates")
++}
++
++func TestCandidateTypes_RelayEnabledByDefault(t *testing.T) {
++	t.Setenv(EnvDisableRelay, "")
++
++	assert.Contains(t, CandidateTypes(), ice.CandidateTypeRelay, "upstream default keeps relay candidates")
++}
++
++func TestIsRelayDisabled(t *testing.T) {
++	cases := map[string]bool{"": false, "true": true, "1": true, "false": false, "junk": false}
++	for val, want := range cases {
++		t.Setenv(EnvDisableRelay, val)
++		assert.Equal(t, want, IsRelayDisabled(), "value %q", val)
++	}
++}

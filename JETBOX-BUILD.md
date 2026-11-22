@@ -86,7 +86,8 @@ NetBird (описание и статус апстрима — в `README.md` т
 | `23a1487` | — (собрано 05.09 без аргумента) | 1.0 (1) |
 | `cb7ca8e` | `0.78.0+cb7ca8e` | 1.0 (2)–1.0 (4), апстрим v0.4.1 |
 | `cb7ca8e` + `0001` | `0.78.0+cb7ca8e.jetbox1` | 1.0 (5): трафик пиров на iOS |
-| `cb7ca8e` + `0001` + `0002` | `0.78.0+cb7ca8e.jetbox2` | 1.0 (18): без адресов облака NetBird по умолчанию |
+| `cb7ca8e` + `0001` + `0002` | `0.78.0+cb7ca8e.jetbox2` | промежуточная: без адресов облака NetBird по умолчанию |
+| `cb7ca8e` + `0001`…`0003` | `0.78.0+cb7ca8e.jetbox3` | 1.0 (18): + выключатель relay `NB_DISABLE_RELAY` |
 
 ## 2. Приложение
 
@@ -331,7 +332,11 @@ xcodebuild -project NetBird.xcodeproj -scheme NetBird … archive JETBOX_HOME_ON
 
 В сборке США **не компилируются** экраны апстрима (`EXCLUDED_SOURCE_FILE_NAMES` в том же
 xcconfig): ручной выбор сервера, профили, расширенный режим (7 нажатий) со всеми вкладками.
-Принудительного relay нет (`EnvVarPackager`, `#if JETBOX_US`): сначала P2P, relay — запасной.
+Relay в сборке США выключен совсем (этап 1, решение руководителя 23.11.2026): `EnvVarPackager`
+под `#if JETBOX_US` передаёт ядру `NB_DISABLE_RELAY=true` (патч ядра `0003`). Соединение с
+JetBox — только напрямую (P2P через STUN); не вышло — строка Connection пишет «Can't reach
+your JetBox directly» (в плитке панели — «No direct link»), а не Relay. Relay вернётся
+отдельным обновлением этапа 2.
 Перед первым входом — экран согласия «какие данные собираем» (`JetBoxDataConsent.swift`).
 Журнал приложения — по-английски в обеих редакциях: в бинарнике США нет кириллицы.
 
@@ -343,7 +348,12 @@ strings -a $APP/NetBird.debug.dylib | grep -E "jet-net|xn--80aswg|api\.netbird\.
 find $APP -name ru.lproj
 ```
 
-Ядро с 1.0 (18) — `0.78.0+cb7ca8e.jetbox2`: патч `0002` убирает адреса облака NetBird по
+Ядро с 1.0 (18) — `0.78.0+cb7ca8e.jetbox3` (патчи `0001`–`0003`). Патч `0003`: при
+`NB_DISABLE_RELAY=true` ядро не подключается к relay (адреса от сервера и из
+`NB_HOME_RELAY_SERVERS` отбрасываются, `relayManager.Serve()` не зовётся), отбрасывает TURN от
+сервера и не собирает relay-кандидатов ICE; `NB_FORCE_RELAY` при этом не действует. STUN
+остаётся. Проверка — тесты ядра `TestEngine_RelayDisabled_*`, `TestCandidateTypes_RelayDisabled`
+и приложения `JetBoxRouteTests`. Патч `0002` убирает адреса облака NetBird по
 умолчанию (api/app.netbird.io). Конфиг без адреса сервера теперь ошибка, а не регистрация в
 облаке NetBird; AdminURL берётся от адреса management. Отправка метрик ядра на
 ingest.netbird.io выключена переменной `NB_METRICS_PUSH_ENABLED=false` (`EnvVarPackager`).

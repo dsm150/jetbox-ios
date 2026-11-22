@@ -236,6 +236,19 @@ enum JBText {
     static var detailsRoute: String { t("jetbox.details.route") }
     static var detailsRelayed: String { t("jetbox.details.relayed") }
     static var detailsTraffic: String { t("jetbox.details.traffic") }
+    static var routeNotDirect: String { t("jetbox.route.not_direct") }
+    static var routeNotDirectShort: String { t("jetbox.route.not_direct_short") }
+
+    /// Строка Connection. `compact` — плитка нижней панели (одна строка в
+    /// треть ширины): там короткие «Relay» и «No direct link»; в строке экрана
+    /// «простое» и в деталях — полные «Via relay» и «Can't reach your JetBox directly».
+    static func route(_ route: JetBoxLiveStats.Route, compact: Bool = false) -> String {
+        switch route {
+        case .direct: return dockDirect
+        case .relayed: return compact ? dockRelayed : detailsRelayed
+        case .notDirect: return compact ? routeNotDirectShort : routeNotDirect
+        }
+    }
 
     // MARK: Стиль оформления и стиль «простое»
 

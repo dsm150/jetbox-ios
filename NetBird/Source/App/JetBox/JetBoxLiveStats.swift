@@ -21,6 +21,24 @@ final class JetBoxLiveStats: ObservableObject {
         var relayed: Bool
         var bytesRx: Int64
         var bytesTx: Int64
+        /// Пир JetBox в состоянии Connected (ядро соединилось с ним).
+        var connected: Bool = true
+    }
+
+    /// Как идёт соединение с JetBox — строка Connection в панели и деталях.
+    enum Route: Equatable {
+        case direct
+        case relayed
+        /// Сборка США: relay выключен в ядре (NB_DISABLE_RELAY), и если прямое
+        /// соединение не вышло — так и пишем, а не «Relay».
+        case notDirect
+    }
+
+    static func route(_ snapshot: Snapshot, relayAllowed: Bool = !JetBoxEdition.homeOnly) -> Route {
+        guard relayAllowed else {
+            return snapshot.connected && !snapshot.relayed ? .direct : .notDirect
+        }
+        return snapshot.relayed ? .relayed : .direct
     }
 
     @Published private(set) var box: Snapshot?
@@ -47,7 +65,8 @@ final class JetBoxLiveStats: ObservableObject {
         }
         let snapshot = peer.map {
             Snapshot(latencyMs: probedLatencyMs ?? Self.latencyMs($0.latency), relayed: $0.relayed,
-                     bytesRx: $0.bytesRx, bytesTx: $0.bytesTx)
+                     bytesRx: $0.bytesRx, bytesTx: $0.bytesTx,
+                     connected: $0.connStatus.lowercased() == "connected")
         }
         if snapshot != box { box = snapshot }
         if connectedSince != self.connectedSince { self.connectedSince = connectedSince }
