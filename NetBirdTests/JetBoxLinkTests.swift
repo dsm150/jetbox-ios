@@ -859,6 +859,43 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
 
     private var link: URL { URL(string: "https://jetbox.ai-boss.us/auth/verify#t=\(token)")! }
 
+    /// Дефект Android (6), проверка для iOS 26: ссылка входа из письма
+    /// (https://…/auth/verify#t=…) открывается извне без подписи, а
+    /// connect_url из ответа verify — без `s`. Путь «письмо → verify» обязан
+    /// пройти как доверенный и в сборке США сразу перейти к подключению,
+    /// без «This link isn't from JetBox» и без экрана подтверждения —
+    /// и когда ссылка ждала экрана согласия тоже.
+    func testEmailLinkVerifyIsTrustedAndConnectsAtOnce() async {
+        let connectURL = "jetbox://connect#k=\(key)&m=https%3A%2F%2F\(JBT.mgmtHost)&n=Lakeview%20Home"
+        #if JETBOX_US
+        XCTAssertEqual(JetBoxLink.parse(URL(string: connectURL)!, rules: .current), .unsigned,
+                       "сама по себе такая ссылка была бы отклонена — проходит только как ответ verify")
+        #endif
+        for heldByConsent in [false, true] {
+            let stub = JetBoxLoginStub()
+            stub.replies["verify"] = (200, #"{"connect_url":"\#(connectURL)"}"#)
+            let flow = JetBoxOnboarding()
+            flow.autoConnects = true
+            flow.loginAPI = stub.api()
+            var consentNeeded = heldByConsent
+            flow.needsDataConsent = { consentNeeded }
+            XCTAssertTrue(flow.handle(link))
+            if heldByConsent {
+                XCTAssertEqual(flow.step, .idle, "ссылка ждёт согласия")
+                consentNeeded = false
+                flow.resumeAfterDataConsent()
+            }
+            XCTAssertEqual(flow.step, .signingIn)
+            await settle(flow)
+            XCTAssertNotEqual(flow.step, .failed(.notFromJetBox), "consent=\(heldByConsent)")
+            guard case .ready(let payload) = flow.step else { return XCTFail("шаг \(flow.step)") }
+            XCTAssertEqual(payload.setupKey, key)
+            XCTAssertFalse(flow.isPresenting, "без экрана подтверждения")
+            XCTAssertTrue(flow.isConnectingInBackground, "сразу подключение (ждёт только ViewModel)")
+            XCTAssertEqual(flow.connectingBox?.displayName, "Lakeview Home")
+        }
+    }
+
     func testLoginLinkLeadsToTheConnectScreen() async {
         let stub = JetBoxLoginStub()
         stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&m=https%3A%2F%2F\#(JBT.mgmtHost)&n=Lakeview%20Home"}"#)
