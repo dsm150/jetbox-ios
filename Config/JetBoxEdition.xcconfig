@@ -42,6 +42,19 @@ JETBOX_PROBE_NAME_YES = jetbox.ai-boss.us
 JETBOX_PROBE_NAME_NO = jet-net.net
 JETBOX_PROBE_NAME = $(JETBOX_PROBE_NAME_$(JETBOX_HOME_ONLY))
 
+// --- Идентификаторы ----------------------------------------------------------
+// Bundle ID приложения (расширения — <он>.NetworkExtension / .WidgetExtension)
+// и App Group всех трёх. США — отдельное приложение «JetBox Home» в той же
+// команде FRPY3A4QGK (решение владельца 23.11.2026); русская — прежние ID.
+// Те же строки — в Swift (JetBoxIdentifiers, WidgetConstants) под JETBOX_US.
+JETBOX_BUNDLE_ID_YES = us.aiboss.jetbox
+JETBOX_BUNDLE_ID_NO = net.jetnet.jetbox
+JETBOX_BUNDLE_ID = $(JETBOX_BUNDLE_ID_$(JETBOX_HOME_ONLY))
+
+JETBOX_APP_GROUP_YES = group.us.aiboss.jetbox
+JETBOX_APP_GROUP_NO = group.net.jetnet.jetbox
+JETBOX_APP_GROUP = $(JETBOX_APP_GROUP_$(JETBOX_HOME_ONLY))
+
 // --- Что входит в бинарник ---------------------------------------------------
 // Условие компиляции Swift: JETBOX_US / JETBOX_RU.
 JETBOX_SWIFT_EDITION_YES = JETBOX_US

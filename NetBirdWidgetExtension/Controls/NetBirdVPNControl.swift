@@ -4,7 +4,11 @@ import WidgetKit
 @available(iOS 18.0, *)
 struct NetBirdVPNControl: ControlWidget {
 
+    #if JETBOX_US
+    static let kind = "us.aiboss.jetbox.vpn.control"
+    #else
     static let kind = "net.jetnet.jetbox.vpn.control"
+    #endif
 
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(

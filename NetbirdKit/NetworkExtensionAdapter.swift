@@ -127,7 +127,7 @@ public class NetworkExtensionAdapter: ObservableObject {
     let legacyExtensionNames = ["NetBird"]
     private let loginRetryState = LoginRetryState()
     #else
-    var extensionID = "net.jetnet.jetbox.NetworkExtension"
+    var extensionID = JetBoxIdentifiers.networkExtension
     var extensionName = "JetBox"
     /// JetBox: имена профиля из прежних сборок — по ним профиль ещё узнаётся.
     let legacyExtensionNames = ["NetBird Network Extension"]

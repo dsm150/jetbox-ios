@@ -17,7 +17,7 @@ import Security
 
 /// Токен приложения из ответа verify.
 enum JetBoxAppToken {
-    static let service = "net.jetnet.jetbox.app-token"
+    static let service = JetBoxIdentifiers.bundleID + ".app-token"
     static let account = "current"
 
     static func load(service: String = service) -> String? {

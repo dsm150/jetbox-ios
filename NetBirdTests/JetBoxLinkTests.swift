@@ -1360,7 +1360,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
     }
 
     func testKeychainRoundTrip() {
-        let service = "net.jetnet.jetbox.app-token.tests"
+        let service = JetBoxAppToken.service + ".tests"
         JetBoxAppToken.delete(service: service)
         XCTAssertNil(JetBoxAppToken.load(service: service))
         XCTAssertTrue(JetBoxAppToken.save("tok-A", service: service))

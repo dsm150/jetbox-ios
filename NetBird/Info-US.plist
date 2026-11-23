@@ -14,7 +14,7 @@
 		     ни в Referer, ни в историю редиректов. -->
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>net.jetnet.jetbox</string>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>jetbox</string>

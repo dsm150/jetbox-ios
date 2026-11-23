@@ -1,7 +1,12 @@
 import Foundation
 
 enum WidgetConstants {
+    // Совпадает с JETBOX_APP_GROUP (Config/JetBoxEdition.xcconfig).
+    #if JETBOX_US
+    static let appGroupSuite = "group.us.aiboss.jetbox"
+    #else
     static let appGroupSuite = "group.net.jetnet.jetbox"
+    #endif
     static let deepLinkConnect = URL(string: "jetbox://app/connect")
     static let deepLinkDisconnect = URL(string: "jetbox://app/disconnect")
     static let deepLinkLogin = URL(string: "jetbox://app/login")

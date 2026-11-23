@@ -119,13 +119,25 @@ Swift-package-зависимостей у форка нет: Firebase и Lottie 
 
 Идентификаторы **уже прописаны** — руками в проекте менять ничего не нужно:
 
-| Таргет | Bundle ID |
-|---|---|
-| NetBird (приложение) | `net.jetnet.jetbox` |
-| NetbirdNetworkExtension | `net.jetnet.jetbox.NetworkExtension` |
-| NetBirdWidgetExtensionExtension | `net.jetnet.jetbox.WidgetExtension` |
-| App Group (все три) | `group.net.jetnet.jetbox` |
-| Associated Domains | `applinks:box.jet-net.net` |
+Идентификаторы зависят от редакции (`JETBOX_BUNDLE_ID` / `JETBOX_APP_GROUP` в
+`Config/JetBoxEdition.xcconfig`; в Swift — `JetBoxIdentifiers`, `WidgetConstants`,
+`NetBirdVPNControl.kind` под `JETBOX_US`):
+
+| Таргет | США (`JETBOX_HOME_ONLY=YES`), «JetBox Home» | Россия (`NO`) |
+|---|---|---|
+| NetBird (приложение) | `us.aiboss.jetbox` | `net.jetnet.jetbox` |
+| NetbirdNetworkExtension | `us.aiboss.jetbox.NetworkExtension` | `net.jetnet.jetbox.NetworkExtension` |
+| NetBirdWidgetExtensionExtension | `us.aiboss.jetbox.WidgetExtension` | `net.jetnet.jetbox.WidgetExtension` |
+| App Group (все три) | `group.us.aiboss.jetbox` | `group.net.jetnet.jetbox` |
+| Associated Domains | `applinks:jetbox.ai-boss.us` | `applinks:box.jet-net.net`, `applinks:jetbox.ai-boss.us` |
+| appID для AASA | `FRPY3A4QGK.us.aiboss.jetbox` | `FRPY3A4QGK.net.jetnet.jetbox` |
+
+`us.aiboss.jetbox*` заведены через ASC API 23.11.2026 (возможности как у
+`net.jetnet.jetbox*`: Network Extensions, App Groups, Associated Domains, Access
+Wi-Fi Information у приложения). App Group в ASC API нет — её регистрирует и
+привязывает Xcode при архиве с `-allowProvisioningUpdates`. Сборки 1.0 (1)–(21)
+выходили под `net.jetnet.jetbox` (приложение ASC `6828493462`); с 1.0 (22) США —
+новая запись ASC «JetBox Home».
 
 `DEVELOPMENT_TEAM` намеренно пустой — команда передаётся командой сборки.
 С 1.0 (8) (29.10.2026) приложение живёт в команде организации **INSTASHOP
@@ -442,19 +454,19 @@ git -c merge.conflictstyle=zdiff3 merge --no-ff --no-commit <тег>
 
 | Файл | Наше | Что берём у апстрима |
 |---|---|---|
-| `NetbirdKit/NetworkExtensionAdapter.swift` | `extensionID = net.jetnet.jetbox.NetworkExtension`, `extensionName = "JetBox"`, поиск профиля через `isOurProfile` (имя + `providerBundleIdentifier`, старое имя узнаётся) | всё остальное. ⚠️ С v0.4.1 апстрим выводит ID из бандла как `<bundle>.NetbirdNetworkExtension` — у нас суффикс другой, шаблон не подходит |
+| `NetbirdKit/NetworkExtensionAdapter.swift` | `extensionID = JetBoxIdentifiers.networkExtension` (по редакции), `extensionName = "JetBox"`, поиск профиля через `isOurProfile` (имя + `providerBundleIdentifier`, старое имя узнаётся) | всё остальное. ⚠️ С v0.4.1 апстрим выводит ID из бандла как `<bundle>.NetbirdNetworkExtension` — у нас суффикс другой, шаблон не подходит |
 | `NetBird/Source/App/NetBirdApp.swift` | `configureFirebaseIfNeeded() {}` — пустая, Firebase в форке нет; в `AppDelegate` **нет** `requestAuthorization` (спрашиваем после первого подключения — `JetBoxNotifications`); в `init` — одна строка `JetBoxStartup.run()` | новые точки жизненного цикла |
 | `netbird-core` (сабмодуль) | правок в дереве нет — только `patches/netbird-core/*.patch` | пин ядра |
 | `NetBird/Source/App/ViewModels/MainViewModel.swift` | в `startPollingDetails` под `#if os(iOS)` — `JetBoxLiveStats.shared.ingest(details, connectedSince:)` (живые показатели панели) | всё остальное |
 | `NetBird/Source/App/Views/AboutView.swift` | без «Join Beta Program» и алерта TestFlight NetBird; ссылки — `JetBoxConfig.licenseURL`/`privacyPolicyURL`; «© <год> JetNet» | новые строки экрана |
 | `NetBird/Source/App/Views/MainView.swift` | флаг простого режима, `JetBoxHomeView`, оверлей `JetBoxFlowView`, анимация `jetbox.step` | модификаторы рядом (`onAppear` и т. п.) — обе стороны |
 | `NetBird/Source/App/Views/iOS/iOSSettingsView.swift` | первой строкой `JetBoxAdvancedModeSection` | секции и гейты — обе стороны |
-| `NetbirdNetworkExtension/PacketTunnelProvider.swift` | — | группа приложений через `GlobalConstants.userPreferencesSuiteName` (у нас там `group.net.jetnet.jetbox`) |
-| `NetbirdKit/GlobalConstants.swift` | `group.net.jetnet.jetbox` | новые ключи |
+| `NetbirdNetworkExtension/PacketTunnelProvider.swift` | — | группа приложений через `GlobalConstants.userPreferencesSuiteName` (у нас там `JetBoxIdentifiers.appGroup`, по редакции) |
+| `NetbirdKit/GlobalConstants.swift` | `JetBoxIdentifiers` (bundle ID и App Group по редакции) | новые ключи |
 | `NetBirdWidgetExtension/**` | русские строки, `jetbox-mark`, тинт бренда | логика интентов (обычно сливается сама) |
 | `NetBird/Info.plist` | схема `jetbox`, Associated Domains | новые ключи |
 | `README.md` | наш целиком | — |
-| `project.pbxproj` | идентификаторы `net.jetnet.jetbox…`, версии, без фаз Crashlytics | новые файлы и таргеты; после слияния — `grep PRODUCT_BUNDLE_IDENTIFIER` |
+| `project.pbxproj` | идентификаторы `$(JETBOX_BUNDLE_ID)…`, версии, без фаз Crashlytics | новые файлы и таргеты; после слияния — `grep PRODUCT_BUNDLE_IDENTIFIER` |
 
 ### 6.4. Проверки после слияния
 

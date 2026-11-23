@@ -7,11 +7,24 @@
 
 import Foundation
 
+/// JetBox: идентификаторы редакции. Совпадают с JETBOX_BUNDLE_ID и
+/// JETBOX_APP_GROUP в Config/JetBoxEdition.xcconfig (сверяет
+/// GlobalConstantsTests по бандлу собранного приложения).
+enum JetBoxIdentifiers {
+    #if JETBOX_US
+    static let bundleID = "us.aiboss.jetbox"
+    #else
+    static let bundleID = "net.jetnet.jetbox"
+    #endif
+    static let appGroup = "group." + bundleID
+    static let networkExtension = bundleID + ".NetworkExtension"
+}
+
 struct GlobalConstants {
     #if os(tvOS)
     static let userPreferencesSuiteName = "group.net.jetnet.jetbox.tv"
     #else
-    static let userPreferencesSuiteName = "group.net.jetnet.jetbox"
+    static let userPreferencesSuiteName = JetBoxIdentifiers.appGroup
     #endif
 
     static let keyForceRelayConnection = "isConnectionForceRelayed"
