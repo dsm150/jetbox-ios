@@ -211,6 +211,8 @@ enum JBText {
 
     static var aboutTitle: String { t("jetbox.about.title") }
     static var aboutBody: String { t("jetbox.about.body") }
+    /// About сборки США: только правообладатель (Алексей, 23.11.2026).
+    static func aboutCopyrightUS(_ year: String) -> String { t("jetbox.about.copyright.us", year) }
     static var aboutSite: String { t("jetbox.about.site") }
     static var aboutSource: String { t("jetbox.about.source") }
     /// Правообладатель зависит от редакции: см. `JetBoxEdition.aboutLegalKey`.
@@ -274,8 +276,7 @@ enum JBText {
     static var legalPrivacy: String { t("jetbox.legal.privacy") }
     static var legalTerms: String { t("jetbox.legal.terms") }
     static var legalEULA: String { t("jetbox.legal.eula") }
-    /// Сборка США (Алексей, 23.11.2026): в Legal — сайт, соглашение, политика.
-    static var legalUSSite: String { t("jetbox.legal.us.site") }
+    /// Сборка США (Алексей, 23.11.2026): в Legal и в About — соглашение и политика.
     static var legalUSAgreement: String { t("jetbox.legal.us.agreement") }
     static var legalUSPrivacy: String { t("jetbox.legal.us.privacy") }
     /// Строка согласия с Markdown-ссылками на Terms и Privacy (App Review 5.1.1).

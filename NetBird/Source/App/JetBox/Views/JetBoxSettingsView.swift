@@ -88,8 +88,7 @@ struct JetBoxSettingsView: View {
 
                 Section(JBText.legalSection) {
                     #if JETBOX_US
-                    // Сборка США: сайт, соглашение пользователя, политика (Алексей, 23.11.2026).
-                    Link(JBText.legalUSSite, destination: JetBoxConfig.siteURL)
+                    // Сборка США: соглашение пользователя и политика (Алексей, 23.11.2026).
                     Link(JBText.legalUSAgreement, destination: JetBoxConfig.termsURL)
                     Link(JBText.legalUSPrivacy, destination: JetBoxConfig.privacyPolicyURL)
                     #else
@@ -238,6 +237,44 @@ struct JetBoxSettingsView: View {
 
 struct JetBoxAboutView: View {
     var body: some View {
+        #if JETBOX_US
+        usAbout
+        #else
+        fullAbout
+        #endif
+    }
+
+    #if JETBOX_US
+    /// About сборки США (Алексей, 23.11.2026): фишки, соглашение, политика и
+    /// правообладатель. Текст о данных — на экране согласия перед входом.
+    private var usAbout: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    JetBoxLogo(markHeight: 40)
+                    ForEach([JBText.simpleAboutRouter, JBText.simpleAboutGuard,
+                             JBText.simpleAboutApp, JBText.simpleAboutPrivacy], id: \.self) { line in
+                        Text(line)
+                            .font(.subheadline)
+                            .foregroundColor(JBColor.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            Section {
+                Link(JBText.legalUSAgreement, destination: JetBoxConfig.termsURL)
+                Link(JBText.legalUSPrivacy, destination: JetBoxConfig.privacyPolicyURL)
+            } footer: {
+                Text(JBText.aboutCopyrightUS(String(Calendar.current.component(.year, from: Date()))))
+            }
+        }
+        .navigationTitle(JBText.aboutTitle)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    #endif
+
+    private var fullAbout: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 14) {

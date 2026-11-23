@@ -1785,15 +1785,18 @@ final class JetBoxAutoConnectTests: XCTestCase {
     }
 }
 
-/// Сборка 28 (Алексей, 23.11.2026): в Settings → Legal сборки США три пункта —
-/// JetBox site, User agreement (Terms of Use, #terms), Privacy policy; без App EULA.
+/// Сборка 29 (Алексей, 23.11.2026): в Settings → Legal и в About сборки США —
+/// два пункта, User agreement (Terms of Use, #terms) и Privacy policy; внизу About —
+/// «© <год> INSTASHOP Corporation».
 final class JetBoxUSLegalLinksTests: XCTestCase {
-    func testThreeItemsAndTheirAddresses() {
-        XCTAssertEqual(JBText.legalUSSite, "JetBox site")
+    func testTwoItemsAndTheirAddresses() {
         XCTAssertEqual(JBText.legalUSAgreement, "User agreement")
         XCTAssertEqual(JBText.legalUSPrivacy, "Privacy policy")
-        XCTAssertEqual(JetBoxConfig.siteURL.absoluteString, "https://jetbox.ai-boss.us")
         XCTAssertEqual(JetBoxConfig.termsURL.absoluteString, "https://jetbox.ai-boss.us/legal/#terms")
         XCTAssertEqual(JetBoxConfig.privacyPolicyURL.absoluteString, "https://jetbox.ai-boss.us/legal/#privacy")
+    }
+
+    func testUSCopyrightLine() {
+        XCTAssertEqual(JBText.aboutCopyrightUS("2026"), "© 2026 INSTASHOP Corporation")
     }
 }

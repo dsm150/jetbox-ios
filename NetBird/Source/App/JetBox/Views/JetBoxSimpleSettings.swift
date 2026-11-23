@@ -80,13 +80,9 @@ struct JetBoxSimpleSettingsView: View {
                     }
 
                     JBSimpleSectionLabel(title: JBText.legalSection)
-                    // Три пункта (Алексей, 23.11.2026): сайт, соглашение пользователя
-                    // (Terms of Use, #terms), политика. Отдельного EULA нет — стандартный Apple.
+                    // Два пункта (Алексей, 23.11.2026): соглашение пользователя
+                    // (Terms of Use, #terms) и политика. EULA — стандартный Apple.
                     JBSimpleCard {
-                        Link(destination: JetBoxConfig.siteURL) {
-                            JBSimpleRow(title: JBText.legalUSSite, chevron: true)
-                        }
-                        JBSimpleDivider()
                         Link(destination: JetBoxConfig.termsURL) {
                             JBSimpleRow(title: JBText.legalUSAgreement, chevron: true)
                         }
@@ -245,7 +241,6 @@ struct JetBoxSimpleSettingsView: View {
 
 struct JetBoxSimpleAboutView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var showsLinks = false
 
     var body: some View {
         ScrollView {
@@ -278,58 +273,25 @@ struct JetBoxSimpleAboutView: View {
                     point("eye.slash.fill", JBText.simpleAboutPrivacy)
                 }
 
-                // Что уходит на сервер (App Review 5.1.1) — тот же текст,
-                // что за (i) на экране подключения (замечание Алексея 23.11.2026).
-                Text(JBText.privacyNotice)
-                    .font(JBSimple.font(17, .semibold))
-                    .foregroundColor(JBSimple.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                // Ссылки и сведения, которые требует GPL-3.0 (§5(d)), — те же,
-                // что в «О программе» стиля «техно», но свёрнуты в одну строку
-                // (замечание Алексея 21.11.2026): по нажатию — всё на месте.
+                // Ниже фишек — только соглашение, политика и правообладатель
+                // (Алексей, 23.11.2026). Текст о данных — на экране согласия
+                // перед входом; исходники и GPL-3.0 — в репозитории форка.
                 JBSimpleCard {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.25)) { showsLinks.toggle() }
-                    } label: {
-                        HStack(spacing: 12) {
-                            Text(JBText.simpleAboutLinks)
-                                .font(JBSimple.font(20, .bold))
-                                .foregroundColor(JBSimple.ink)
-                            Spacer(minLength: 8)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundColor(JBSimple.muted)
-                                .rotationEffect(.degrees(showsLinks ? 180 : 0))
-                        }
-                        .padding(.horizontal, 20)
-                        .frame(minHeight: 66)
-                        .contentShape(Rectangle())
+                    Link(destination: JetBoxConfig.termsURL) {
+                        JBSimpleRow(title: JBText.legalUSAgreement, chevron: true)
                     }
-                    .buttonStyle(.plain)
-                    if showsLinks {
-                        JBSimpleDivider()
-                        Link(destination: JetBoxConfig.siteURL) {
-                            JBSimpleRow(title: JBText.aboutSite, chevron: true)
-                        }
-                        JBSimpleDivider()
-                        Link(destination: JetBoxConfig.sourceCodeURL) {
-                            JBSimpleRow(title: JBText.aboutSource, chevron: true)
-                        }
-                        JBSimpleDivider()
-                        Link(destination: JetBoxConfig.licenseURL) {
-                            JBSimpleRow(title: JBText.aboutLicense, chevron: true)
-                        }
-                        Text(JBText.aboutLegal(String(Calendar.current.component(.year, from: Date()))))
-                            .font(JBSimple.font(17, .semibold))
-                            .foregroundColor(JBSimple.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 18)
-                            .padding(.top, 4)
+                    JBSimpleDivider()
+                    Link(destination: JetBoxConfig.privacyPolicyURL) {
+                        JBSimpleRow(title: JBText.legalUSPrivacy, chevron: true)
                     }
                 }
                 .padding(.top, 6)
+
+                Text(JBText.aboutCopyrightUS(String(Calendar.current.component(.year, from: Date()))))
+                    .font(JBSimple.font(17, .semibold))
+                    .foregroundColor(JBSimple.muted)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 4)
             }
             .padding(.horizontal, 22)
             .padding(.top, 8)

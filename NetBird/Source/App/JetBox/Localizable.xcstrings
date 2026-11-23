@@ -18,6 +18,23 @@
         }
       }
     },
+    "jetbox.about.copyright.us": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© %@ INSTASHOP Corporation"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© %@ INSTASHOP Corporation"
+          }
+        }
+      }
+    },
     "jetbox.about.legal": {
       "extractionState": "manual",
       "localizations": {
@@ -1476,23 +1493,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Политика конфиденциальности"
-          }
-        }
-      }
-    },
-    "jetbox.legal.us.site": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "JetBox site"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сайт JetBox"
           }
         }
       }
