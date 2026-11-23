@@ -87,9 +87,16 @@ struct JetBoxSettingsView: View {
                 }
 
                 Section(JBText.legalSection) {
+                    #if JETBOX_US
+                    // Сборка США: сайт, соглашение пользователя, политика (Алексей, 23.11.2026).
+                    Link(JBText.legalUSSite, destination: JetBoxConfig.siteURL)
+                    Link(JBText.legalUSAgreement, destination: JetBoxConfig.termsURL)
+                    Link(JBText.legalUSPrivacy, destination: JetBoxConfig.privacyPolicyURL)
+                    #else
                     Link(JBText.legalPrivacy, destination: JetBoxConfig.privacyPolicyURL)
                     Link(JBText.legalTerms, destination: JetBoxConfig.termsURL)
                     Link(JBText.legalEULA, destination: JetBoxConfig.eulaURL)
+                    #endif
                 }
 
                 if box != nil {

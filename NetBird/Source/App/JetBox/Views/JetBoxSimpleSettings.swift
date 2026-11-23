@@ -80,17 +80,19 @@ struct JetBoxSimpleSettingsView: View {
                     }
 
                     JBSimpleSectionLabel(title: JBText.legalSection)
+                    // Три пункта (Алексей, 23.11.2026): сайт, соглашение пользователя
+                    // (Terms of Use, #terms), политика. Отдельного EULA нет — стандартный Apple.
                     JBSimpleCard {
-                        Link(destination: JetBoxConfig.privacyPolicyURL) {
-                            JBSimpleRow(title: JBText.legalPrivacy, chevron: true)
+                        Link(destination: JetBoxConfig.siteURL) {
+                            JBSimpleRow(title: JBText.legalUSSite, chevron: true)
                         }
                         JBSimpleDivider()
                         Link(destination: JetBoxConfig.termsURL) {
-                            JBSimpleRow(title: JBText.legalTerms, chevron: true)
+                            JBSimpleRow(title: JBText.legalUSAgreement, chevron: true)
                         }
                         JBSimpleDivider()
-                        Link(destination: JetBoxConfig.eulaURL) {
-                            JBSimpleRow(title: JBText.legalEULA, chevron: true)
+                        Link(destination: JetBoxConfig.privacyPolicyURL) {
+                            JBSimpleRow(title: JBText.legalUSPrivacy, chevron: true)
                         }
                     }
 

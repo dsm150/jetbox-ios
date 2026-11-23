@@ -274,6 +274,10 @@ enum JBText {
     static var legalPrivacy: String { t("jetbox.legal.privacy") }
     static var legalTerms: String { t("jetbox.legal.terms") }
     static var legalEULA: String { t("jetbox.legal.eula") }
+    /// Сборка США (Алексей, 23.11.2026): в Legal — сайт, соглашение, политика.
+    static var legalUSSite: String { t("jetbox.legal.us.site") }
+    static var legalUSAgreement: String { t("jetbox.legal.us.agreement") }
+    static var legalUSPrivacy: String { t("jetbox.legal.us.privacy") }
     /// Строка согласия с Markdown-ссылками на Terms и Privacy (App Review 5.1.1).
     static var legalConsent: String { t("jetbox.legal.consent") }
 }
