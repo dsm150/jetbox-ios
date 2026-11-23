@@ -131,31 +131,35 @@ struct JetBoxEmailLoginView: View {
 
     // MARK: Экран 1b — «проверьте почту»
 
+    /// Компактно (замечание Алексея 23.11.2026): «Enter code manually» видна
+    /// без прокрутки на iPhone SE (3-го поколения); срок ссылки — в самом
+    /// письме, на экране его нет.
     private func checkEmail(_ email: String) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             Image(systemName: "envelope.open.fill")
-                .font(.system(size: 54, weight: .semibold))
+                .font(.system(size: 36, weight: .semibold))
                 .foregroundColor(JBSimple.accent)
-                .frame(width: 150, height: 150)
+                .frame(width: 92, height: 92)
                 .background(Circle().fill(JBSimple.accentTint))
-                .padding(.top, 30)
+                .padding(.top, 8)
                 .accessibilityHidden(true)
 
             Text(JBText.loginSentTitle)
-                .font(JBSimple.font(30, .black))
+                .font(JBSimple.font(26, .black))
                 .foregroundColor(JBSimple.ink)
                 .multilineTextAlignment(.center)
 
             Text(JBText.loginSentBody(email))
-                .font(JBSimple.secondary)
+                .font(JBSimple.font(17, .semibold))
                 .foregroundColor(JBSimple.muted)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(JBText.loginSentNote)
-                .font(JBSimple.font(17, .semibold))
+            Text(JBText.loginSentSpam)
+                .font(JBSimple.font(16, .semibold))
                 .foregroundColor(JBSimple.muted)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Запасной путь: код из того же письма (и вход проверяющего Apple).
             JBSimpleTextButton(JBText.loginCodeLink) { model.enterCodeManually() }

@@ -74,7 +74,7 @@ enum JBText {
     static var loginInvalidEmail: String { t("jetbox.login.invalid_email") }
     static var loginSentTitle: String { t("jetbox.login.sent.title") }
     static func loginSentBody(_ email: String) -> String { t("jetbox.login.sent.body", email) }
-    static var loginSentNote: String { t("jetbox.login.sent.note") }
+    static var loginSentSpam: String { t("jetbox.login.sent.spam") }
     static var loginOpenMail: String { t("jetbox.login.open_mail") }
     static var loginResend: String { t("jetbox.login.resend") }
     static func loginResendWait(_ seconds: Int) -> String { t("jetbox.login.resend_wait", String(seconds)) }

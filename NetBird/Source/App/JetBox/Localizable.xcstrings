@@ -1803,19 +1803,19 @@
         }
       }
     },
-    "jetbox.login.sent.note": {
+    "jetbox.login.sent.spam": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The link works once, for 15 minutes."
+            "value": "No email? Check your Spam folder."
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ссылка работает один раз в течение 15 минут."
+            "value": "Письма нет? Проверьте папку «Спам»."
           }
         }
       }
