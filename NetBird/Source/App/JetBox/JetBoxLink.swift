@@ -119,11 +119,23 @@ struct JetBoxLinkRules: Equatable {
     var connectHost: String
     var managementSuffix: String
     var defaultManagementURL: String
+    /// Ссылка с любого хоста и с любым `m` (https) — без маски сервера и
+    /// проверки хоста ссылки. Сборка США: решение владельца 23.11.2026
+    /// («сними фильтр по доменам в ссылке»). Чужой сервер всё равно не даст
+    /// чужих пиров и выхода: ядро держится пира своей коробки (патч 0004).
+    var anyHost: Bool = false
+
+    #if JETBOX_US
+    static let editionAcceptsAnyHost = true
+    #else
+    static let editionAcceptsAnyHost = false
+    #endif
 
     static var current: JetBoxLinkRules {
         JetBoxLinkRules(connectHost: JetBoxServers.connectLinkHost.lowercased(),
                         managementSuffix: JetBoxServers.managementSuffix.lowercased(),
-                        defaultManagementURL: JetBoxServers.managementURL)
+                        defaultManagementURL: JetBoxServers.managementURL,
+                        anyHost: editionAcceptsAnyHost)
     }
 }
 
@@ -157,7 +169,7 @@ enum JetBoxLink {
         guard let key = params["k"], !key.isEmpty else { return .notOurs }
         guard isValidSetupKey(key) else { return .broken }
 
-        if let rawManagement = params["m"], !rawManagement.isEmpty,
+        if !rules.anyHost, let rawManagement = params["m"], !rawManagement.isEmpty,
            !allowedManagement(rawManagement, suffix: rules.managementSuffix) {
             return .foreignServer
         }
@@ -188,15 +200,17 @@ enum JetBoxLink {
         return nil
     }
 
-    /// Универсальная ссылка Кабинета либо своя схема.
+    /// Универсальная ссылка Кабинета либо своя схема. С `anyHost` — любой
+    /// хост и путь: ссылкой подключения её делает ключ `k` во фрагменте.
     static func isJetBoxURL(_ url: URL, rules: JetBoxLinkRules = .current) -> Bool {
         let scheme = url.scheme?.lowercased()
 
         if scheme == JetBoxConfig.customScheme {
-            return url.host?.lowercased() == "connect"
+            return rules.anyHost || url.host?.lowercased() == "connect"
         }
 
         if scheme == "https" {
+            if rules.anyHost { return true }
             guard !rules.connectHost.isEmpty, url.host?.lowercased() == rules.connectHost else { return false }
             // AASA матчит `/connect` и `/connect/*` — принимаем то же самое.
             let path = url.path.lowercased()

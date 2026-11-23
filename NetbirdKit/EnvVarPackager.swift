@@ -51,7 +51,9 @@ class EnvVarPackager {
         envList.put(NetBirdSDKGetEnvKeyNBAllowedExit(), value: allowedExit)
         lastAllowedExit = allowedExit
         // 1.0 (21): только пир своей коробки (по mesh-адресу) и только его
-        // маршруты (патч 0004). Пусто — ни одного удалённого пира.
+        // маршруты (патч 0004). С 1.0 (23) пусто (ссылка без `b`) — привязки
+        // к пиру нет, остаётся фильтр выхода; пустое значение, а не отсутствие:
+        // переменную, раз отданную ядру, из процесса расширения не убрать.
         let allowedPeer = JetBoxAllowedPeer.read()
         envList.put(NetBirdSDKGetEnvKeyNBAllowedPeerIP(), value: allowedPeer)
         lastAllowedPeer = allowedPeer

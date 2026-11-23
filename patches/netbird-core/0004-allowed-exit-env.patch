@@ -50,7 +50,7 @@
  	return lazyconn.EnvLazyConn
 --- /dev/null
 +++ b/client/internal/exit_allowlist.go
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,164 @@
 +package internal
 +
 +import (
@@ -73,9 +73,10 @@
 +
 +// EnvAllowedPeerIP pins the only remote peer the agent may talk to: the peer
 +// whose overlay address is this IP. When the variable is set, the network map
-+// keeps only that peer and only routes whose routing peer is that peer; set but
-+// empty or unparseable means no remote peers and no routes at all. Unset keeps
-+// upstream behavior.
++// keeps only that peer and only routes whose routing peer is that peer; an
++// unparseable value means no remote peers and no routes at all. Unset or empty
++// keeps upstream behavior: an empty value lets the app drop an earlier pin, as
++// a process cannot unset a variable once it has been exported to the agent.
 +const EnvAllowedPeerIP = "NB_ALLOWED_PEER_IP"
 +
 +// allowedExitFromEnv returns the pinned exit NetID and whether pinning is on.
@@ -116,19 +117,16 @@
 +// pinning is on. An invalid address is returned as the zero Addr, which
 +// matches no peer.
 +func allowedPeerFromEnv() (netip.Addr, bool) {
-+	val, ok := os.LookupEnv(EnvAllowedPeerIP)
-+	if !ok {
++	val := strings.TrimSpace(os.Getenv(EnvAllowedPeerIP))
++	if val == "" {
 +		return netip.Addr{}, false
 +	}
-+	val = strings.TrimSpace(val)
 +	if i := strings.IndexByte(val, '/'); i >= 0 {
 +		val = val[:i]
 +	}
 +	addr, err := netip.ParseAddr(val)
 +	if err != nil {
-+		if val != "" {
-+			log.Warnf("failed to parse %s: %v", EnvAllowedPeerIP, err)
-+		}
++		log.Warnf("failed to parse %s: %v", EnvAllowedPeerIP, err)
 +		return netip.Addr{}, true
 +	}
 +	return addr.Unmap(), true
@@ -219,7 +217,7 @@
 +}
 --- /dev/null
 +++ b/client/internal/exit_allowlist_test.go
-@@ -0,0 +1,296 @@
+@@ -0,0 +1,317 @@
 +package internal
 +
 +import (
@@ -450,9 +448,26 @@
 +	assert.Empty(t, routes, "box not in the map: no routes at all")
 +}
 +
-+func TestEngine_PinnedPeer_EmptyMeansNothing(t *testing.T) {
++// An empty value drops the peer pin (a link without the box address); the exit
++// allowlist still applies, so only the own exit can carry the default route.
++func TestEngine_PinnedPeer_EmptyMeansExitFilterOnly(t *testing.T) {
 +	t.Setenv(EnvAllowedExit, "sv-demo-us-exit")
 +	t.Setenv(EnvAllowedPeerIP, "")
++	nm, _, _ := pinnedTestNetworkMap(t)
++
++	nm.Routes = append(nm.Routes, &mgmtProto.Route{ID: "other-exit", Network: "0.0.0.0/0", NetID: "other-exit",
++		Peer: nm.GetRemotePeers()[1].GetWgPubKey(), NetworkType: 1, Masquerade: true})
++
++	routes, peers := applyNetworkMap(t, 5, nm)
++	assert.Len(t, peers, 2, "no peer pin: every remote peer stays")
++	assert.Contains(t, routes, "sv-demo-us-exit", "the own exit name passes")
++	assert.Contains(t, routes, "public-dns", "no peer pin: other peers' routes stay")
++	assert.NotContains(t, routes, "other-exit", "an exit with another name is still dropped")
++}
++
++func TestEngine_PinnedPeer_GarbageMeansNothing(t *testing.T) {
++	t.Setenv(EnvAllowedExit, "sv-demo-us-exit")
++	t.Setenv(EnvAllowedPeerIP, "not-an-ip")
 +	nm, _, _ := pinnedTestNetworkMap(t)
 +
 +	routes, peers := applyNetworkMap(t, 5, nm)
@@ -511,6 +526,10 @@
 +	addr, on = allowedPeerFromEnv()
 +	assert.True(t, on, "set but invalid still pins")
 +	assert.False(t, addr.IsValid(), "invalid address matches no peer")
++
++	t.Setenv(EnvAllowedPeerIP, "  ")
++	_, on = allowedPeerFromEnv()
++	assert.False(t, on, "empty drops the pin")
 +
 +	require.NoError(t, os.Unsetenv(EnvAllowedPeerIP))
 +	_, on = allowedPeerFromEnv()

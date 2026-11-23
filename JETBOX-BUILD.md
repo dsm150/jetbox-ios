@@ -90,6 +90,7 @@ NetBird (описание и статус апстрима — в `README.md` т
 | `cb7ca8e` + `0001`…`0003` | `0.78.0+cb7ca8e.jetbox3` | 1.0 (18)–(19): + выключатель relay `NB_DISABLE_RELAY` |
 | `cb7ca8e` + `0001`…`0005` | `0.78.0+cb7ca8e.jetbox4` | 1.0 (20): + единственный разрешённый выход `NB_ALLOWED_EXIT`, без адресов сервисов NetBird |
 | `cb7ca8e` + `0001`…`0005` (0004 расширен) | `0.78.0+cb7ca8e.jetbox5` | 1.0 (21): + только пир своей коробки `NB_ALLOWED_PEER_IP` |
+| `cb7ca8e` + `0001`…`0005` | `0.78.0+cb7ca8e.jetbox6` | 1.0 (23): пустой `NB_ALLOWED_PEER_IP` — без привязки к пиру (ссылка без `b`), остаётся фильтр выхода |
 
 ## 2. Приложение
 
@@ -320,7 +321,7 @@ xcodebuild -project NetBird.xcodeproj -scheme NetBird … archive JETBOX_HOME_ON
 | Что | США (`YES`) | Русская (`NO`) |
 |---|---|---|
 | management (`JETBOX_MANAGEMENT_HOST`) | `net.jetbox.ai-boss.us` (заглушка до сервера в США) | `netbird.jet-net.net` |
-| маска `m` в ссылке | `.jetbox.ai-boss.us` | `.jet-net.net` |
+| маска `m` в ссылке | нет (с 1.0 (23), решение владельца 23.11.2026): `m` любой https, хост ссылки любой (`JetBoxLinkRules.anyHost`); приходят ссылки только через схему `jetbox://`, ответ verify и универсальные ссылки с `jetbox.ai-boss.us` (AASA — ограничение iOS) | `.jet-net.net` |
 | API входа и удаления | `api.jetbox.ai-boss.us/api/app/v1/` (заглушка) | `box.jet-net.net/api/app/v1/` |
 | универсальная ссылка `/connect` | нет: подключение из полей verify | `box.jet-net.net` |
 | ссылка входа из письма | `jetbox.ai-boss.us` | `jetbox.ai-boss.us` |
@@ -349,6 +350,13 @@ APP=build/Build/Products/Debug-iphonesimulator/NetBird.app
 strings -a $APP/NetBird.debug.dylib | grep -E "jet-net|xn--80aswg|api\.netbird\.io"
 find $APP -name ru.lproj
 ```
+
+С 1.0 (23) ядро — `0.78.0+cb7ca8e.jetbox6`: пустой `NB_ALLOWED_PEER_IP` больше не значит «ни одного
+пира» — привязки к пиру нет, работает только фильтр выхода по `e` (решение владельца 23.11.2026:
+ссылка подключения без `b`). Пустое значение, а не отсутствие: переменную, раз отданную ядру, из
+процесса расширения не убрать. Нечитаемый адрес — по-прежнему ни пиров, ни маршрутов. В той же
+сборке — второй путь в сборке США: «Have a setup link?» на экране входа (вставка ссылки, тот же
+путь, что `jetbox://connect#…`), без маски `m` и проверки хоста ссылки (`JetBoxLinkRules.anyHost`).
 
 С 1.0 (21) ядро — `0.78.0+cb7ca8e.jetbox5`: патч `0004` дополнен `NB_ALLOWED_PEER_IP` — в начале
 engine.updateNetworkMap (после проверки serial, до firewall/DNS/маршрутов/пиров) на копии карты

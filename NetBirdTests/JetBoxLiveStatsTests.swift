@@ -244,7 +244,7 @@ final class JetBoxAllowedExitTests: XCTestCase {
         JetBoxStore.currentBox = nil
         env = try XCTUnwrap(EnvVarPackager.getEnvironmentVariables(defaults: defaults))
         XCTAssertEqual(env.get("NB_ALLOWED_EXIT"), "", "нет коробки — ядро не пропустит ни одного выхода")
-        XCTAssertEqual(env.get("NB_ALLOWED_PEER_IP"), "", "нет коробки — ни одного пира")
+        XCTAssertEqual(env.get("NB_ALLOWED_PEER_IP"), "", "нет адреса — пустое значение: ядро (jetbox6) снимает привязку к пиру")
     }
 
     /// verify → ссылка с `b` → полезная нагрузка → запись коробки.

@@ -47,9 +47,11 @@ enum JetBoxLoginLink {
         case notOurs
     }
 
-    static func parse(_ url: URL) -> Outcome {
+    /// `anyHost` (сборка США, JetBoxLinkRules): хост ссылки не проверяем —
+    /// токен всё равно уходит только в API приложения.
+    static func parse(_ url: URL, anyHost: Bool = JetBoxLinkRules.editionAcceptsAnyHost) -> Outcome {
         guard url.scheme?.lowercased() == "https",
-              url.host?.lowercased() == JetBoxConfig.loginLinkHost else { return .notOurs }
+              anyHost || url.host?.lowercased() == JetBoxConfig.loginLinkHost else { return .notOurs }
         var path = url.path.lowercased()
         if path.count > 1, path.hasSuffix("/") { path.removeLast() }
         // Остальные пути `/auth/*` — страницы сайта, не наши.
@@ -212,7 +214,8 @@ struct JetBoxLoginAPI {
 
     /// Ссылка подключения из ответа verify. Основной путь — готовый
     /// `connect_url`; без него собираем ту же ссылку из полей. В обоих
-    /// случаях дальше её проверяет `JetBoxLink.parse` — маска сервера и ключ.
+    /// случаях дальше её проверяет `JetBoxLink.parse`: ключ и формат `m`
+    /// (маска сервера — только в русской сборке).
     static func connectURL(from data: Data) -> URL? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         // 1.0 (21): mesh-адрес пира коробки — параметром `b` той же ссылки.
@@ -368,6 +371,26 @@ final class JetBoxLoginModel: ObservableObject {
         resentNote = false
         lastSentAt = nil
         isVerifying = false
+    }
+
+    /// Ссылка подключения, вставленная вручную («Have a setup link?»): тот же
+    /// формат и тот же путь, что у `jetbox://connect#…` (k, m, e, n, b),
+    /// фильтра домена нет (решение владельца 23.11.2026). nil — ссылка ушла
+    /// в сценарий; иначе — текст ошибки для листа.
+    @discardableResult
+    func connectWithSetupLink(_ text: String) -> String? {
+        let raw = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: raw) else { return JBText.setupLinkNotOurs }
+        switch JetBoxLink.parse(url) {
+        case .payload:
+            AppLogger.shared.log("JetBox: setup link pasted")
+            onConnect(url)
+            return nil
+        case .broken, .foreignServer:
+            return JBText.setupLinkBroken
+        case .notOurs:
+            return JBText.setupLinkNotOurs
+        }
     }
 
     func enterCodeManually() {

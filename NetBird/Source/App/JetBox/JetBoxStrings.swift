@@ -85,6 +85,14 @@ enum JBText {
     static var loginUnavailable: String { t("jetbox.login.unavailable") }
     static var loginSigningIn: String { t("jetbox.login.signing_in") }
     static var loginCodeLink: String { t("jetbox.login.code.link") }
+    static var setupLinkOpen: String { t("jetbox.setup_link.open") }
+    static var setupLinkTitle: String { t("jetbox.setup_link.title") }
+    static var setupLinkBody: String { t("jetbox.setup_link.body") }
+    static var setupLinkField: String { t("jetbox.setup_link.field") }
+    static var setupLinkPaste: String { t("jetbox.setup_link.paste") }
+    static var setupLinkConnect: String { t("jetbox.setup_link.connect") }
+    static var setupLinkNotOurs: String { t("jetbox.setup_link.not_ours") }
+    static var setupLinkBroken: String { t("jetbox.setup_link.broken") }
     static var loginCodeTitle: String { t("jetbox.login.code.title") }
     static func loginCodeBody(_ email: String) -> String { t("jetbox.login.code.body", email) }
     static var loginCodeField: String { t("jetbox.login.code.field") }

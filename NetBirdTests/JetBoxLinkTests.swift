@@ -646,9 +646,10 @@ final class JetBoxLoginLinkTests: XCTestCase {
     }
 
     func testOtherHostsAndPathsAreNotOurs() {
+        XCTAssertEqual(JetBoxLoginLink.parse(URL(string: "https://evil.example/auth/verify#t=\(token)")!, anyHost: false),
+                       .notOurs)
         for raw in ["https://jetbox.ai-boss.us/auth/login#t=\(token)",
                     "https://jetbox.ai-boss.us/#t=\(token)",
-                    "https://evil.example/auth/verify#t=\(token)",
                     "http://jetbox.ai-boss.us/auth/verify#t=\(token)",
                     "https://box.jet-net.net/connect#k=11111111-2222-4333-8444-555555555555"] {
             XCTAssertEqual(JetBoxLoginLink.parse(URL(string: raw)!), .notOurs, raw)
@@ -737,11 +738,19 @@ final class JetBoxLoginAPITests: XCTestCase {
     }
 
     func testVerifyResponseWithForeignServerIsNotTrusted() async {
-        // Ответ всё равно проходит маску *.jet-net.net: ключ на чужой сервер не уйдёт.
         let stub = JetBoxLoginStub()
         stub.replies["verify"] = (200, #"{"connect_url":"jetbox://connect#k=\#(key)&m=https%3A%2F%2Fevil.example"}"#)
         let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
+        #if JETBOX_US
+        // США: маски нет (решение владельца 23.11.2026) — сервер из ответа принимается.
+        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
+            return XCTFail("\(outcome)")
+        }
+        XCTAssertEqual(payload.managementURL, "https://evil.example")
+        #else
+        // Русская сборка: ответ проходит маску *.jet-net.net, ключ на чужой сервер не уйдёт.
         XCTAssertEqual(outcome, .unavailable)
+        #endif
     }
 
     func testVerifyOutcomes() async {
@@ -1492,26 +1501,33 @@ final class JetBoxDataConsentTests: XCTestCase {
         let flow = JetBoxOnboarding()
         flow.needsDataConsent = { true }
         XCTAssertFalse(flow.handle(URL(string: "jetbox://app/connect")!))
+        XCTAssertFalse(flow.handle(URL(string: "https://example.com/connect")!), "без ключа — не ссылка подключения")
+        #if !JETBOX_US
         XCTAssertFalse(flow.handle(URL(string: "https://example.com/connect#k=\(key)")!))
+        #endif
     }
 }
 
 /// Сборка 1.0 (18): адреса серверов — только из конфига редакции.
 final class JetBoxServersTests: XCTestCase {
     func testAddressesComeFromTheEditionConfig() {
-        for value in [JetBoxServers.managementURL, JetBoxServers.managementSuffix, JetBoxServers.apiBaseURL,
+        for value in [JetBoxServers.managementURL, JetBoxServers.apiBaseURL,
                       JetBoxServers.loginLinkHost, JetBoxServers.probeName] {
             XCTAssertFalse(value.isEmpty)
             XCTAssertFalse(value.contains("$("), "настройка сборки не подставилась: \(value)")
         }
         XCTAssertTrue(JetBoxServers.managementURL.hasPrefix("https://"))
         XCTAssertTrue(JetBoxServers.apiBaseURL.hasPrefix("https://"))
+        #if JETBOX_US
+        XCTAssertTrue(JetBoxServers.managementSuffix.isEmpty, "в США маски нет")
+        #else
         XCTAssertTrue(JetBoxServers.managementSuffix.hasPrefix("."))
+        #endif
     }
 
     #if JETBOX_US
     func testUSBuildHasNoRussianOrUpstreamAddresses() {
-        let all = [JetBoxServers.managementURL, JetBoxServers.managementSuffix, JetBoxServers.apiBaseURL,
+        let all = [JetBoxServers.managementURL, JetBoxServers.apiBaseURL,
                    JetBoxServers.loginLinkHost, JetBoxServers.probeName,
                    JetBoxConfig.defaultManagementURL, JetBoxConfig.loginAPIBase.absoluteString]
         for value in all {
@@ -1522,19 +1538,67 @@ final class JetBoxServersTests: XCTestCase {
         }
     }
 
-    /// Универсальной ссылки /connect в США нет: подключение — из полей verify.
-    func testUSBuildHasNoConnectUniversalLink() {
-        XCTAssertTrue(JetBoxServers.connectLinkHost.isEmpty)
-        XCTAssertEqual(JetBoxLink.parse(URL(string: "https://jetbox.ai-boss.us/connect#k=11111111-2222-4333-8444-555555555555")!),
-                       .notOurs)
-        guard case .payload = JetBoxLink.parse(URL(string: "jetbox://connect#k=11111111-2222-4333-8444-555555555555")!) else {
-            return XCTFail("своя схема по-прежнему наша")
+    /// Решение владельца 23.11.2026: в США фильтра по доменам в ссылке нет —
+    /// ни маски `m`, ни проверки хоста ссылки (https или своя схема).
+    func testUSBuildAcceptsLinksFromAnyHostWithAnyManagement() {
+        let k = "11111111-2222-4333-8444-555555555555"
+        XCTAssertTrue(JetBoxLinkRules.current.anyHost)
+        for raw in ["https://jetbox.ai-boss.us/connect#k=\(k)",
+                    "https://example.com/any/path#k=\(k)&m=https%3A%2F%2Fmgmt.example.org%3A33073&e=home",
+                    "jetbox://connect#k=\(k)&m=https://netbird.jet-net.net",
+                    "jetbox://open#k=\(k)&m=https%3A%2F%2F100.64.0.1"] {
+            guard case .payload = JetBoxLink.parse(URL(string: raw)!) else { return XCTFail(raw) }
         }
+        guard case .payload(let p) = JetBoxLink.parse(URL(string: "https://x.example/c#k=\(k)&m=https%3A%2F%2FMgmt.Example.ORG%3A33073%2F")!) else {
+            return XCTFail("payload")
+        }
+        XCTAssertEqual(p.managementURL, "https://mgmt.example.org:33073")
+        // Без ключа это не ссылка подключения; кривой `m` и ключ — «повреждена».
+        XCTAssertEqual(JetBoxLink.parse(URL(string: "https://example.com/connect")!), .notOurs)
+        XCTAssertEqual(JetBoxLink.parse(URL(string: "jetbox://app/connect")!), .notOurs)
+        XCTAssertEqual(JetBoxLink.parse(URL(string: "jetbox://connect#k=\(k)&m=http://mgmt.example.org")!), .broken)
+        XCTAssertEqual(JetBoxLink.parse(URL(string: "https://example.com/#k=bad")!), .broken)
+        // Ссылка входа из письма — тоже с любого хоста, путь /auth/verify.
+        let t = "abcdefghijklmnopqrstuvwx"
+        XCTAssertEqual(JetBoxLoginLink.parse(URL(string: "https://mail-redirect.example/auth/verify#t=\(t)")!), .token(t))
+    }
+    #endif
+}
+
+/// 1.0 (23): «Have a setup link?» — ссылка подключения вставкой (решение
+/// владельца 23.11.2026), тот же путь, что у `jetbox://connect#…`.
+@MainActor
+final class JetBoxSetupLinkTests: XCTestCase {
+    private let key = "11111111-2222-4333-8444-555555555555"
+
+    func testPastedLinkGoesToTheFlow() {
+        let model = JetBoxLoginModel()
+        var opened: [URL] = []
+        model.onConnect = { opened.append($0) }
+        let link = "  jetbox://connect#k=\(key)&m=https%3A%2F%2F\(JBT.mgmtHost)&e=home-1&n=Home&b=100.79.115.162\n"
+        XCTAssertNil(model.connectWithSetupLink(link))
+        XCTAssertEqual(opened.count, 1)
+        guard let url = opened.first, case .payload(let p) = JetBoxLink.parse(url) else { return XCTFail("payload") }
+        XCTAssertEqual(p.exitNodeName, "home-1")
+        XCTAssertEqual(p.boxIP, "100.79.115.162")
     }
 
-    func testDefaultManagementPassesItsOwnMask() {
-        XCTAssertTrue(JetBoxLink.allowedManagement(JetBoxServers.managementURL))
-        XCTAssertFalse(JetBoxLink.allowedManagement("https://netbird.jet-net.net"))
+    func testPastedGarbageStaysOnTheSheet() {
+        let model = JetBoxLoginModel()
+        var opened = 0
+        model.onConnect = { _ in opened += 1 }
+        XCTAssertEqual(model.connectWithSetupLink("hello"), JBText.setupLinkNotOurs)
+        XCTAssertEqual(model.connectWithSetupLink("jetbox://connect#k=not-a-key"), JBText.setupLinkBroken)
+        XCTAssertEqual(opened, 0)
+    }
+
+    #if JETBOX_US
+    func testPastedLinkFromAnyHostWithAnyServerIsAccepted() {
+        let model = JetBoxLoginModel()
+        var opened = 0
+        model.onConnect = { _ in opened += 1 }
+        XCTAssertNil(model.connectWithSetupLink("https://links.example.org/s#k=\(key)&m=https://mgmt.example.org&e=home"))
+        XCTAssertEqual(opened, 1)
     }
     #endif
 }

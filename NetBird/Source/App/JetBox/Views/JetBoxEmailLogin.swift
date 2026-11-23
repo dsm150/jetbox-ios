@@ -18,6 +18,7 @@ struct JetBoxEmailLoginView: View {
     let onSettings: () -> Void
     @FocusState private var fieldFocused: Bool
     @FocusState private var codeFocused: Bool
+    @State private var showsSetupLink = false
 
     var body: some View {
         ZStack {
@@ -60,6 +61,9 @@ struct JetBoxEmailLoginView: View {
             }
         }
         .environment(\.colorScheme, .light)
+        .sheet(isPresented: $showsSetupLink) {
+            JetBoxSetupLinkSheet(model: model)
+        }
     }
 
     private var header: some View {
@@ -121,6 +125,15 @@ struct JetBoxEmailLoginView: View {
             JBSimplePrimaryButton(model.isSending ? JBText.loginSending : JBText.loginSend, action: send)
                 .disabled(model.isSending)
                 .padding(.top, 20)
+
+            // Второй путь — ссылка подключения (решение владельца 23.11.2026).
+            JBSimpleTextButton(JBText.setupLinkOpen) {
+                fieldFocused = false
+                showsSetupLink = true
+            }
+            .disabled(model.isSending)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
         }
     }
 
@@ -274,6 +287,100 @@ struct JetBoxEmailLoginView: View {
                 .padding(.top, 14)
         }
         .onAppear { codeFocused = true }
+    }
+}
+
+/// «Have a setup link?»: ссылка подключения вставкой в поле. Поле, а не
+/// чтение буфера: iOS не спрашивает «Разрешить вставку?». Дальше — тот же
+/// путь, что у `jetbox://connect#…` (JetBoxLoginModel.connectWithSetupLink).
+struct JetBoxSetupLinkSheet: View {
+    @ObservedObject var model: JetBoxLoginModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var error: String?
+    @FocusState private var focused: Bool
+
+    private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    var body: some View {
+        ZStack {
+            JBSimple.background.ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Spacer()
+                        JBSimpleCapsuleButton(title: JBText.cancel) { dismiss() }
+                    }
+
+                    Text(JBText.setupLinkTitle)
+                        .font(JBSimple.font(26, .black))
+                        .foregroundColor(JBSimple.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text(JBText.setupLinkBody)
+                        .font(JBSimple.font(17, .semibold))
+                        .foregroundColor(JBSimple.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    TextField(JBText.setupLinkField, text: $text)
+                        .font(JBSimple.font(18, .semibold))
+                        .foregroundColor(JBSimple.ink)
+                        .keyboardType(.URL)
+                        .textContentType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .submitLabel(.go)
+                        .focused($focused)
+                        .onSubmit(connect)
+                        .onChange(of: text) { _ in error = nil }
+                        .padding(.horizontal, 20)
+                        .frame(minHeight: 64)
+                        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(JBSimple.card))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .stroke(error == nil ? JBSimple.outline : JBSimple.error, lineWidth: 2)
+                        )
+                        .accessibilityLabel(JBText.setupLinkField)
+
+                    if let error {
+                        Text(error)
+                            .font(JBSimple.font(17, .semibold))
+                            .foregroundColor(JBSimple.error)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if #available(iOS 16.0, *) {
+                        PasteButton(payloadType: String.self) { strings in
+                            Task { @MainActor in text = strings.first ?? "" }
+                        }
+                        .labelStyle(.titleAndIcon)
+                        .tint(JBSimple.accent)
+                        .buttonBorderShape(.capsule)
+                    }
+
+                    JBSimplePrimaryButton(JBText.setupLinkConnect, action: connect)
+                        .disabled(isEmpty)
+                        .opacity(isEmpty ? 0.55 : 1)
+                        .padding(.top, 6)
+                }
+                .frame(maxWidth: 440)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .environment(\.colorScheme, .light)
+        .onAppear { focused = true }
+    }
+
+    private func connect() {
+        guard !isEmpty else { return }
+        focused = false
+        if let message = model.connectWithSetupLink(text) {
+            error = message
+        } else {
+            dismiss()
+        }
     }
 }
 
