@@ -818,6 +818,10 @@ extension JetBoxOnboarding {
                                                       style: JetBoxStyle.current, homeOnly: JetBoxEdition.homeOnly)
         case "protected": step = .protected(exitNode: "Lakeview Home")
         case "failed": step = .failed(.offline)
+        case "unsigned": step = .failed(.notFromJetBox)
+        case "unreachable": step = .failed(.managementUnreachable(nil))
+        case "tunnel": step = .failed(.tunnelFailed)
+        case "devices": step = .failed(.deviceLimit)
         case "signing": step = .signingIn
         case "expired": step = .failed(.loginExpired)
         default: break

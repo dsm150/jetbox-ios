@@ -27,6 +27,8 @@ struct JetBoxSimpleSettingsView: View {
     var opensAbout = false
     /// Демо для съёмки: сразу диалог «Sign out?».
     var asksSignOut = false
+    /// Демо для съёмки: сразу подтверждение «Delete account» (без удаления).
+    var asksDelete = false
 
     @State private var unlockCounter = AdvancedUnlockCounter()
     @State private var toast: String?
@@ -177,6 +179,7 @@ struct JetBoxSimpleSettingsView: View {
         .onAppear {
             if opensAbout { showsAbout = true }
             if asksSignOut { confirmsSignOut = true }
+            if asksDelete { confirmsDelete = true }
         }
     }
 

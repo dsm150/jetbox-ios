@@ -465,18 +465,18 @@ extension JetBoxLoginModel {
         case "filled":
             email = UserDefaults.standard.string(forKey: "JetBoxLoginDemoEmail") ?? "appreview@ai-boss.us"
         case "sent":
-            email = "alex@example.com"
+            email = UserDefaults.standard.string(forKey: "JetBoxLoginDemoEmail") ?? "alex@example.com"
             lastSentAt = now().addingTimeInterval(-18)
             phase = .sent(email: email)
         case "error":
             email = "alex@example"
             message = JBText.loginInvalidEmail
         case "code":
-            email = "alex@example.com"
+            email = UserDefaults.standard.string(forKey: "JetBoxLoginDemoEmail") ?? "alex@example.com"
             lastSentAt = now().addingTimeInterval(-18)
             phase = .code(email: email)
         case "badcode":
-            email = "alex@example.com"
+            email = UserDefaults.standard.string(forKey: "JetBoxLoginDemoEmail") ?? "alex@example.com"
             lastSentAt = now().addingTimeInterval(-75)
             phase = .code(email: email)
             message = JBText.loginCodeWrongLeft(2)
