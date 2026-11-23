@@ -213,15 +213,30 @@ struct JetBoxEmailLoginView: View {
 
     private func enterCode(_ email: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button { model.backToLink() } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 17, weight: .heavy))
-                    Text(JBText.loginCodeBack)
-                        .font(JBSimple.font(19, .heavy))
+            // «‹ Back» — к «Check your email»; «Use another email» — сразу к
+            // полю email, одним нажатием: письмо или код не сработали
+            // (Алексей, 23.11.2026). Оба наверху — видны над клавиатурой.
+            HStack(spacing: 12) {
+                Button { model.backToLink() } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .heavy))
+                        Text(JBText.loginCodeBack)
+                            .font(JBSimple.font(19, .heavy))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(JBSimple.accent)
+                    .frame(minHeight: 44)
                 }
-                .foregroundColor(JBSimple.accent)
-                .frame(minHeight: 44)
+                Spacer(minLength: 8)
+                Button { model.useAnotherEmail() } label: {
+                    Text(JBText.loginAnother)
+                        .font(JBSimple.font(19, .heavy))
+                        .foregroundColor(JBSimple.muted)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(minHeight: 44)
+                }
             }
             .padding(.bottom, 12)
 

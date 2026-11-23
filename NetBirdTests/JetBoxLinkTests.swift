@@ -1020,6 +1020,27 @@ final class JetBoxLoginCodeTests: XCTestCase {
         XCTAssertEqual(payload.boxName, "Demo Home")
     }
 
+    /// Экран кода (сборка 26): «‹ Back» — к «Check your email», «Use another
+    /// email» — сразу к полю email, с чистым кодом и без старой ошибки.
+    func testCodeScreenLeadsBackAndToAnotherEmail() async {
+        let stub = JetBoxLoginStub()
+        let model = await sentModel(stub)
+        model.enterCodeManually()
+        model.backToLink()
+        XCTAssertEqual(model.phase, .sent(email: "alex@example.com"))
+
+        model.enterCodeManually()
+        model.code = "12345"
+        stub.replies["verify"] = (401, #"{"error":"bad_code","attempts_left":2}"#)
+        model.code = "111111"
+        await model.submitCode()
+        XCTAssertNotNil(model.message)
+        model.useAnotherEmail()
+        XCTAssertEqual(model.phase, .enter, "одно нажатие — и снова поле email")
+        XCTAssertEqual(model.code, "")
+        XCTAssertNil(model.message)
+    }
+
     func testWrongAndExpiredCodeMessages() async {
         let stub = JetBoxLoginStub()
         let model = await sentModel(stub)
