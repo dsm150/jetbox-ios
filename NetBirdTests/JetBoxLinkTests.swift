@@ -1671,14 +1671,30 @@ final class JetBoxAutoConnectTests: XCTestCase {
         XCTAssertEqual(flow.connectingBox?.displayName, "New Home", "главный экран — уже про новую коробку")
     }
 
-    /// Ссылка на ту же коробку — просто главный экран, без регистрации.
-    func testSameBoxJustShowsHome() {
+    /// Ссылка на ту же коробку — без регистрации: главный экран, а
+    /// выключенный туннель включается (клик по ссылке = подключение).
+    func testSameBoxTurnsTunnelOnAndShowsHome() {
         JetBoxStore.remember(payload(key, name: "Demo Home"))
         let flow = flow(autoConnects: true)
+        var resumed = 0
+        flow.resumeTunnel = { resumed += 1; return true }
         XCTAssertTrue(flow.handle(link(key), trusted: true))
         XCTAssertEqual(flow.step, .idle)
+        XCTAssertEqual(resumed, 1, "туннель включаем через обычное подключение, без регистрации")
         XCTAssertFalse(flow.isConnectingInBackground)
         XCTAssertNil(flow.connectingBox)
+    }
+
+    /// Другая коробка и первый вход идут через регистрацию, а не через
+    /// простое включение туннеля.
+    func testOnlySameBoxResumesTunnel() {
+        let flow = flow(autoConnects: true)
+        var resumed = 0
+        flow.resumeTunnel = { resumed += 1; return true }
+        XCTAssertTrue(flow.handle(link(key), trusted: true))
+        JetBoxStore.remember(payload(key, name: "Old Home"))
+        XCTAssertTrue(flow.handle(link(otherKey, name: "New Home"), trusted: true))
+        XCTAssertEqual(resumed, 0)
     }
 
     /// Отказы по-прежнему на экране — и неподписанная ссылка в США.
@@ -1698,6 +1714,7 @@ final class JetBoxAutoConnectTests: XCTestCase {
     /// Русская сборка: экран с кнопкой и вопрос о замене остаются.
     func testManualFlowKeepsConfirmAndSwitch() {
         let flow = flow(autoConnects: false)
+        flow.resumeTunnel = { XCTFail("русская сборка туннель по ссылке сама не включает"); return false }
         XCTAssertTrue(flow.handle(link(key), trusted: true))
         guard case .ready = flow.step else { return XCTFail("шаг \(flow.step)") }
         XCTAssertTrue(flow.isPresenting)

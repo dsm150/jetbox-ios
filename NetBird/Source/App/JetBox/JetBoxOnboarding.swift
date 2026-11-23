@@ -167,6 +167,14 @@ final class JetBoxOnboarding: ObservableObject {
     /// прийти раньше (холодный старт) — тогда сценарий ждёт в `.ready`.
     private weak var viewModel: ViewModel?
 
+    /// Ссылка на ту же коробку (США): включить туннель, если он выключен.
+    /// true — включали. В тестах подменяется.
+    lazy var resumeTunnel: () -> Bool = { [weak self] in
+        guard let viewModel = self?.viewModel, viewModel.vpnDisplayState == .disconnected else { return false }
+        viewModel.connect()
+        return true
+    }
+
     func attach(_ viewModel: ViewModel) {
         self.viewModel = viewModel
         if autoConnects, case .ready(let payload) = step, flowTask == nil {
@@ -295,9 +303,13 @@ final class JetBoxOnboarding: ObservableObject {
                     JetBoxStore.currentBox = named
                 }
                 if autoConnects, JetBoxStore.currentBox != nil {
-                    // США: ссылка на ту же коробку — просто главный экран,
-                    // без повторной регистрации.
-                    AppLogger.shared.log("JetBox: link leads to the current box, showing the home screen")
+                    // США: ссылка на ту же коробку — без повторной регистрации.
+                    // Туннель выключен — включаем (клик по ссылке = подключение,
+                    // Алексей 23.11.2026), включён — просто главный экран.
+                    let resumed = resumeTunnel()
+                    AppLogger.shared.log(resumed
+                        ? "JetBox: link leads to the current box, tunnel was off — connecting"
+                        : "JetBox: link leads to the current box, showing the home screen")
                     lastPayload = nil
                     step = .idle
                 } else if autoConnects {
