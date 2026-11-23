@@ -163,7 +163,8 @@ enum JBText {
     static func exitWarning(expected: Bool, inTunnel: Bool = JetBoxTunnelState.defaultRouteInTunnel()) -> String? {
         expected && !inTunnel ? t("jetbox.home.exit_missing") : nil
     }
-    static var homeConnectedNow: String { allInternetHome ? t("jetbox.home.connected_all") : homeConnected }
+    static var homeConnectedAll: String { t("jetbox.home.connected_all") }
+    static var homeConnectedNow: String { allInternetHome ? homeConnectedAll : homeConnected }
     static var homeConnecting: String { t("jetbox.home.connecting") }
     static var homeDisconnecting: String { t("jetbox.home.disconnecting") }
     static var homeDisconnected: String { t("jetbox.home.disconnected") }

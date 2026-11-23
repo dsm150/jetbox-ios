@@ -305,8 +305,17 @@ struct JetBoxShieldDemoView: View {
     private let box = JetBoxBox(managementURL: JetBoxConfig.defaultManagementURL,
                                 exitNodeName: "home-ivanov",
                                 selectedExitNode: nil,
-                                boxName: "Lakeview Home",
+                                boxName: UserDefaults.standard.string(forKey: "JetBoxDemoBoxName") ?? "Lakeview Home",
                                 registeredAt: Date())
+
+    /// `-JetBoxDemoAllInternet YES` — «весь интернет через дом», как у живой
+    /// записи США с выходом своей коробки: «Protected by your JetBox».
+    private func status(_ state: VPNDisplayState) -> String {
+        if state == .connected, UserDefaults.standard.bool(forKey: "JetBoxDemoAllInternet") {
+            return JBText.homeConnectedAll
+        }
+        return JetBoxHomeView.statusText(for: state, online: true)
+    }
 
     /// Примерные показатели — только для демо.
     /// `-JetBoxDemoRoute notDirect` — прямое соединение не вышло (сборка США без relay).
@@ -320,7 +329,7 @@ struct JetBoxShieldDemoView: View {
             #if JETBOX_US
             JetBoxSimpleHomeLayout(
                 phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
-                statusText: JetBoxHomeView.statusText(for: state, online: true),
+                statusText: status(state),
                 box: box,
                 stats: state == .connected ? sample : nil,
                 connectedSince: state == .connected ? since : nil,
@@ -333,7 +342,7 @@ struct JetBoxShieldDemoView: View {
         } else {
             JetBoxHomeLayout(
                 phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
-                statusText: JetBoxHomeView.statusText(for: state, online: true),
+                statusText: status(state),
                 box: box,
                 stats: state == .connected ? sample : nil,
                 connectedSince: state == .connected ? since : nil,

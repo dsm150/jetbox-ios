@@ -456,11 +456,14 @@ final class JetBoxLoginModel: ObservableObject {
 
 #if DEBUG
 extension JetBoxLoginModel {
-    /// Только для съёмки: `-JetBoxLoginDemo enter|sent|error`.
+    /// Только для съёмки: `-JetBoxLoginDemo filled|sent|error|code|badcode`;
+    /// `filled` — адрес в поле (`-JetBoxLoginDemoEmail`, по умолчанию демо-вход App Review).
     static var demoRequested: Bool { UserDefaults.standard.string(forKey: "JetBoxLoginDemo") != nil }
 
     func applyDemoIfRequested() {
         switch UserDefaults.standard.string(forKey: "JetBoxLoginDemo") {
+        case "filled":
+            email = UserDefaults.standard.string(forKey: "JetBoxLoginDemoEmail") ?? "appreview@ai-boss.us"
         case "sent":
             email = "alex@example.com"
             lastSentAt = now().addingTimeInterval(-18)
