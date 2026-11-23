@@ -718,7 +718,7 @@ final class JetBoxLoginAPITests: XCTestCase {
         let outcome = await stub.api().verify(token: token, deviceName: "Alex’s iPhone")
         XCTAssertEqual(stub.requests.first?.url?.absoluteString, "\(JBT.api)login/verify")
         XCTAssertEqual(stub.body(0), ["token": token, "device_name": "Alex’s iPhone", "platform": "ios"])
-        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
+        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url, rules: .current.trustingSource) else {
             return XCTFail("ожидали ссылку подключения, получили \(outcome)")
         }
         XCTAssertEqual(payload.setupKey, key)
@@ -730,7 +730,7 @@ final class JetBoxLoginAPITests: XCTestCase {
         let stub = JetBoxLoginStub()
         stub.replies["verify"] = (200, #"{"setup_key":"\#(key)","management_url":"https://\#(JBT.mgmtHost)","site_name":"Дом & сад"}"#)
         let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
-        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
+        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url, rules: .current.trustingSource) else {
             return XCTFail("ожидали ссылку подключения, получили \(outcome)")
         }
         XCTAssertEqual(payload.managementURL, JetBoxConfig.defaultManagementURL)
@@ -743,7 +743,7 @@ final class JetBoxLoginAPITests: XCTestCase {
         let outcome = await stub.api().verify(token: token, deviceName: "iPhone")
         #if JETBOX_US
         // США: маски нет (решение владельца 23.11.2026) — сервер из ответа принимается.
-        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url) else {
+        guard case .connect(let url) = outcome, case .payload(let payload) = JetBoxLink.parse(url, rules: .current.trustingSource) else {
             return XCTFail("\(outcome)")
         }
         XCTAssertEqual(payload.managementURL, "https://evil.example")
@@ -978,7 +978,7 @@ final class JetBoxLoginCodeTests: XCTestCase {
         let saved = JetBoxStore.currentBox
         JetBoxStore.currentBox = nil
         defer { JetBoxStore.currentBox = saved }
-        XCTAssertTrue(flow.handle(try XCTUnwrap(received)))
+        XCTAssertTrue(flow.handle(try XCTUnwrap(received), trusted: true))
         guard case .ready(let payload) = flow.step else { return XCTFail("шаг \(flow.step)") }
         XCTAssertEqual(payload.boxName, "Demo Home")
     }
@@ -1120,7 +1120,7 @@ final class JetBoxSignOutTests: XCTestCase {
         model.code = "246810"
         await model.submitCode()
 
-        XCTAssertTrue(flow.handle(try XCTUnwrap(received)))
+        XCTAssertTrue(flow.handle(try XCTUnwrap(received), trusted: true))
         // Записи нет — без «переключить?», сразу одна кнопка, как после установки.
         guard case .ready(let payload) = flow.step else { return XCTFail("шаг \(flow.step)") }
         XCTAssertEqual(payload.boxName, "Demo Home")
@@ -1543,21 +1543,25 @@ final class JetBoxServersTests: XCTestCase {
     func testUSBuildAcceptsLinksFromAnyHostWithAnyManagement() {
         let k = "11111111-2222-4333-8444-555555555555"
         XCTAssertTrue(JetBoxLinkRules.current.anyHost)
+        // 1.0 (25): извне — только подписанные (JetBox safety); хост и сервер любые.
+        JBSign.trustTestKey()
+        defer { JBSign.forgetTestKey() }
         for raw in ["https://jetbox.ai-boss.us/connect#k=\(k)",
                     "https://example.com/any/path#k=\(k)&m=https%3A%2F%2Fmgmt.example.org%3A33073&e=home",
                     "jetbox://connect#k=\(k)&m=https://netbird.jet-net.net",
                     "jetbox://open#k=\(k)&m=https%3A%2F%2F100.64.0.1"] {
-            guard case .payload = JetBoxLink.parse(URL(string: raw)!) else { return XCTFail(raw) }
+            XCTAssertEqual(JetBoxLink.parse(URL(string: raw)!), .unsigned, raw)
+            guard case .payload = JetBoxLink.parse(URL(string: JBSign.sign(raw))!) else { return XCTFail(raw) }
         }
-        guard case .payload(let p) = JetBoxLink.parse(URL(string: "https://x.example/c#k=\(k)&m=https%3A%2F%2FMgmt.Example.ORG%3A33073%2F")!) else {
+        guard case .payload(let p) = JetBoxLink.parse(URL(string: JBSign.sign("https://x.example/c#k=\(k)&m=https%3A%2F%2FMgmt.Example.ORG%3A33073%2F"))!) else {
             return XCTFail("payload")
         }
         XCTAssertEqual(p.managementURL, "https://mgmt.example.org:33073")
         // Без ключа это не ссылка подключения; кривой `m` и ключ — «повреждена».
         XCTAssertEqual(JetBoxLink.parse(URL(string: "https://example.com/connect")!), .notOurs)
         XCTAssertEqual(JetBoxLink.parse(URL(string: "jetbox://app/connect")!), .notOurs)
-        XCTAssertEqual(JetBoxLink.parse(URL(string: "jetbox://connect#k=\(k)&m=http://mgmt.example.org")!), .broken)
-        XCTAssertEqual(JetBoxLink.parse(URL(string: "https://example.com/#k=bad")!), .broken)
+        XCTAssertEqual(JetBoxLink.parse(URL(string: JBSign.sign("jetbox://connect#k=\(k)&m=http://mgmt.example.org"))!), .broken)
+        XCTAssertEqual(JetBoxLink.parse(URL(string: JBSign.sign("https://example.com/#k=bad"))!), .broken)
         // Ссылка входа из письма — тоже с любого хоста, путь /auth/verify.
         let t = "abcdefghijklmnopqrstuvwx"
         XCTAssertEqual(JetBoxLoginLink.parse(URL(string: "https://mail-redirect.example/auth/verify#t=\(t)")!), .token(t))

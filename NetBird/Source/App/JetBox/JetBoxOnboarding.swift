@@ -23,6 +23,8 @@ import NetworkExtension
 enum JetBoxFailure: Equatable {
     case brokenLink
     case foreignServer
+    /// JetBox safety (сборка США): ссылка без верной подписи.
+    case notFromJetBox
     case offline
     case managementUnreachable(String?)
     case keyRejected(String?)
@@ -39,6 +41,7 @@ enum JetBoxFailure: Equatable {
         switch self {
         case .brokenLink: return JBText.errBrokenTitle
         case .foreignServer: return JBText.errForeignTitle
+        case .notFromJetBox: return JBText.errUnsignedTitle
         case .offline: return JBText.errOfflineTitle
         case .managementUnreachable: return JBText.errUnreachableTitle
         case .keyRejected: return JBText.errKeyTitle
@@ -54,6 +57,7 @@ enum JetBoxFailure: Equatable {
         switch self {
         case .brokenLink: return JBText.errBrokenBody
         case .foreignServer: return JBText.errForeignBody
+        case .notFromJetBox: return JBText.errUnsignedBody
         case .offline: return JBText.errOfflineBody
         case .managementUnreachable: return JBText.errUnreachableBody
         case .keyRejected: return JBText.errKeyBody
@@ -71,7 +75,7 @@ enum JetBoxFailure: Equatable {
         switch self {
         case .managementUnreachable(let d), .keyRejected(let d): return d
         case .other(let d): return d
-        case .brokenLink, .foreignServer, .offline, .tunnelFailed,
+        case .brokenLink, .foreignServer, .notFromJetBox, .offline, .tunnelFailed,
              .loginExpired, .deviceLimit, .loginRateLimited: return nil
         }
     }
@@ -83,7 +87,7 @@ enum JetBoxFailure: Equatable {
     /// Повтор имеет смысл не всегда: испорченную ссылку повторять нечем.
     var isRetryable: Bool {
         switch self {
-        case .brokenLink, .foreignServer, .loginExpired, .deviceLimit: return false
+        case .brokenLink, .foreignServer, .notFromJetBox, .loginExpired, .deviceLimit: return false
         default: return true
         }
     }
@@ -146,6 +150,7 @@ final class JetBoxOnboarding: ObservableObject {
     /// Наша ссылка, пришедшая до согласия «какие данные собираем» (сборка США):
     /// ждёт, пока человек не примет экран согласия, и только потом идёт в сеть.
     private var pendingURL: URL?
+    private var pendingTrusted = false
     /// Нужен ли экран согласия; в тестах подменяется.
     var needsDataConsent: () -> Bool = { JetBoxDataConsent.needsConsent() }
 
@@ -153,20 +158,24 @@ final class JetBoxOnboarding: ObservableObject {
     func resumeAfterDataConsent() {
         guard let url = pendingURL else { return }
         pendingURL = nil
-        handle(url)
+        handle(url, trusted: pendingTrusted)
     }
 
     // MARK: Вход по ссылке
 
     /// Точка входа из `onOpenURL` / `onContinueUserActivity`.
     /// Возвращает true, если ссылка наша и обработана.
+    /// `trusted` — ссылка из ответа verify встроенного API (вход по email):
+    /// пришла по TLS, подпись JetBox safety для неё не требуется.
     @discardableResult
-    func handle(_ url: URL) -> Bool {
+    func handle(_ url: URL, trusted: Bool = false) -> Bool {
+        let rules: JetBoxLinkRules = trusted ? .current.trustingSource : .current
         if needsDataConsent() {
-            let ours = JetBoxLoginLink.parse(url) != .notOurs || JetBoxLink.parse(url) != .notOurs
+            let ours = JetBoxLoginLink.parse(url) != .notOurs || JetBoxLink.parse(url, rules: rules) != .notOurs
             if ours {
                 AppLogger.shared.log("JetBox: link held until data consent is accepted")
                 pendingURL = url
+                pendingTrusted = trusted
             }
             return ours
         }
@@ -187,9 +196,17 @@ final class JetBoxOnboarding: ObservableObject {
             break
         }
 
-        switch JetBoxLink.parse(url) {
+        switch JetBoxLink.parse(url, rules: rules) {
         case .notOurs:
             return false
+
+        case .unsigned:
+            // JetBox safety: подписи нет или она не наша — ни вопроса, ни
+            // регистрации, текущее подключение не трогаем.
+            AppLogger.shared.log("JetBox: link signature missing or invalid, not going online")
+            flowTask?.cancel()
+            step = .failed(.notFromJetBox)
+            return true
 
         case .broken:
             AppLogger.shared.log("JetBox: link fails format check, not going online")
@@ -367,7 +384,7 @@ final class JetBoxOnboarding: ObservableObject {
             // маска сервера, проверка ключа, «переключить?», одна кнопка.
             lastLoginToken = nil
             flowTask = nil
-            if !handle(url) { step = .failed(.brokenLink) }
+            if !handle(url, trusted: true) { step = .failed(.brokenLink) }
         case .expired, .badCode:
             lastLoginToken = nil
             step = .failed(.loginExpired)

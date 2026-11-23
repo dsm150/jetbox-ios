@@ -328,6 +328,7 @@ xcodebuild -project NetBird.xcodeproj -scheme NetBird … archive JETBOX_HOME_ON
 | Info.plist приложения | `NetBird/Info-US.plist` (без схемы `netbird://`) | `NetBird/Info.plist` |
 | entitlements приложения | `NetBird/NetBird-US.entitlements` (applinks только `jetbox.ai-boss.us`) | `NetBird/NetBird.entitlements` |
 | условие Swift | `JETBOX_US` | `JETBOX_RU` |
+| подпись ссылки (JetBox safety) | с 1.0 (25): ссылка извне — только с верной подписью `s` (Ed25519, `JetBoxLinkSignature`, две открытые части — основная и резервная); без подписи, с неверной или с повтором параметра — «This link isn’t from JetBox» до экрана подтверждения. Ссылка из ответа verify (вход по email) — без подписи: пришла по TLS. Спека — `VPN_Box/docs/superpowers/specs/2026-11-23-link-signature-design.md` | не требуется |
 | стиль оформления | «простое» по умолчанию, выбор «простое/техно» — **только на время выпуска**: первая правка после одобрения Apple — убрать «простое» и вернуть классический дизайн (владелец, 23.11.2026) | только «техно», без переключателя; экраны, вход по email, виджет и картинки «простого» не собираются (`JETBOX_EXCLUDED_SOURCES_NO`, `JetBoxSimple.xcassets`) |
 
 Адреса доходят до кода через Info.plist (`JetBoxManagementURL`, `JetBoxAPIBaseURL`, …) и

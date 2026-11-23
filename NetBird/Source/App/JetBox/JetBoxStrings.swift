@@ -132,6 +132,8 @@ enum JBText {
     static var errBrokenBody: String { t("jetbox.error.broken.body") }
     static var errForeignTitle: String { t("jetbox.error.foreign.title") }
     static var errForeignBody: String { t("jetbox.error.foreign.body") }
+    static var errUnsignedTitle: String { t("jetbox.error.unsigned.title") }
+    static var errUnsignedBody: String { t("jetbox.error.unsigned.body") }
     static var errOfflineTitle: String { t("jetbox.error.offline.title") }
     static var errOfflineBody: String { t("jetbox.error.offline.body") }
     static var errUnreachableTitle: String { t("jetbox.error.unreachable.title") }

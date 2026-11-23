@@ -251,7 +251,7 @@ final class JetBoxAllowedExitTests: XCTestCase {
     func testVerifyBoxIPReachesBoxRecord() throws {
         let json = #"{"setup_key":"11111111-2222-4333-8444-555555555555","management_url":"https://net.jetbox.ai-boss.us","exit_node":"sv-demo-us-exit","site_name":"Demo Home","box_ip":"100.79.115.162"}"#
         let url = try XCTUnwrap(JetBoxLoginAPI.connectURL(from: Data(json.utf8)))
-        guard case .payload(let payload) = JetBoxLink.parse(url) else { return XCTFail("ссылка не разобралась") }
+        guard case .payload(let payload) = JetBoxLink.parse(url, rules: .current.trustingSource) else { return XCTFail("ссылка не разобралась") }
         XCTAssertEqual(payload.boxIP, "100.79.115.162")
         XCTAssertEqual(payload.exitNodeName, "sv-demo-us-exit")
     }

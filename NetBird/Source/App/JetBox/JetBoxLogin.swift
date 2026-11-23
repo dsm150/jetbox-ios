@@ -215,13 +215,18 @@ struct JetBoxLoginAPI {
     /// Ссылка подключения из ответа verify. Основной путь — готовый
     /// `connect_url`; без него собираем ту же ссылку из полей. В обоих
     /// случаях дальше её проверяет `JetBoxLink.parse`: ключ и формат `m`
-    /// (маска сервера — только в русской сборке).
+    /// (маска сервера — только в русской сборке). Подпись `s` здесь не
+    /// требуется: ссылка пришла из встроенного API по TLS.
     static func connectURL(from data: Data) -> URL? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         // 1.0 (21): mesh-адрес пира коробки — параметром `b` той же ссылки.
         let boxParam = JetBoxLink.validIP(json["box_ip"] as? String).map { "&b=" + escape($0) } ?? ""
+        // Пришло по TLS из встроенного API — подпись не нужна (JetBox safety
+        // проверяет только ссылки, открытые извне).
         if let raw = json["connect_url"] as? String, let url = URL(string: raw),
-           case .payload = JetBoxLink.parse(url) {
+           case .payload(let payload) = JetBoxLink.parse(url, rules: .current.trustingSource) {
+            // `b` уже в ссылке (подписанной Кабинетом) — второй не дописываем.
+            if payload.boxIP != nil { return url }
             return boxParam.isEmpty ? url : (URL(string: raw + boxParam) ?? url)
         }
         guard let key = json["setup_key"] as? String, !key.isEmpty else { return nil }

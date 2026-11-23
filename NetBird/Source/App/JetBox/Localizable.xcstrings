@@ -749,6 +749,40 @@
         }
       }
     },
+    "jetbox.error.unsigned.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This link isn’t from JetBox"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эта ссылка не от JetBox"
+          }
+        }
+      }
+    },
+    "jetbox.error.unsigned.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We didn’t connect, and your current connection wasn’t changed. Only use links from your JetBox account or JetBox support."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мы не подключались, текущее подключение не тронуто. Используйте только ссылки из Личного кабинета JetBox или от поддержки."
+          }
+        }
+      }
+    },
     "jetbox.error.foreign.title": {
       "extractionState": "manual",
       "localizations": {

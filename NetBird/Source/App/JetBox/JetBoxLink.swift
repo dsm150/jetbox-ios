@@ -13,6 +13,7 @@
 
 import Foundation
 import Network
+import CryptoKit
 
 // MARK: - Константы контракта
 
@@ -124,18 +125,118 @@ struct JetBoxLinkRules: Equatable {
     /// («сними фильтр по доменам в ссылке»). Чужой сервер всё равно не даст
     /// чужих пиров и выхода: ядро держится пира своей коробки (патч 0004).
     var anyHost: Bool = false
+    /// JetBox safety: ссылка принимается только с верной подписью `s`
+    /// (JetBoxLinkSignature). Сборка США, 1.0 (25): любой сервер в `m`
+    /// остаётся, подлинность ссылки — подписью (решение владельца 23.11.2026).
+    var requiresSignature: Bool = false
 
     #if JETBOX_US
     static let editionAcceptsAnyHost = true
+    static let editionRequiresSignature = true
     #else
     static let editionAcceptsAnyHost = false
+    static let editionRequiresSignature = false
     #endif
 
     static var current: JetBoxLinkRules {
         JetBoxLinkRules(connectHost: JetBoxServers.connectLinkHost.lowercased(),
                         managementSuffix: JetBoxServers.managementSuffix.lowercased(),
                         defaultManagementURL: JetBoxServers.managementURL,
-                        anyHost: editionAcceptsAnyHost)
+                        anyHost: editionAcceptsAnyHost,
+                        requiresSignature: editionRequiresSignature)
+    }
+
+    /// Ссылка из ответа verify встроенного API (вход по email): она пришла по
+    /// TLS с нашего сервера, подпись не нужна.
+    var trustingSource: JetBoxLinkRules {
+        var rules = self
+        rules.requiresSignature = false
+        return rules
+    }
+}
+
+// MARK: - JetBox safety: подпись ссылки
+
+/// JetBox safety — подпись ссылки подключения (спека
+/// VPN_Box/docs/superpowers/specs/2026-11-23-link-signature-design.md).
+///
+/// `s` = base64url без «=» от Ed25519 по сообщению
+/// `"JetBox safety v1\n"` + `"имя=значение\n"` для каждого параметра фрагмента,
+/// кроме `s`, по возрастанию имени (байты UTF-8), значение — после
+/// percent-decoding. Повтор любого имени — ссылка недействительна. Хост и путь
+/// ссылки в подпись не входят. Шифрования нет — только проверка подлинности.
+enum JetBoxLinkSignature {
+    /// JetBox safety: открытые части ключа подписи ссылок (Ed25519, сырые
+    /// 32 байта, base64). Подпись верна, если сходится с любой. Закрытые —
+    /// только на наших серверах; резервная — на случай утечки основной.
+    static let publicKeys: [String] = [
+        "prLMY2riAVq0e1nuydlSO3FOFedlsNvxjKXsHUl8/Tg=",   // JetBox safety: основная
+        "Lr8e8586oEZnBZqS678ipTemL050ha5OUIG6mqGyLu0=",   // JetBox safety: резервная
+    ]
+
+    #if DEBUG
+    /// Только для тестов (тест-векторы на тестовом ключе). В релизной сборке
+    /// этого свойства нет, тестовый ключ в приложение не попадает.
+    static var testPublicKeys: [String] = []
+    #endif
+
+    static let messagePrefix = "JetBox safety v1\n"
+
+    struct Signed: Equatable {
+        let message: Data
+        let signature: Data
+    }
+
+    /// Сообщение и подпись из фрагмента (без «#»). nil — подписи нет, она не
+    /// 64 байта, есть повтор имени или пара без «=».
+    static func signedMessage(fragment: String) -> Signed? {
+        var seen = Set<String>()
+        var fields: [(name: String, value: String)] = []
+        var signature: Data?
+        for pair in fragment.split(separator: "&", omittingEmptySubsequences: true) {
+            let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            guard parts.count == 2, !parts[0].isEmpty else { return nil }
+            let name = String(parts[0])
+            // Разбор ссылки имена не различает по регистру — повтор тоже.
+            guard seen.insert(name.lowercased()).inserted else { return nil }
+            let rawValue = String(parts[1])
+            let value = rawValue.removingPercentEncoding ?? rawValue
+            if name.lowercased() == "s" {
+                signature = base64URLDecode(value)
+                guard signature?.count == 64 else { return nil }
+            } else {
+                fields.append((name, value))
+            }
+        }
+        guard let signature else { return nil }
+        fields.sort { Array($0.name.utf8).lexicographicallyPrecedes(Array($1.name.utf8)) }
+        var message = messagePrefix
+        for field in fields { message += field.name + "=" + field.value + "\n" }
+        return Signed(message: Data(message.utf8), signature: signature)
+    }
+
+    /// Подпись сходится с одной из открытых частей JetBox safety.
+    static func isValid(fragment: String) -> Bool {
+        guard let signed = signedMessage(fragment: fragment) else { return false }
+        return keys.contains { $0.isValidSignature(signed.signature, for: signed.message) }
+    }
+
+    private static var keys: [Curve25519.Signing.PublicKey] {
+        var all = publicKeys
+        #if DEBUG
+        all += testPublicKeys
+        #endif
+        return all.compactMap { Data(base64Encoded: $0) }
+            .compactMap { try? Curve25519.Signing.PublicKey(rawRepresentation: $0) }
+    }
+
+    /// base64url без «=»: только алфавит `A–Z a–z 0–9 - _`.
+    static func base64URLDecode(_ text: String) -> Data? {
+        guard !text.isEmpty, text.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") })
+        else { return nil }
+        var base64 = text.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        base64 += String(repeating: "=", count: (4 - base64.count % 4) % 4)
+        return Data(base64Encoded: base64)
     }
 }
 
@@ -152,6 +253,9 @@ enum JetBoxLink {
         case foreignServer
         /// Не наша ссылка — отдаём дальше по цепочке обработчиков.
         case notOurs
+        /// JetBox safety (сборка США): нет подписи `s`, она неверна или в
+        /// ссылке повтор параметра. Отказ до экрана подтверждения.
+        case unsigned
     }
 
     static func parse(_ url: URL, rules: JetBoxLinkRules = .current) -> Outcome {
@@ -167,6 +271,7 @@ enum JetBoxLink {
         // Без ключа это не ссылка подключения: не пугаем клиента ошибкой,
         // просто не наш случай (для https откроется страница /connect).
         guard let key = params["k"], !key.isEmpty else { return .notOurs }
+        if rules.requiresSignature, !JetBoxLinkSignature.isValid(fragment: raw) { return .unsigned }
         guard isValidSetupKey(key) else { return .broken }
 
         if !rules.anyHost, let rawManagement = params["m"], !rawManagement.isEmpty,

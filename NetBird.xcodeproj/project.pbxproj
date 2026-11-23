@@ -156,6 +156,7 @@
 		JB0000012026090900000011 /* VPNProfileNamingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026090900000010 /* VPNProfileNamingTests.swift */; };
 		JB0000012026091000000011 /* JetBoxAdvancedAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026091000000010 /* JetBoxAdvancedAccessTests.swift */; };
 		JB0000012026091000000021 /* JetBoxWordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026091000000020 /* JetBoxWordingTests.swift */; };
+		JB0000012026112300000002 /* JetBoxLinkSignatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026112300000001 /* JetBoxLinkSignatureTests.swift */; };
 		JB0000012026102400000021 /* JetBoxLiveStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026102400000020 /* JetBoxLiveStatsTests.swift */; };
 		JB0000012026102400000011 /* JetBoxPowerActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = JB0000012026102400000010 /* JetBoxPowerActionTests.swift */; };
 		A1B2C3D42F4A000100000001 /* VPNToggleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D32F4A000100000001 /* VPNToggleView.swift */; };
@@ -379,6 +380,7 @@
 		JB0000012026090900000010 /* VPNProfileNamingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VPNProfileNamingTests.swift; sourceTree = "<group>"; };
 		JB0000012026091000000010 /* JetBoxAdvancedAccessTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JetBoxAdvancedAccessTests.swift; sourceTree = "<group>"; };
 		JB0000012026091000000020 /* JetBoxWordingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JetBoxWordingTests.swift; sourceTree = "<group>"; };
+		JB0000012026112300000001 /* JetBoxLinkSignatureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JetBoxLinkSignatureTests.swift; sourceTree = "<group>"; };
 		JB0000012026102400000020 /* JetBoxLiveStatsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JetBoxLiveStatsTests.swift; sourceTree = "<group>"; };
 		JB0000012026102400000010 /* JetBoxPowerActionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = JetBoxPowerActionTests.swift; sourceTree = "<group>"; };
 		8DE6A20955914E68BFADDEED /* iOSConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSConnectionView.swift; sourceTree = "<group>"; };
@@ -743,6 +745,7 @@
 				JB0000012026090900000010 /* VPNProfileNamingTests.swift */,
 				JB0000012026091000000010 /* JetBoxAdvancedAccessTests.swift */,
 				JB0000012026091000000020 /* JetBoxWordingTests.swift */,
+				JB0000012026112300000001 /* JetBoxLinkSignatureTests.swift */,
 				JB0000012026102400000020 /* JetBoxLiveStatsTests.swift */,
 				JB0000012026102400000010 /* JetBoxPowerActionTests.swift */,
 				53CB9305A9DC6CAD1895495A /* SharedUserDefaultsTests.swift */,
@@ -1261,6 +1264,7 @@
 				JB0000012026090900000011 /* VPNProfileNamingTests.swift in Sources */,
 				JB0000012026091000000011 /* JetBoxAdvancedAccessTests.swift in Sources */,
 				JB0000012026091000000021 /* JetBoxWordingTests.swift in Sources */,
+				JB0000012026112300000002 /* JetBoxLinkSignatureTests.swift in Sources */,
 				JB0000012026102400000021 /* JetBoxLiveStatsTests.swift in Sources */,
 				JB0000012026102400000011 /* JetBoxPowerActionTests.swift in Sources */,
 				1C9E4E97130030CE0D6C8F59 /* SharedUserDefaultsTests.swift in Sources */,
@@ -1330,7 +1334,7 @@
 				CODE_SIGN_ENTITLEMENTS = "NetBird TV/NetBird TVDebug.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
@@ -1374,7 +1378,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "NetBird TV/NetBird TV.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1413,7 +1417,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetBirdTVNetworkExtension/NetBirdTVNetworkExtensionDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -1451,7 +1455,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = NetBirdTVNetworkExtension/NetBirdTVNetworkExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -1487,7 +1491,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetbirdNetworkExtension/NetbirdNetworkExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetbirdNetworkExtension/Info.plist;
@@ -1519,7 +1523,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetbirdNetworkExtension/NetbirdNetworkExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NetbirdNetworkExtension/Info.plist;
@@ -1674,7 +1678,7 @@
 				CODE_SIGN_ENTITLEMENTS = "$(JETBOX_APP_ENTITLEMENTS)";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
@@ -1721,7 +1725,7 @@
 				CODE_SIGN_ENTITLEMENTS = "$(JETBOX_APP_ENTITLEMENTS)";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
@@ -1767,7 +1771,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetBirdWidgetExtension/NetBirdWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -1806,7 +1810,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetBirdWidgetExtension/NetBirdWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 25;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;

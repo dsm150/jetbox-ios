@@ -111,7 +111,7 @@ struct JetBoxHomeView: View {
                 #if JETBOX_US
                 JetBoxEmailLoginView(model: login, onSettings: { showsSettings = true })
                     // Код подтверждён — дальше обычный сценарий ссылки /connect.
-                    .onAppear { login.onConnect = { [weak jetbox = jetbox] url in jetbox?.handle(url) } }
+                    .onAppear { login.onConnect = { [weak jetbox = jetbox] url in jetbox?.handle(url, trusted: true) } }
                 #endif
             } else {
                 layout(power: power, state: state)
