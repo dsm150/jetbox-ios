@@ -452,11 +452,26 @@ final class JetBoxOnboarding: ObservableObject {
         step = .signingIn
         let api = loginAPI
         flowTask = Task { @MainActor in
+            #if DEBUG
+            // Съёмка в симуляторе: сеть в нём не выключить. `-JetBoxVerifyDemoFail offline` —
+            // первая проверка ссылки падает как «без сети», следующие идут на сервер.
+            if UserDefaults.standard.string(forKey: "JetBoxVerifyDemoFail") == "offline", !Self.verifyDemoFailUsed {
+                Self.verifyDemoFailUsed = true
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                if Task.isCancelled { return }
+                finishLogin(.offline)
+                return
+            }
+            #endif
             let outcome = await api.verify(token: token, deviceName: Device.getName())
             if Task.isCancelled { return }
             finishLogin(outcome)
         }
     }
+
+    #if DEBUG
+    private static var verifyDemoFailUsed = false
+    #endif
 
     private func finishLogin(_ outcome: JetBoxLoginAPI.VerifyOutcome) {
         switch outcome {
