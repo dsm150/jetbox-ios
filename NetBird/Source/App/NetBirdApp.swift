@@ -152,6 +152,8 @@ struct NetBirdApp: App {
                         }
                     }
                     .onAppear {
+                        // JetBox: сценарий ссылки запускает подключение сам (сборка США).
+                        jetbox.attach(viewModel)
                         if let url = pendingURL {
                             handleIncomingURL(url, viewModel: viewModel)
                             pendingURL = nil
@@ -307,6 +309,7 @@ struct NetBirdApp: App {
     /// она приводит приложение в режим «одной кнопки». Всё остальное —
     /// апстримовые ссылки виджета.
     private func handleIncomingURL(_ url: URL, viewModel: ViewModel) {
+        jetbox.attach(viewModel)
         if jetbox.handle(url) { return }
         handleWidgetURL(url, viewModel: viewModel)
     }

@@ -123,7 +123,7 @@ Swift-package-зависимостей у форка нет: Firebase и Lottie 
 `Config/JetBoxEdition.xcconfig`; в Swift — `JetBoxIdentifiers`, `WidgetConstants`,
 `NetBirdVPNControl.kind` под `JETBOX_US`):
 
-| Таргет | США (`JETBOX_HOME_ONLY=YES`), «JetBox Home» | Россия (`NO`) |
+| Таргет | США (`JETBOX_HOME_ONLY=YES`) | Россия (`NO`) |
 |---|---|---|
 | NetBird (приложение) | `us.aiboss.jetbox` | `net.jetnet.jetbox` |
 | NetbirdNetworkExtension | `us.aiboss.jetbox.NetworkExtension` | `net.jetnet.jetbox.NetworkExtension` |
@@ -134,10 +134,14 @@ Swift-package-зависимостей у форка нет: Firebase и Lottie 
 
 `us.aiboss.jetbox*` заведены через ASC API 23.11.2026 (возможности как у
 `net.jetnet.jetbox*`: Network Extensions, App Groups, Associated Domains, Access
-Wi-Fi Information у приложения). App Group в ASC API нет — её регистрирует и
-привязывает Xcode при архиве с `-allowProvisioningUpdates`. Сборки 1.0 (1)–(21)
-выходили под `net.jetnet.jetbox` (приложение ASC `6828493462`); с 1.0 (22) США —
-новая запись ASC «JetBox Home».
+Wi-Fi Information у приложения). App Group в ASC API нет, и архив с
+`-allowProvisioningUpdates` по ключу API её **не** заводит (проверено 23.11.2026):
+профили выходят с возможностью App Groups, но без самой группы, и архив падает
+«doesn't match the entitlements file's value for … application-groups». Группу
+`group.us.aiboss.jetbox` регистрирует человек на developer.apple.com (Identifiers →
+App Groups) и отмечает её у всех трёх App ID; после этого архив сам перевыпускает
+профили. Сборки 1.0 (1)–(25) выходили под `net.jetnet.jetbox` (приложение ASC
+`6828493462`); с 1.0 (26) США — новая запись ASC (решение Алексея 23.11.2026).
 
 `DEVELOPMENT_TEAM` намеренно пустой — команда передаётся командой сборки.
 С 1.0 (8) (29.10.2026) приложение живёт в команде организации **INSTASHOP
@@ -340,7 +344,8 @@ xcodebuild -project NetBird.xcodeproj -scheme NetBird … archive JETBOX_HOME_ON
 | Info.plist приложения | `NetBird/Info-US.plist` (без схемы `netbird://`) | `NetBird/Info.plist` |
 | entitlements приложения | `NetBird/NetBird-US.entitlements` (applinks только `jetbox.ai-boss.us`) | `NetBird/NetBird.entitlements` |
 | условие Swift | `JETBOX_US` | `JETBOX_RU` |
-| подпись ссылки (JetBox safety) | с 1.0 (25): ссылка извне — только с верной подписью `s` (Ed25519, `JetBoxLinkSignature`, две открытые части — основная и резервная); без подписи, с неверной или с повтором параметра — «This link isn’t from JetBox» до экрана подтверждения. Ссылка из ответа verify (вход по email) — без подписи: пришла по TLS. Спека — `VPN_Box/docs/superpowers/specs/2026-11-23-link-signature-design.md` | не требуется |
+| подпись ссылки (JetBox safety) | с 1.0 (25): ссылка извне — только с верной подписью `s` (Ed25519, `JetBoxLinkSignature`, две открытые части — основная и резервная); без подписи, с неверной или с повтором параметра — «This link isn’t from JetBox» до подключения. Ссылка из ответа verify (вход по email) — без подписи: пришла по TLS. Спека — `VPN_Box/docs/superpowers/specs/2026-11-23-link-signature-design.md` | не требуется |
+| подключение по ссылке | с 1.0 (26): сразу, без экрана подтверждения, без вопроса о замене и без экрана «готово»; ход — на главном экране. Раскрытие данных (5.1.1) — экран согласия до первой ссылки и About | экран с кнопкой Connect, «Switch?», «Вы под защитой» |
 | стиль оформления | «простое» по умолчанию, выбор «простое/техно» — **только на время выпуска**: первая правка после одобрения Apple — убрать «простое» и вернуть классический дизайн (владелец, 23.11.2026) | только «техно», без переключателя; экраны, вход по email, виджет и картинки «простого» не собираются (`JETBOX_EXCLUDED_SOURCES_NO`, `JetBoxSimple.xcassets`) |
 
 Адреса доходят до кода через Info.plist (`JetBoxManagementURL`, `JetBoxAPIBaseURL`, …) и
@@ -370,8 +375,11 @@ find $APP -name ru.lproj
 ссылка подключения без `b`). Пустое значение, а не отсутствие: переменную, раз отданную ядру, из
 процесса расширения не убрать. Нечитаемый адрес — по-прежнему ни пиров, ни маршрутов. В той же
 сборке — второй путь в сборке США: ссылка подключения без маски `m` и проверки хоста ссылки
-(`JetBoxLinkRules.anyHost`). Ссылку открывает система (`jetbox://`, универсальная ссылка) — приложение
-показывает экран подтверждения с кнопкой Connect. Поле «Have a setup link?» было только в 1.0 (23):
+(`JetBoxLinkRules.anyHost`). Ссылку открывает система (`jetbox://`, универсальная ссылка). До 1.0 (25)
+приложение показывало экран подтверждения с кнопкой Connect; с 1.0 (26) в сборке США подписанная
+ссылка подключает сразу (`JetBoxOnboarding.autoConnects`): системный запрос на VPN, затем главный экран
+«Connecting…» → «Protected»; ссылка на другую коробку — замена без вопроса, на ту же — просто главный
+экран. Экраны «Your JetBox found successfully» и «You are protected by JetBox» в США не показываются. Поле «Have a setup link?» было только в 1.0 (23):
 в 1.0 (24) убрано — «просить ссылку в самом приложении не надо» (владелец, 23.11.2026).
 
 С 1.0 (21) ядро — `0.78.0+cb7ca8e.jetbox5`: патч `0004` дополнен `NB_ALLOWED_PEER_IP` — в начале

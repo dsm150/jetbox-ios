@@ -103,9 +103,11 @@ final class JetBoxOnboarding: ObservableObject {
         case idle
         /// Ссылка входа из письма: меняем токен на параметры подключения.
         case signingIn
-        /// Ссылка разобрана, ждём нажатия единственной кнопки.
+        /// Ссылка разобрана. Русская сборка ждёт нажатия единственной кнопки;
+        /// сборка США подключается сама, как только есть ViewModel.
         case ready(JetBoxLinkPayload)
-        /// Ссылка ведёт на другую коробку — спрашиваем подтверждение.
+        /// Ссылка ведёт на другую коробку — спрашиваем подтверждение (только
+        /// русская сборка: в США замена идёт без вопроса).
         case confirmSwitch(JetBoxLinkPayload, current: String)
         /// Регистрируем устройство по setup key.
         case registering(JetBoxLinkPayload)
@@ -115,7 +117,8 @@ final class JetBoxOnboarding: ObservableObject {
         case selectingExit(JetBoxLinkPayload)
         /// Выход не определился сам — просим выбрать.
         case chooseExit(JetBoxLinkPayload, options: [String])
-        /// Готово.
+        /// Готово. Экран «You are protected» — только русская сборка: в США
+        /// сценарий сразу возвращает на главный экран.
         case protected(exitNode: String?)
         case failed(JetBoxFailure)
     }
@@ -145,7 +148,52 @@ final class JetBoxOnboarding: ObservableObject {
     /// Сколько ждём остановки прежнего туннеля при замене подключения.
     private let stopTimeout: TimeInterval = 10
 
-    var isPresenting: Bool { step != .idle }
+    /// Сборка США (решение Алексея 23.11.2026, сборка 26): подписанная ссылка
+    /// подключает сразу — без экрана подтверждения, без вопроса о замене и без
+    /// экрана «готово». Ход подключения показывает главный экран
+    /// («Connecting…» → «Protected»), экран сценария — только отказы.
+    /// Русская сборка — как раньше, с кнопкой. В тестах подменяется.
+    var autoConnects: Bool = JetBoxOnboarding.editionAutoConnects
+
+    nonisolated static var editionAutoConnects: Bool {
+        #if JETBOX_US
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    /// ViewModel приложения: без неё сценарий не запустить. Ссылка может
+    /// прийти раньше (холодный старт) — тогда сценарий ждёт в `.ready`.
+    private weak var viewModel: ViewModel?
+
+    func attach(_ viewModel: ViewModel) {
+        self.viewModel = viewModel
+        if autoConnects, case .ready(let payload) = step, flowTask == nil {
+            start(payload: payload, viewModel: viewModel)
+        }
+    }
+
+    /// Экран сценария поверх главного. В сборке США — только вход по ссылке
+    /// из письма, отказы и (теоретически) выбор выхода.
+    var isPresenting: Bool {
+        guard autoConnects else { return step != .idle }
+        switch step {
+        case .signingIn, .failed, .chooseExit: return true
+        case .idle, .ready, .confirmSwitch, .registering, .connecting, .selectingExit, .protected: return false
+        }
+    }
+
+    /// Сборка США: идёт подключение по ссылке без экрана сценария —
+    /// главный экран показывает «Connecting…».
+    var isConnectingInBackground: Bool { autoConnects && activePayload != nil && !isPresenting }
+
+    /// Коробка, к которой идёт подключение, — для главного экрана, пока
+    /// запись ещё не сохранена (первый вход) или сохранена прежняя (замена).
+    var connectingBox: JetBoxBox? {
+        guard isConnectingInBackground, let payload = activePayload else { return nil }
+        return JetBoxStore.box(for: payload)
+    }
 
     /// Наша ссылка, пришедшая до согласия «какие данные собираем» (сборка США):
     /// ждёт, пока человек не примет экран согласия, и только потом идёт в сеть.
@@ -233,17 +281,40 @@ final class JetBoxOnboarding: ObservableObject {
             lastPayload = payload
 
             if let box = JetBoxStore.currentBox, !box.isSameConnection(as: payload) {
-                step = .confirmSwitch(payload, current: box.displayName)
+                if autoConnects {
+                    // США: замена без вопроса, как раньше после «Switch».
+                    AppLogger.shared.log("JetBox: link leads to another box, replacing without a question")
+                    begin(payload)
+                } else {
+                    step = .confirmSwitch(payload, current: box.displayName)
+                }
             } else {
                 // Тот же JetBox, а имени в записи не было — запоминаем сразу,
                 // даже если клиент нажмёт «Отмена».
                 if let named = JetBoxStore.currentBox?.named(by: payload) {
                     JetBoxStore.currentBox = named
                 }
-                step = .ready(payload)
+                if autoConnects, JetBoxStore.currentBox != nil {
+                    // США: ссылка на ту же коробку — просто главный экран,
+                    // без повторной регистрации.
+                    AppLogger.shared.log("JetBox: link leads to the current box, showing the home screen")
+                    lastPayload = nil
+                    step = .idle
+                } else if autoConnects {
+                    begin(payload)
+                } else {
+                    step = .ready(payload)
+                }
             }
             return true
         }
+    }
+
+    /// США: сразу в сценарий. Без ViewModel (холодный старт, тесты) шаг
+    /// остаётся `.ready` до `attach`.
+    private func begin(_ payload: JetBoxLinkPayload) {
+        step = .ready(payload)
+        if let viewModel { start(payload: payload, viewModel: viewModel) }
     }
 
     // MARK: Кнопки
@@ -277,11 +348,9 @@ final class JetBoxOnboarding: ObservableObject {
             if let name {
                 await applyExitNode(named: name, viewModel: viewModel)
                 JetBoxStore.rememberExitNode(name)
-                step = .protected(exitNode: name)
-                JetBoxNotifications.requestIfNeeded()
+                finish(exitNode: name)
             } else {
-                step = .protected(exitNode: nil)
-                JetBoxNotifications.requestIfNeeded()
+                finish(exitNode: nil)
             }
         }
     }
@@ -381,7 +450,8 @@ final class JetBoxOnboarding: ObservableObject {
         switch outcome {
         case .connect(let url):
             // Токен израсходован: дальше обычный путь ссылки /connect —
-            // маска сервера, проверка ключа, «переключить?», одна кнопка.
+            // маска сервера, проверка ключа; в США — сразу подключение,
+            // в русской — «переключить?» и одна кнопка.
             lastLoginToken = nil
             flowTask = nil
             if !handle(url, trusted: true) { step = .failed(.brokenLink) }
@@ -505,19 +575,33 @@ final class JetBoxOnboarding: ObservableObject {
         switch exitOutcome {
         case .selected(let name):
             JetBoxStore.rememberExitNode(name)
-            step = .protected(exitNode: name)
-            JetBoxNotifications.requestIfNeeded()
+            finish(exitNode: name)
         case .ambiguous(let options):
-            step = Self.stepForAmbiguousExit(payload: payload, options: options, style: JetBoxStyle.current,
-                                             homeOnly: JetBoxEdition.homeOnly)
-            if case .protected = step {
+            let next = Self.stepForAmbiguousExit(payload: payload, options: options, style: JetBoxStyle.current,
+                                                 homeOnly: JetBoxEdition.homeOnly)
+            if case .protected(let exitNode) = next {
                 AppLogger.shared.log("JetBox: exit picker not shown (simple style or home only), same as Not now")
-                JetBoxNotifications.requestIfNeeded()
+                finish(exitNode: exitNode)
+            } else {
+                step = next
             }
         case .none:
-            step = .protected(exitNode: nil)
-            JetBoxNotifications.requestIfNeeded()
+            finish(exitNode: nil)
         }
+    }
+
+    /// Сценарий дошёл до конца. Русская сборка показывает «готово»; сборка
+    /// США сразу отдаёт главный экран — там уже «Protected».
+    private func finish(exitNode: String?) {
+        if autoConnects {
+            AppLogger.shared.log("JetBox: connected by link, back to the home screen")
+            flowTask = nil
+            lastPayload = nil
+            step = .idle
+        } else {
+            step = .protected(exitNode: exitNode)
+        }
+        JetBoxNotifications.requestIfNeeded()
     }
 
     /// Останавливает туннель и ждёт, пока расширение доложит `.disconnected`.

@@ -1600,3 +1600,112 @@ final class JetBoxStyleDefaultTests: XCTestCase {
     }
     #endif
 }
+
+/// Сборка 26 (решение Алексея 23.11.2026): в сборке США подписанная ссылка
+/// подключает сразу — без экрана подтверждения, без вопроса о замене и без
+/// экрана «готово». Русская сборка — как раньше, с кнопкой.
+@MainActor
+final class JetBoxAutoConnectTests: XCTestCase {
+    private let key = "11111111-2222-4333-8444-555555555555"
+    private let otherKey = "99999999-8888-4777-8666-555555555555"
+    private var savedBox: JetBoxBox?
+
+    override func setUp() {
+        savedBox = JetBoxStore.currentBox
+        JetBoxStore.currentBox = nil
+    }
+
+    override func tearDown() {
+        JetBoxStore.currentBox = savedBox
+    }
+
+    private func link(_ key: String, name: String = "Demo Home") -> URL {
+        let encoded = name.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? name
+        return URL(string: "jetbox://connect#k=\(key)&m=https%3A%2F%2F\(JBT.mgmtHost)&n=\(encoded)")!
+    }
+
+    private func payload(_ key: String, name: String) -> JetBoxLinkPayload {
+        guard case .payload(let p) = JetBoxLink.parse(link(key, name: name), rules: .current.trustingSource) else {
+            fatalError("ссылка не разобралась")
+        }
+        return p
+    }
+
+    private func flow(autoConnects: Bool) -> JetBoxOnboarding {
+        let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
+        flow.autoConnects = autoConnects
+        return flow
+    }
+
+    func testEditionDefault() {
+        #if JETBOX_US
+        XCTAssertTrue(JetBoxOnboarding.editionAutoConnects)
+        #else
+        XCTAssertFalse(JetBoxOnboarding.editionAutoConnects)
+        #endif
+    }
+
+    /// Первый вход: без экрана — шаг ждёт ViewModel и сразу стартует,
+    /// главный экран показывает коробку из ссылки и «Connecting…».
+    func testFirstLinkConnectsWithoutAScreen() {
+        let flow = flow(autoConnects: true)
+        XCTAssertTrue(flow.handle(link(key), trusted: true))
+        guard case .ready(let p) = flow.step else { return XCTFail("шаг \(flow.step)") }
+        XCTAssertEqual(p.boxName, "Demo Home")
+        XCTAssertFalse(flow.isPresenting, "экрана подтверждения нет")
+        XCTAssertTrue(flow.isConnectingInBackground)
+        XCTAssertEqual(flow.connectingBox?.displayName, "Demo Home")
+        XCTAssertFalse(JetBoxEdition.showsEmailLogin(homeOnly: true, box: flow.connectingBox ?? JetBoxStore.currentBox),
+                       "пока идёт подключение, форма входа не показывается")
+    }
+
+    /// Ссылка на другую коробку — замена без вопроса.
+    func testOtherBoxIsReplacedWithoutAQuestion() {
+        JetBoxStore.remember(payload(key, name: "Old Home"))
+        let flow = flow(autoConnects: true)
+        XCTAssertTrue(flow.handle(link(otherKey, name: "New Home"), trusted: true))
+        guard case .ready(let p) = flow.step else { return XCTFail("шаг \(flow.step)") }
+        XCTAssertEqual(p.boxName, "New Home")
+        XCTAssertFalse(flow.isPresenting)
+        XCTAssertEqual(flow.connectingBox?.displayName, "New Home", "главный экран — уже про новую коробку")
+    }
+
+    /// Ссылка на ту же коробку — просто главный экран, без регистрации.
+    func testSameBoxJustShowsHome() {
+        JetBoxStore.remember(payload(key, name: "Demo Home"))
+        let flow = flow(autoConnects: true)
+        XCTAssertTrue(flow.handle(link(key), trusted: true))
+        XCTAssertEqual(flow.step, .idle)
+        XCTAssertFalse(flow.isConnectingInBackground)
+        XCTAssertNil(flow.connectingBox)
+    }
+
+    /// Отказы по-прежнему на экране — и неподписанная ссылка в США.
+    func testFailuresStillShowAScreen() {
+        let flow = flow(autoConnects: true)
+        XCTAssertTrue(flow.handle(URL(string: "jetbox://connect#k=not-a-key")!, trusted: true))
+        XCTAssertEqual(flow.step, .failed(.brokenLink))
+        XCTAssertTrue(flow.isPresenting)
+        XCTAssertFalse(flow.isConnectingInBackground)
+        #if JETBOX_US
+        XCTAssertTrue(flow.handle(link(key)))
+        XCTAssertEqual(flow.step, .failed(.notFromJetBox), "без подписи — отказ до подключения")
+        XCTAssertTrue(flow.isPresenting)
+        #endif
+    }
+
+    /// Русская сборка: экран с кнопкой и вопрос о замене остаются.
+    func testManualFlowKeepsConfirmAndSwitch() {
+        let flow = flow(autoConnects: false)
+        XCTAssertTrue(flow.handle(link(key), trusted: true))
+        guard case .ready = flow.step else { return XCTFail("шаг \(flow.step)") }
+        XCTAssertTrue(flow.isPresenting)
+        XCTAssertFalse(flow.isConnectingInBackground)
+
+        JetBoxStore.remember(payload(key, name: "Old Home"))
+        XCTAssertTrue(flow.handle(link(otherKey, name: "New Home"), trusted: true))
+        guard case .confirmSwitch(_, let current) = flow.step else { return XCTFail("шаг \(flow.step)") }
+        XCTAssertEqual(current, "Old Home")
+    }
+}

@@ -30,7 +30,9 @@ struct JetBoxHomeView: View {
     private var styleRaw = JetBoxStyle.fallback.rawValue
     @EnvironmentObject private var jetbox: JetBoxOnboarding
 
-    private var box: JetBoxBox? { JetBoxStore.currentBox }
+    /// Пока идёт подключение по ссылке (сборка США) — коробка из ссылки:
+    /// при первом входе записи ещё нет, при замене в ней ещё прежняя.
+    private var box: JetBoxBox? { jetbox.connectingBox ?? JetBoxStore.currentBox }
     /// Сборка США без подключения: вместо пустого состояния — вход по email.
     private var showsEmailLogin: Bool {
         #if DEBUG && JETBOX_US
@@ -93,9 +95,13 @@ struct JetBoxHomeView: View {
     }
 
     private var live: some View {
-        let state = readiness.displayState(viewModel.vpnDisplayState)
+        // Подключение по ссылке без экрана сценария (сборка США, 26): до самого
+        // «Protected» главный экран показывает «Connecting…», щит не нажимается —
+        // сценарий сам регистрирует устройство, поднимает туннель и ждёт дом.
+        let byLink = jetbox.isConnectingInBackground
+        let state = byLink ? .connecting : readiness.displayState(viewModel.vpnDisplayState)
         // Пока ждём дом, выключить можно: кнопка — по настоящему состоянию туннеля.
-        let power = JetBoxPowerAction.action(for: viewModel.vpnDisplayState, hasBox: box != nil)
+        let power = byLink ? JetBoxPowerAction.none : JetBoxPowerAction.action(for: viewModel.vpnDisplayState, hasBox: box != nil)
         return Group {
             // Согласие и вход по email — только в сборке США (в русской оба
             // условия ложны, а экраны на наборе «простого» не собираются).

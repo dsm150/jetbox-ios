@@ -2,8 +2,9 @@
 //  JetBoxSimpleFlow.swift
 //  JetBox
 //
-//  Экран по ссылке из Кабинета в стиле «простое». Шаги и действия те же,
-//  что у `JetBoxFlowView`: меняется только вид.
+//  Экран по ссылке из Кабинета в стиле «простое» — только сборка США. С 26
+//  он показывает лишь вход по ссылке из письма и отказы: подписанная ссылка
+//  подключает сразу, ход подключения — на главном экране.
 //
 
 import SwiftUI
@@ -13,7 +14,6 @@ import SwiftUI
 struct JetBoxSimpleFlowView: View {
     @EnvironmentObject var viewModel: ViewModel
     @EnvironmentObject var jetbox: JetBoxOnboarding
-    @State private var showsInfo = false
 
     var body: some View {
         ZStack {
@@ -49,63 +49,8 @@ struct JetBoxSimpleFlowView: View {
         case .idle:
             EmptyView()
 
-        case .ready(let payload):
-            VStack(alignment: .leading, spacing: 18) {
-                Image("jetbox-simple-app-connect")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-                    .accessibilityHidden(true)
-                JetBoxLogo(markHeight: 30)
-                // «Your JetBox found successfully», имя и одна кнопка; ключ и
-                // текст о данных — за (i) рядом с Connect (замечания Алексея
-                // 21.11 и 23.11.2026).
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(JBText.readyCaption)
-                        .font(JBSimple.font(19, .semibold))
-                        .foregroundColor(JBSimple.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(payload.displayName)
-                        .font(JBSimple.font(30, .black))
-                        .foregroundColor(JBSimple.ink)
-                        .lineLimit(2)
-                }
-                HStack(spacing: 8) {
-                    JBSimplePrimaryButton(JBText.readyButton) {
-                        jetbox.connect(viewModel: viewModel)
-                    }
-                    JBSimpleInfoButton(label: JBText.simpleDetails) { showsInfo = true }
-                }
-                .padding(.top, 6)
-            }
-            .sheet(isPresented: $showsInfo) { linkInfo(payload) }
-            .onAppear {
-                #if DEBUG
-                if UserDefaults.standard.bool(forKey: "JetBoxFlowDemoInfo") { showsInfo = true }
-                #endif
-            }
-
-        case .confirmSwitch(let payload, let current):
-            centered(symbol: "arrow.triangle.2.circlepath",
-                     title: JBText.switchTitle,
-                     message: JBText.switchMessage(current, payload.displayName)) {
-                JBSimplePrimaryButton(JBText.switchConfirm) {
-                    jetbox.confirmSwitch(viewModel: viewModel)
-                }
-            }
-
         case .signingIn:
             progress(JBText.loginSigningIn)
-
-        case .registering:
-            progress(JBText.registering)
-
-        case .connecting:
-            progress(JBText.connecting)
-
-        case .selectingExit:
-            progress(JBText.selectingExit)
 
         case .chooseExit:
             // В «простом» выбора выхода нет: сюда попадаем, только если стиль
@@ -113,22 +58,12 @@ struct JetBoxSimpleFlowView: View {
             progress(JBText.selectingExit)
                 .onAppear { jetbox.chooseExit(nil, viewModel: viewModel) }
 
-        case .protected(let exitNode):
-            VStack(spacing: 14) {
-                JBSimpleCircle(phase: .on, diameter: 200, accessibilityLabel: JBText.protectedTitle(exitNode: exitNode))
-                    .padding(.top, 40)
-                // Без отдельной галочки: длинный заголовок переносится, а галочка
-                // уже есть на значке круга.
-                Text(JBText.protectedTitle(exitNode: exitNode))
-                    .font(JBSimple.font(28, .black))
-                    .foregroundColor(JBSimple.accent)
-                    .multilineTextAlignment(.center)
-                JBSimpleTrafficLine(moving: false)
-                Text(JBText.protectedBody(exitNode: exitNode))
-                    .font(JBSimple.secondary)
-                    .foregroundColor(JBSimple.muted)
-                    .multilineTextAlignment(.center)
-            }
+        case .ready, .confirmSwitch, .registering, .connecting, .selectingExit, .protected:
+            // «Простое» есть только в сборке США, а там эти шаги идут без экрана
+            // сценария: подтверждения, замены с вопросом и «готово» нет
+            // (сборка 26, решение Алексея 23.11.2026) — ход подключения
+            // показывает главный экран (JetBoxOnboarding.isPresenting).
+            EmptyView()
 
         case .failed(let failure):
             JetBoxSimpleFailure(failure: failure)
@@ -149,54 +84,11 @@ struct JetBoxSimpleFlowView: View {
         }
     }
 
-    private func centered<Action: View>(symbol: String, title: String, message: String,
-                                        @ViewBuilder action: () -> Action) -> some View {
-        VStack(spacing: 18) {
-            Image(systemName: symbol)
-                .font(.system(size: 56, weight: .semibold))
-                .foregroundColor(JBSimple.accent)
-                .frame(width: 150, height: 150)
-                .background(Circle().fill(JBSimple.accentTint))
-                .padding(.top, 60)
-                .accessibilityHidden(true)
-            Text(title)
-                .font(JBSimple.font(30, .black))
-                .foregroundColor(JBSimple.ink)
-                .multilineTextAlignment(.center)
-            Text(message)
-                .font(JBSimple.secondary)
-                .foregroundColor(JBSimple.muted)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-            action()
-                .padding(.top, 4)
-        }
-    }
-
-    /// Лист по значку (i): хвост ключа и что уходит на сервер (App Review 5.4).
-    private func linkInfo(_ payload: JetBoxLinkPayload) -> some View {
-        JBSimpleInfoSheet(title: JBText.errDetails) {
-            // Ключ целиком не показываем: только хвост для сверки с поддержкой.
-            JBSimpleInfoRow(title: JBText.readyKeyLabel, value: payload.maskedKey)
-            Text(JBText.privacyNotice)
-                .font(JBSimple.font(17, .semibold))
-                .foregroundColor(JBSimple.muted)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 4)
-            Link(JBText.privacyMore, destination: JetBoxConfig.privacyPolicyURL)
-                .font(JBSimple.font(18, .heavy))
-                .foregroundColor(JBSimple.accent)
-        }
-    }
-
     // MARK: - Низ экрана
 
     @ViewBuilder
     private var footer: some View {
         switch jetbox.step {
-        case .protected:
-            JBSimplePrimaryButton(JBText.done) { jetbox.dismiss() }
-
         case .failed(let failure):
             VStack(spacing: 6) {
                 if failure.asksForNewLoginLink {
@@ -208,17 +100,8 @@ struct JetBoxSimpleFlowView: View {
                 JBSimpleTextButton(JBText.close, color: JBSimple.muted) { jetbox.dismiss() }
             }
 
-        case .ready:
-            VStack(spacing: 4) {
-                JBSimpleTextButton(JBText.cancel, color: JBSimple.muted) { jetbox.dismiss() }
-                // Согласие внизу под кнопкой — App Review 5.1.1.
-                JBSimpleConsent()
-            }
-
-        case .confirmSwitch:
-            JBSimpleTextButton(JBText.cancel, color: JBSimple.muted) { jetbox.dismiss() }
-
-        case .idle, .signingIn, .registering, .connecting, .selectingExit, .chooseExit:
+        case .idle, .signingIn, .ready, .confirmSwitch, .registering, .connecting, .selectingExit,
+             .chooseExit, .protected:
             EmptyView()
         }
     }
