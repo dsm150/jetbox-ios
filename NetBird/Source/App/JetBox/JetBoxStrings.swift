@@ -108,7 +108,7 @@ enum JBText {
     static var protectedNoExit: String { t("jetbox.protected.no_exit") }
     /// Экран «готово»: в сборке США с выходом своей коробки — «весь интернет через дом».
     static func protectedTitle(exitNode: String?) -> String {
-        if JetBoxEdition.homeOnly { return allInternetHome ? t("jetbox.protected.title_all") : protectedTitle }
+        if JetBoxEdition.homeOnly { return allInternetHome ? protectedTitleAll : protectedTitle }
         return protectedTitle
     }
     static func protectedBody(exitNode: String?) -> String {
@@ -163,7 +163,21 @@ enum JBText {
     static func exitWarning(expected: Bool, inTunnel: Bool = JetBoxTunnelState.defaultRouteInTunnel()) -> String? {
         expected && !inTunnel ? t("jetbox.home.exit_missing") : nil
     }
-    static var homeConnectedAll: String { t("jetbox.home.connected_all") }
+    /// Сборка США (Алексей, 23.11.2026): «You are in your home network, protected by JetBox».
+    static var homeConnectedAll: String {
+        #if JETBOX_US
+        return t("jetbox.home.connected_all.us")
+        #else
+        return t("jetbox.home.connected_all")
+        #endif
+    }
+    static var protectedTitleAll: String {
+        #if JETBOX_US
+        return t("jetbox.protected.title_all.us")
+        #else
+        return t("jetbox.protected.title_all")
+        #endif
+    }
     static var homeConnectedNow: String { allInternetHome ? homeConnectedAll : homeConnected }
     static var homeConnecting: String { t("jetbox.home.connecting") }
     static var homeDisconnecting: String { t("jetbox.home.disconnecting") }

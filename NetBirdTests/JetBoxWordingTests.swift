@@ -160,7 +160,8 @@ final class JetBoxWordingTests: XCTestCase {
     /// «Protected» в английском — только когда весь интернет идёт через свою
     /// коробку (решение руководителя 22.11.2026, 1.0 (14)): тогда это правда.
     func testProtectedOnlyWhenAllInternetGoesThroughOwnBox() throws {
-        let allowed: Set<String> = ["jetbox.home.connected_all", "jetbox.protected.title_all"]
+        let allowed: Set<String> = ["jetbox.home.connected_all", "jetbox.protected.title_all",
+                                    "jetbox.home.connected_all.us", "jetbox.protected.title_all.us"]
         for (key, value) in try strings("en") where key.hasPrefix("jetbox.") && value.lowercased().contains("protect") {
             XCTAssertTrue(allowed.contains(key), "«protect» вне состояния «весь интернет через JetBox»: \(key): \(value)")
         }

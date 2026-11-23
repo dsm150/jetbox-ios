@@ -1208,6 +1208,23 @@
         }
       }
     },
+    "jetbox.home.connected_all.us": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are in your home network, protected by JetBox"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вы в своей домашней сети под защитой JetBox"
+          }
+        }
+      }
+    },
     "jetbox.home.connecting": {
       "extractionState": "manual",
       "localizations": {
@@ -2173,6 +2190,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Под защитой вашего JetBox"
+          }
+        }
+      }
+    },
+    "jetbox.protected.title_all.us": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are in your home network, protected by JetBox"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вы в своей домашней сети под защитой JetBox"
           }
         }
       }

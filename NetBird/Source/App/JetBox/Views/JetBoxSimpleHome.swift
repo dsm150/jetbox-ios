@@ -83,10 +83,13 @@ struct JetBoxSimpleHomeLayout: View {
                         .frame(width: 32, height: 32)
                         .background(Circle().fill(JBSimple.accent))
                 }
+                // Длинный заголовок США «You are in your home network, protected by
+                // JetBox» (1.0 (31)) переносится сам и не обрезается даже на SE.
                 Text(statusText)
-                    .font(JBSimple.font(30, .black))
+                    .font(JBSimple.font(statusText.count > 30 ? 26 : 30, .black))
                     .foregroundColor(phase == .on ? JBSimple.accent : JBSimple.ink)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             // Бежит только пока подключаемся или ждём дом; в «Protected» —
             // сплошная и неподвижная (1.0 (24)).

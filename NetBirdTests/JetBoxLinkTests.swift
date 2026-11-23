@@ -1803,6 +1803,13 @@ final class JetBoxUSLegalLinksTests: XCTestCase {
         #endif
     }
 
+    func testUSProtectedTitle() {
+        #if JETBOX_US
+        XCTAssertEqual(JBText.homeConnectedAll, "You are in your home network, protected by JetBox")
+        XCTAssertEqual(JBText.protectedTitleAll, "You are in your home network, protected by JetBox")
+        #endif
+    }
+
     func testUSCopyrightLine() {
         XCTAssertEqual(JBText.aboutCopyrightUS("2026"), "© 2026 INSTASHOP Corporation")
     }
