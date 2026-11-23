@@ -17,6 +17,8 @@ struct JetBoxFlowView: View {
     @EnvironmentObject var jetbox: JetBoxOnboarding
     @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
     private var styleRaw = JetBoxStyle.fallback.rawValue
+    @Environment(\.openURL) private var openURL
+    @State private var showsPrivacy = false
 
     var body: some View {
         if JetBoxStyle(rawValue: styleRaw) == .simple {
@@ -91,21 +93,6 @@ struct JetBoxFlowView: View {
             .multilineTextAlignment(.center)
     }
 
-    /// Что уходит на сервер и что не уходит. App Review 5.4 требует показать
-    /// это на экране **до** любого действия клиента, поэтому блок живёт под
-    /// самой кнопкой подключения, а не в «О программе».
-    private var privacyNotice: some View {
-        VStack(spacing: 6) {
-            Text(JBText.privacyNotice)
-                .font(.caption)
-                .foregroundColor(JBColor.muted)
-                .multilineTextAlignment(.center)
-            Link(JBText.privacyMore, destination: JetBoxConfig.privacyPolicyURL)
-                .font(.caption.weight(.semibold))
-                .foregroundColor(JBColor.accent)
-        }
-    }
-
     // MARK: - Содержимое по шагам
 
     @ViewBuilder
@@ -117,12 +104,20 @@ struct JetBoxFlowView: View {
         case .ready(let payload):
             VStack(spacing: 24) {
                 boxCard(payload)
-                Text(JBText.readyHint)
-                    .font(.footnote)
-                    .foregroundColor(JBColor.muted)
-                    .multilineTextAlignment(.center)
-                JBGlassButton(JBText.readyButton) {
-                    jetbox.connect(viewModel: viewModel)
+                // Текст о данных — за (i) рядом с Connect (замечание Алексея
+                // 23.11.2026); тот же текст — в «О программе».
+                HStack(spacing: 8) {
+                    JBGlassButton(JBText.readyButton) {
+                        jetbox.connect(viewModel: viewModel)
+                    }
+                    Button { showsPrivacy = true } label: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundColor(JBColor.accent)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel(JBText.simpleDetails)
                 }
                 // Согласие под кнопкой — App Review 5.1.1.
                 Text(LocalizedStringKey(JBText.legalConsent))
@@ -130,7 +125,12 @@ struct JetBoxFlowView: View {
                     .foregroundColor(JBColor.muted)
                     .tint(JBColor.accent)
                     .multilineTextAlignment(.center)
-                privacyNotice
+            }
+            .alert(JBText.errDetails, isPresented: $showsPrivacy) {
+                Button(JBText.privacyMore) { openURL(JetBoxConfig.privacyPolicyURL) }
+                Button(JBText.close, role: .cancel) {}
+            } message: {
+                Text(JBText.privacyNotice)
             }
 
         case .confirmSwitch(let payload, let current):

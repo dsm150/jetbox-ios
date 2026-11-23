@@ -356,23 +356,35 @@ struct JBSimpleCircle: View {
     }
 }
 
-/// Бегущий пунктир под «подключено»: движение по линии — трафик идёт.
+/// Линия под статусом. `moving` — бегущий пунктир: идёт подключение, проверка
+/// дома или переподключение. Иначе — неподвижная сплошная линия цвета статуса:
+/// после ответа дома анимация ничего не подсказывает (замечание владельца
+/// 23.11.2026, 1.0 (24): бегущий пунктир под «Protected» читался как «подключаемся»).
 struct JBSimpleTrafficLine: View {
+    var moving: Bool = false
+    var color: Color = JBSimple.accent
     var width: CGFloat = 170
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var phase: CGFloat = 0
 
     var body: some View {
-        Line()
-            .stroke(JBSimple.accent, style: StrokeStyle(lineWidth: 4, lineCap: .butt, dash: [10, 14], dashPhase: phase))
-            .background(Line().stroke(JBSimple.accentTint, lineWidth: 4))
-            .frame(width: width, height: 4)
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) { phase = -24 }
+        Group {
+            if moving {
+                Line()
+                    .stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .butt, dash: [10, 14], dashPhase: phase))
+                    .background(Line().stroke(JBSimple.accentTint, lineWidth: 4))
+                    .onAppear {
+                        guard !reduceMotion else { return }
+                        phase = 0
+                        withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) { phase = -24 }
+                    }
+            } else {
+                Line().stroke(color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
             }
-            .accessibilityHidden(true)
+        }
+        .frame(width: width, height: 4)
+        .accessibilityHidden(true)
     }
 
     private struct Line: Shape {

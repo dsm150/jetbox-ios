@@ -373,26 +373,6 @@ final class JetBoxLoginModel: ObservableObject {
         isVerifying = false
     }
 
-    /// Ссылка подключения, вставленная вручную («Have a setup link?»): тот же
-    /// формат и тот же путь, что у `jetbox://connect#…` (k, m, e, n, b),
-    /// фильтра домена нет (решение владельца 23.11.2026). nil — ссылка ушла
-    /// в сценарий; иначе — текст ошибки для листа.
-    @discardableResult
-    func connectWithSetupLink(_ text: String) -> String? {
-        let raw = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: raw) else { return JBText.setupLinkNotOurs }
-        switch JetBoxLink.parse(url) {
-        case .payload:
-            AppLogger.shared.log("JetBox: setup link pasted")
-            onConnect(url)
-            return nil
-        case .broken, .foreignServer:
-            return JBText.setupLinkBroken
-        case .notOurs:
-            return JBText.setupLinkNotOurs
-        }
-    }
-
     func enterCodeManually() {
         guard case .sent(let address) = phase else { return }
         message = nil

@@ -182,7 +182,13 @@ final class JetBoxWordingTests: XCTestCase {
         // Легенда продукта — доступ к своей сети, а не «весь трафик через
         // коробку»: описание в магазине и текст на экране должны совпадать.
         let en = try strings("en")
-        XCTAssertEqual(en["jetbox.ready.hint"], "One tap and your phone joins your home network.")
+        // 1.0 (24): строку «One tap…» убрали, вместо «Your JetBox» — «найден»
+        // (замечания Алексея 23.11.2026); у Sign out — только заголовок.
+        XCTAssertNil(en["jetbox.ready.hint"])
+        XCTAssertEqual(en["jetbox.ready.caption"], "Your JetBox found successfully")
+        XCTAssertNil(en["jetbox.settings.sign_out.confirm_body"])
+        XCTAssertEqual(en["jetbox.settings.sign_out.confirm_title"], "Sign out?")
+        XCTAssertTrue(en.keys.filter { $0.hasPrefix("jetbox.setup_link.") }.isEmpty)
         XCTAssertEqual(en["jetbox.home.connected"], "On your home network")
         XCTAssertEqual(en["jetbox.home.disconnected"], "Not on your home network")
     }

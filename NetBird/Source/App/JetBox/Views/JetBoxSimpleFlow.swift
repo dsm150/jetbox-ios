@@ -58,17 +58,24 @@ struct JetBoxSimpleFlowView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
                     .accessibilityHidden(true)
                 JetBoxLogo(markHeight: 30)
-                // Ключ и текст о данных — за значком (замечание Алексея
-                // 21.11.2026): на экране только имя и одна кнопка.
-                HStack(spacing: 6) {
+                // «Your JetBox found successfully», имя и одна кнопка; ключ и
+                // текст о данных — за (i) рядом с Connect (замечания Алексея
+                // 21.11 и 23.11.2026).
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(JBText.readyCaption)
+                        .font(JBSimple.font(19, .semibold))
+                        .foregroundColor(JBSimple.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(payload.displayName)
                         .font(JBSimple.font(30, .black))
                         .foregroundColor(JBSimple.ink)
                         .lineLimit(2)
-                    JBSimpleInfoButton(label: JBText.simpleDetails) { showsInfo = true }
                 }
-                JBSimplePrimaryButton(JBText.readyButton) {
-                    jetbox.connect(viewModel: viewModel)
+                HStack(spacing: 8) {
+                    JBSimplePrimaryButton(JBText.readyButton) {
+                        jetbox.connect(viewModel: viewModel)
+                    }
+                    JBSimpleInfoButton(label: JBText.simpleDetails) { showsInfo = true }
                 }
                 .padding(.top, 6)
             }
@@ -116,7 +123,7 @@ struct JetBoxSimpleFlowView: View {
                     .font(JBSimple.font(28, .black))
                     .foregroundColor(JBSimple.accent)
                     .multilineTextAlignment(.center)
-                JBSimpleTrafficLine()
+                JBSimpleTrafficLine(moving: false)
                 Text(JBText.protectedBody(exitNode: exitNode))
                     .font(JBSimple.secondary)
                     .foregroundColor(JBSimple.muted)

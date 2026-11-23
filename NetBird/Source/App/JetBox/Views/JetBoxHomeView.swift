@@ -281,7 +281,7 @@ struct JetBoxShieldDemoView: View {
     private var styleRaw = JetBoxStyle.fallback.rawValue
 
     private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
-    /// `-JetBoxDemoScreen settings|about|details` — сразу открыть нужный лист.
+    /// `-JetBoxDemoScreen settings|about|signout|details` — сразу открыть нужный лист.
     private var screen: String { UserDefaults.standard.string(forKey: "JetBoxDemoScreen") ?? "" }
 
     private let box = JetBoxBox(managementURL: JetBoxConfig.defaultManagementURL,
@@ -330,7 +330,8 @@ struct JetBoxShieldDemoView: View {
         layout(power)
         .sheet(isPresented: $showsSettings) {
             if isSimple {
-                JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about")
+                JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about",
+                                         asksSignOut: screen == "signout")
                     .environmentObject(viewModel)
                     .environmentObject(jetbox)
             } else if screen == "about" {
@@ -352,7 +353,7 @@ struct JetBoxShieldDemoView: View {
             }
             if UserDefaults.standard.bool(forKey: "JetBoxShieldDemoDetails") { showsDetails = true }
             switch screen {
-            case "settings", "about": showsSettings = true
+            case "settings", "about", "signout": showsSettings = true
             case "details": if !isSimple { showsDetails = true }
             default: break
             }

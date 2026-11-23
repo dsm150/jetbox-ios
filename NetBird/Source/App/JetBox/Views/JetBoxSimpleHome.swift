@@ -88,8 +88,12 @@ struct JetBoxSimpleHomeLayout: View {
                     .foregroundColor(phase == .on ? JBSimple.accent : JBSimple.ink)
                     .multilineTextAlignment(.center)
             }
+            // Бежит только пока подключаемся или ждём дом; в «Protected» —
+            // сплошная и неподвижная (1.0 (24)).
             if phase == .on {
-                JBSimpleTrafficLine()
+                JBSimpleTrafficLine(moving: false)
+            } else if phase == .working(reverse: false) {
+                JBSimpleTrafficLine(moving: true)
             }
             if !subtitle.isEmpty {
                 HStack(spacing: 8) {

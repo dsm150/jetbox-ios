@@ -155,8 +155,6 @@ struct JetBoxSettingsView: View {
             .alert(JBText.settingsSignOutTitle, isPresented: $confirmsSignOut) {
                 Button(JBText.settingsSignOut, role: .destructive) { signOut() }
                 Button(JBText.cancel, role: .cancel) {}
-            } message: {
-                Text(JBText.settingsSignOutBody)
             }
             .navigationTitle(JBText.settingsTitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -237,6 +235,12 @@ struct JetBoxAboutView: View {
                     Text(JBText.aboutBody)
                         .font(.subheadline)
                         .foregroundColor(JBColor.muted)
+                    // Что уходит на сервер (App Review 5.1.1) — тот же текст,
+                    // что за (i) на экране подключения.
+                    Text(JBText.privacyNotice)
+                        .font(.subheadline)
+                        .foregroundColor(JBColor.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                     Link(JBText.aboutSite, destination: JetBoxConfig.siteURL)
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(JBColor.accent)

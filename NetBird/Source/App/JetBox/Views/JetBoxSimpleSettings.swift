@@ -25,6 +25,8 @@ struct JetBoxSimpleSettingsView: View {
     /// Демо для съёмки: имя дома приходит параметром, а не из хранилища.
     var demoBoxName: String?
     var opensAbout = false
+    /// Демо для съёмки: сразу диалог «Sign out?».
+    var asksSignOut = false
 
     @State private var unlockCounter = AdvancedUnlockCounter()
     @State private var toast: String?
@@ -170,13 +172,14 @@ struct JetBoxSimpleSettingsView: View {
             .alert(JBText.settingsSignOutTitle, isPresented: $confirmsSignOut) {
                 Button(JBText.settingsSignOut, role: .destructive) { signOut() }
                 Button(JBText.cancel, role: .cancel) {}
-            } message: {
-                Text(JBText.settingsSignOutBody)
             }
         }
         .navigationViewStyle(.stack)
         .environment(\.colorScheme, .light)
-        .onAppear { if opensAbout { showsAbout = true } }
+        .onAppear {
+            if opensAbout { showsAbout = true }
+            if asksSignOut { confirmsSignOut = true }
+        }
     }
 
     /// Выход: туннель выключен, профиль стёрт, главный экран — как у свежей установки.
@@ -272,6 +275,13 @@ struct JetBoxSimpleAboutView: View {
                     point("iphone", JBText.simpleAboutApp)
                     point("eye.slash.fill", JBText.simpleAboutPrivacy)
                 }
+
+                // Что уходит на сервер (App Review 5.1.1) — тот же текст,
+                // что за (i) на экране подключения (замечание Алексея 23.11.2026).
+                Text(JBText.privacyNotice)
+                    .font(JBSimple.font(17, .semibold))
+                    .foregroundColor(JBSimple.muted)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 // Ссылки и сведения, которые требует GPL-3.0 (§5(d)), — те же,
                 // что в «О программе» стиля «техно», но свёрнуты в одну строку

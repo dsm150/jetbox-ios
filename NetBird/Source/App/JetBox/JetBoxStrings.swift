@@ -33,7 +33,6 @@ enum JBText {
     // MARK: Экран ссылки
 
     static var readyCaption: String { t("jetbox.ready.caption") }
-    static var readyHint: String { t("jetbox.ready.hint") }
     static var readyKeyLabel: String { t("jetbox.ready.key_label") }
     static var readyButton: String { t("jetbox.ready.button") }
     /// Объявление о собираемых данных под кнопкой подключения — требование
@@ -85,14 +84,6 @@ enum JBText {
     static var loginUnavailable: String { t("jetbox.login.unavailable") }
     static var loginSigningIn: String { t("jetbox.login.signing_in") }
     static var loginCodeLink: String { t("jetbox.login.code.link") }
-    static var setupLinkOpen: String { t("jetbox.setup_link.open") }
-    static var setupLinkTitle: String { t("jetbox.setup_link.title") }
-    static var setupLinkBody: String { t("jetbox.setup_link.body") }
-    static var setupLinkField: String { t("jetbox.setup_link.field") }
-    static var setupLinkPaste: String { t("jetbox.setup_link.paste") }
-    static var setupLinkConnect: String { t("jetbox.setup_link.connect") }
-    static var setupLinkNotOurs: String { t("jetbox.setup_link.not_ours") }
-    static var setupLinkBroken: String { t("jetbox.setup_link.broken") }
     static var loginCodeTitle: String { t("jetbox.login.code.title") }
     static func loginCodeBody(_ email: String) -> String { t("jetbox.login.code.body", email) }
     static var loginCodeField: String { t("jetbox.login.code.field") }
@@ -197,7 +188,6 @@ enum JBText {
     static var settingsDeleteFailed: String { t("jetbox.settings.delete_account.failed") }
     static var deleteSignInAgain: String { t("jetbox.settings.delete_account.sign_in_again") }
     static var settingsSignOutTitle: String { t("jetbox.settings.sign_out.confirm_title") }
-    static var settingsSignOutBody: String { t("jetbox.settings.sign_out.confirm_body") }
     static var settingsSectionApp: String { t("jetbox.settings.section.app") }
     static var settingsVersion: String { t("jetbox.settings.version") }
     static var settingsAdvanced: String { t("jetbox.settings.advanced") }

@@ -2098,30 +2098,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your JetBox"
+            "value": "Your JetBox found successfully"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ваш JetBox"
-          }
-        }
-      }
-    },
-    "jetbox.ready.hint": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One tap and your phone joins your home network."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Одно нажатие — и телефон окажется в вашей домашней сети."
+            "value": "Ваш JetBox найден"
           }
         }
       }
@@ -2519,23 +2502,6 @@
         }
       }
     },
-    "jetbox.settings.sign_out.confirm_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This phone will disconnect from JetBox and forget it. To come back, log in again."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Телефон отключится от JetBox и забудет его. Чтобы вернуться, войдите снова."
-          }
-        }
-      }
-    },
     "jetbox.settings.sign_out.confirm_title": {
       "extractionState": "manual",
       "localizations": {
@@ -2906,142 +2872,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "JetBox отключён"
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.open": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Have a setup link?"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Есть ссылка подключения?"
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add with a setup link"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключение по ссылке"
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paste the setup link for your JetBox. It starts with jetbox:// or https://."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вставьте ссылку подключения вашего JetBox. Она начинается с jetbox:// или https://."
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.field": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Setup link"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ссылка подключения"
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.paste": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paste"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вставить"
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.connect": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Подключить"
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.not_ours": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This isn’t a JetBox setup link."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Это не ссылка подключения JetBox."
-          }
-        }
-      }
-    },
-    "jetbox.setup_link.broken": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This link is damaged. Copy it again and paste it here."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ссылка повреждена. Скопируйте её ещё раз и вставьте сюда."
           }
         }
       }

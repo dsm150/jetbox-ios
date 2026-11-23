@@ -1565,40 +1565,17 @@ final class JetBoxServersTests: XCTestCase {
     #endif
 }
 
-/// 1.0 (23): «Have a setup link?» — ссылка подключения вставкой (решение
-/// владельца 23.11.2026), тот же путь, что у `jetbox://connect#…`.
-@MainActor
-final class JetBoxSetupLinkTests: XCTestCase {
-    private let key = "11111111-2222-4333-8444-555555555555"
+/// 1.0 (24): первый запуск — «простое», выбранное раньше «техно» не перетирается.
+final class JetBoxStyleDefaultTests: XCTestCase {
+    func testFirstLaunchIsSimpleAndChosenTechnoStays() {
+        let suite = "jetbox.tests.style.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
 
-    func testPastedLinkGoesToTheFlow() {
-        let model = JetBoxLoginModel()
-        var opened: [URL] = []
-        model.onConnect = { opened.append($0) }
-        let link = "  jetbox://connect#k=\(key)&m=https%3A%2F%2F\(JBT.mgmtHost)&e=home-1&n=Home&b=100.79.115.162\n"
-        XCTAssertNil(model.connectWithSetupLink(link))
-        XCTAssertEqual(opened.count, 1)
-        guard let url = opened.first, case .payload(let p) = JetBoxLink.parse(url) else { return XCTFail("payload") }
-        XCTAssertEqual(p.exitNodeName, "home-1")
-        XCTAssertEqual(p.boxIP, "100.79.115.162")
+        XCTAssertEqual(JetBoxStyle.current(in: defaults), .simple)
+        defaults.set(JetBoxStyle.techno.rawValue, forKey: JetBoxStyle.key)
+        XCTAssertEqual(JetBoxStyle.current(in: defaults), .techno)
+        defaults.set("garbage", forKey: JetBoxStyle.key)
+        XCTAssertEqual(JetBoxStyle.current(in: defaults), .simple)
     }
-
-    func testPastedGarbageStaysOnTheSheet() {
-        let model = JetBoxLoginModel()
-        var opened = 0
-        model.onConnect = { _ in opened += 1 }
-        XCTAssertEqual(model.connectWithSetupLink("hello"), JBText.setupLinkNotOurs)
-        XCTAssertEqual(model.connectWithSetupLink("jetbox://connect#k=not-a-key"), JBText.setupLinkBroken)
-        XCTAssertEqual(opened, 0)
-    }
-
-    #if JETBOX_US
-    func testPastedLinkFromAnyHostWithAnyServerIsAccepted() {
-        let model = JetBoxLoginModel()
-        var opened = 0
-        model.onConnect = { _ in opened += 1 }
-        XCTAssertNil(model.connectWithSetupLink("https://links.example.org/s#k=\(key)&m=https://mgmt.example.org&e=home"))
-        XCTAssertEqual(opened, 1)
-    }
-    #endif
 }

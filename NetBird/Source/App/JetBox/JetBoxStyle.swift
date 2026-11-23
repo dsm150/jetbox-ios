@@ -27,7 +27,10 @@ enum JetBoxStyle: String, CaseIterable, Identifiable {
 
     static var defaults: UserDefaults { JetBoxAdvancedAccess.defaults }
 
-    static var current: JetBoxStyle {
+    static var current: JetBoxStyle { current(in: defaults) }
+
+    /// Первый запуск (ключа нет) — «простое»; выбранное раньше «техно» остаётся.
+    static func current(in defaults: UserDefaults) -> JetBoxStyle {
         JetBoxStyle(rawValue: defaults.string(forKey: key) ?? "") ?? fallback
     }
 
