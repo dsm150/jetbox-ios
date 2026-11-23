@@ -1796,6 +1796,13 @@ final class JetBoxUSLegalLinksTests: XCTestCase {
         XCTAssertEqual(JetBoxConfig.privacyPolicyURL.absoluteString, "https://jetbox.ai-boss.us/legal/#privacy")
     }
 
+    func testConsentLineNamesTheSameDocuments() {
+        #if JETBOX_US
+        XCTAssertEqual(JBText.legalConsent,
+                       "By continuing, you agree to the [User agreement](https://jetbox.ai-boss.us/legal/#terms) and [Privacy policy](https://jetbox.ai-boss.us/legal/#privacy).")
+        #endif
+    }
+
     func testUSCopyrightLine() {
         XCTAssertEqual(JBText.aboutCopyrightUS("2026"), "© 2026 INSTASHOP Corporation")
     }

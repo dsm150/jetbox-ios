@@ -280,5 +280,12 @@ enum JBText {
     static var legalUSAgreement: String { t("jetbox.legal.us.agreement") }
     static var legalUSPrivacy: String { t("jetbox.legal.us.privacy") }
     /// Строка согласия с Markdown-ссылками на Terms и Privacy (App Review 5.1.1).
-    static var legalConsent: String { t("jetbox.legal.consent") }
+    /// Сборка США (Алексей, 23.11.2026): «User agreement and Privacy policy» — как в Settings и About.
+    static var legalConsent: String {
+        #if JETBOX_US
+        return t("jetbox.legal.consent.us")
+        #else
+        return t("jetbox.legal.consent")
+        #endif
+    }
 }

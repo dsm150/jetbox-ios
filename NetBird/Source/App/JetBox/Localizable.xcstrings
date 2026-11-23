@@ -1395,6 +1395,23 @@
         }
       }
     },
+    "jetbox.legal.consent.us": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By continuing, you agree to the [User agreement](https://jetbox.ai-boss.us/legal/#terms) and [Privacy policy](https://jetbox.ai-boss.us/legal/#privacy)."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжая, вы принимаете [Пользовательское соглашение](https://jetbox.ai-boss.us/legal/#terms) и [Политику конфиденциальности](https://jetbox.ai-boss.us/legal/#privacy)."
+          }
+        }
+      }
+    },
     "jetbox.legal.eula": {
       "extractionState": "manual",
       "localizations": {
