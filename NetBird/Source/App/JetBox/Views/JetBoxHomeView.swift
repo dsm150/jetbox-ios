@@ -33,12 +33,13 @@ struct JetBoxHomeView: View {
     private var box: JetBoxBox? { JetBoxStore.currentBox }
     /// Сборка США без подключения: вместо пустого состояния — вход по email.
     private var showsEmailLogin: Bool {
-        #if DEBUG
+        #if DEBUG && JETBOX_US
         if JetBoxLoginModel.demoRequested { return true }
         #endif
         return JetBoxEdition.showsEmailLogin(box: box)
     }
-    private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
+    /// Русская сборка: всегда false — «простого» там нет (JetBoxStyle.resolve).
+    private var isSimple: Bool { JetBoxStyle.resolve(styleRaw) == .simple }
     private var needsConsent: Bool {
         #if DEBUG
         // Съёмка демо-экранов в симуляторе: `-JetBoxSkipConsent YES`.
@@ -64,6 +65,7 @@ struct JetBoxHomeView: View {
         let phase = JetBoxShieldPhase(state: state, isInternetConnected: viewModel.isInternetConnected)
         let status = Self.statusText(for: state, online: viewModel.isInternetConnected)
         if isSimple {
+            #if JETBOX_US
             JetBoxSimpleHomeLayout(
                 phase: phase,
                 statusText: status,
@@ -74,6 +76,7 @@ struct JetBoxHomeView: View {
                 onPower: { perform(power) },
                 onSettings: { showsSettings = true }
             )
+            #endif
         } else {
             JetBoxHomeLayout(
                 phase: phase,
@@ -94,25 +97,33 @@ struct JetBoxHomeView: View {
         // Пока ждём дом, выключить можно: кнопка — по настоящему состоянию туннеля.
         let power = JetBoxPowerAction.action(for: viewModel.vpnDisplayState, hasBox: box != nil)
         return Group {
+            // Согласие и вход по email — только в сборке США (в русской оба
+            // условия ложны, а экраны на наборе «простого» не собираются).
             if needsConsent {
+                #if JETBOX_US
                 JetBoxDataConsentView {
                     JetBoxDataConsent.accept()
                     consentAccepted = true
                     jetbox.resumeAfterDataConsent()
                 }
+                #endif
             } else if showsEmailLogin {
+                #if JETBOX_US
                 JetBoxEmailLoginView(model: login, onSettings: { showsSettings = true })
                     // Код подтверждён — дальше обычный сценарий ссылки /connect.
                     .onAppear { login.onConnect = { [weak jetbox = jetbox] url in jetbox?.handle(url) } }
+                #endif
             } else {
                 layout(power: power, state: state)
             }
         }
         .sheet(isPresented: $showsSettings) {
             if isSimple {
+                #if JETBOX_US
                 JetBoxSimpleSettingsView()
                     .environmentObject(viewModel)
                     .environmentObject(jetbox)
+                #endif
             } else {
                 JetBoxSettingsView()
                     .environmentObject(viewModel)
@@ -280,7 +291,8 @@ struct JetBoxShieldDemoView: View {
     @AppStorage(JetBoxStyle.key, store: JetBoxStyle.defaults)
     private var styleRaw = JetBoxStyle.fallback.rawValue
 
-    private var isSimple: Bool { JetBoxStyle(rawValue: styleRaw) == .simple }
+    /// Русская сборка: всегда false — «простого» там нет (JetBoxStyle.resolve).
+    private var isSimple: Bool { JetBoxStyle.resolve(styleRaw) == .simple }
     /// `-JetBoxDemoScreen settings|about|signout|details` — сразу открыть нужный лист.
     private var screen: String { UserDefaults.standard.string(forKey: "JetBoxDemoScreen") ?? "" }
 
@@ -299,6 +311,7 @@ struct JetBoxShieldDemoView: View {
     @ViewBuilder
     private func layout(_ power: JetBoxPowerAction) -> some View {
         if isSimple {
+            #if JETBOX_US
             JetBoxSimpleHomeLayout(
                 phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
                 statusText: JetBoxHomeView.statusText(for: state, online: true),
@@ -310,6 +323,7 @@ struct JetBoxShieldDemoView: View {
                 onPower: { run(power) },
                 onSettings: { showsSettings = true }
             )
+            #endif
         } else {
             JetBoxHomeLayout(
                 phase: JetBoxShieldPhase(state: state, isInternetConnected: true),
@@ -330,10 +344,12 @@ struct JetBoxShieldDemoView: View {
         layout(power)
         .sheet(isPresented: $showsSettings) {
             if isSimple {
+                #if JETBOX_US
                 JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about",
                                          asksSignOut: screen == "signout")
                     .environmentObject(viewModel)
                     .environmentObject(jetbox)
+                #endif
             } else if screen == "about" {
                 NavigationView { JetBoxAboutView() }
             } else {

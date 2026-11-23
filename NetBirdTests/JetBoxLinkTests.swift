@@ -1567,6 +1567,7 @@ final class JetBoxServersTests: XCTestCase {
 
 /// 1.0 (24): первый запуск — «простое», выбранное раньше «техно» не перетирается.
 final class JetBoxStyleDefaultTests: XCTestCase {
+    #if JETBOX_US
     func testFirstLaunchIsSimpleAndChosenTechnoStays() {
         let suite = "jetbox.tests.style.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
@@ -1577,5 +1578,21 @@ final class JetBoxStyleDefaultTests: XCTestCase {
         XCTAssertEqual(JetBoxStyle.current(in: defaults), .techno)
         defaults.set("garbage", forKey: JetBoxStyle.key)
         XCTAssertEqual(JetBoxStyle.current(in: defaults), .simple)
+        XCTAssertTrue(JetBoxStyle.isSelectable)
     }
+    #else
+    /// Русская сборка: «простого» нет — всегда «техно», даже если в App Group
+    /// осталось «simple» от прежней версии; выбора стиля нет.
+    func testRussianBuildIsAlwaysTechno() {
+        let suite = "jetbox.tests.style.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        XCTAssertEqual(JetBoxStyle.current(in: defaults), .techno)
+        defaults.set(JetBoxStyle.simple.rawValue, forKey: JetBoxStyle.key)
+        XCTAssertEqual(JetBoxStyle.current(in: defaults), .techno)
+        XCTAssertFalse(JetBoxStyle.isSelectable)
+        XCTAssertEqual(JetBoxStyle.fallback, .techno)
+    }
+    #endif
 }

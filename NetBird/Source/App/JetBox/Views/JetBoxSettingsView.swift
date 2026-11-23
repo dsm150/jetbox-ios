@@ -53,15 +53,18 @@ struct JetBoxSettingsView: View {
                     Text(JBText.settingsSectionBox)
                 }
 
+                // Выбор стиля — только в сборке США; в русской один «техно».
+                #if JETBOX_US
                 Section(JBText.styleTitle) {
                     Picker(JBText.styleTitle, selection: Binding(
-                        get: { JetBoxStyle(rawValue: styleRaw) ?? JetBoxStyle.fallback },
+                        get: { JetBoxStyle.resolve(styleRaw) },
                         set: { styleRaw = $0.rawValue; JetBoxStyle.styleDidChange() }
                     )) {
                         ForEach(JetBoxStyle.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
                 }
+                #endif
 
                 Section {
                     // Строка версии — вход в расширенные настройки.

@@ -63,5 +63,7 @@ JETBOX_APP_ENTITLEMENTS = $(JETBOX_APP_ENTITLEMENTS_$(JETBOX_HOME_ONLY))
 // ручной выбор сервера, профили, расширенный режим (7 нажатий) со всеми его
 // вкладками. Экраны tvOS в приложение iOS не входят и так (свой таргет).
 JETBOX_EXCLUDED_SOURCES_YES = ServerView.swift AddProfileSheet.swift AddProfileViewModel.swift ProfilesListView.swift ProfileBadge.swift FirstLaunchView.swift AdvancedView.swift AboutView.swift TroubleshootView.swift VPNOnDemandView.swift iOSSettingsView.swift iOSConnectionView.swift iOSPeersView.swift iOSNetworksView.swift PeerTabView.swift RouteTabView.swift PeerCard.swift PeerDetailSheet.swift EmptyTabPlaceholder.swift CustomTextField.swift NetworkWarningBanner.swift VPNToggleView.swift SafariView.swift AppButton.swift MDMManagedNotice.swift
-JETBOX_EXCLUDED_SOURCES_NO =
+// Русская сборка: стиля «простое» нет вовсе (слово владельца 23.11.2026) —
+// его экраны, вход по email на его наборе, виджет и картинки не собираются.
+JETBOX_EXCLUDED_SOURCES_NO = JetBoxSimpleKit.swift JetBoxSimpleHome.swift JetBoxSimpleSettings.swift JetBoxSimpleFlow.swift JetBoxEmailLogin.swift SimpleWidgetView.swift JetBoxSimple.xcassets
 EXCLUDED_SOURCE_FILE_NAMES[sdk=iphone*] = $(inherited) $(JETBOX_EXCLUDED_SOURCES_$(JETBOX_HOME_ONLY))

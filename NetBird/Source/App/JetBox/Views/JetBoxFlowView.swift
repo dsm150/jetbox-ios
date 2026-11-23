@@ -21,8 +21,10 @@ struct JetBoxFlowView: View {
     @State private var showsPrivacy = false
 
     var body: some View {
-        if JetBoxStyle(rawValue: styleRaw) == .simple {
+        if JetBoxStyle.resolve(styleRaw) == .simple {
+            #if JETBOX_US
             JetBoxSimpleFlowView()
+            #endif
         } else {
             techno
         }

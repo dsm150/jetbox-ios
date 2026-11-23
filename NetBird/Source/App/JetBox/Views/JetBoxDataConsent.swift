@@ -31,6 +31,8 @@ enum JetBoxDataConsent {
     }
 }
 
+#if JETBOX_US
+/// Экран на наборе «простого» — только в сборке США (в русской его нет).
 struct JetBoxDataConsentView: View {
     let onAccept: () -> Void
 
@@ -119,5 +121,7 @@ struct JetBoxDataConsentView: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+#endif
 
 #endif

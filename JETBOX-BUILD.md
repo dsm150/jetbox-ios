@@ -328,6 +328,7 @@ xcodebuild -project NetBird.xcodeproj -scheme NetBird … archive JETBOX_HOME_ON
 | Info.plist приложения | `NetBird/Info-US.plist` (без схемы `netbird://`) | `NetBird/Info.plist` |
 | entitlements приложения | `NetBird/NetBird-US.entitlements` (applinks только `jetbox.ai-boss.us`) | `NetBird/NetBird.entitlements` |
 | условие Swift | `JETBOX_US` | `JETBOX_RU` |
+| стиль оформления | «простое» по умолчанию, выбор «простое/техно» — **только на время выпуска**: первая правка после одобрения Apple — убрать «простое» и вернуть классический дизайн (владелец, 23.11.2026) | только «техно», без переключателя; экраны, вход по email, виджет и картинки «простого» не собираются (`JETBOX_EXCLUDED_SOURCES_NO`, `JetBoxSimple.xcassets`) |
 
 Адреса доходят до кода через Info.plist (`JetBoxManagementURL`, `JetBoxAPIBaseURL`, …) и
 `JetBoxServers` (`NetbirdKit/GlobalConstants.swift`); associated domains в

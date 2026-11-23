@@ -21,9 +21,21 @@ enum JetBoxStyle: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     static let key = "jetbox.style"
-    /// По умолчанию — «простое» (Алексей, 21.11.2026). Стиль, который
-    /// человек уже выбрал сам, хранится и не перетирается.
+    /// Сборка США: по умолчанию — «простое» (Алексей, 21.11.2026), только на
+    /// время выпуска; стиль, который человек уже выбрал сам, не перетирается.
+    /// Русская сборка: только «техно», «простого» в ней нет (владелец, 23.11.2026).
+    #if JETBOX_US
     static let fallback: JetBoxStyle = .simple
+    #else
+    static let fallback: JetBoxStyle = .techno
+    #endif
+
+    /// Есть ли выбор стиля в этой сборке.
+    #if JETBOX_US
+    static let isSelectable = true
+    #else
+    static let isSelectable = false
+    #endif
 
     static var defaults: UserDefaults { JetBoxAdvancedAccess.defaults }
 
@@ -31,7 +43,14 @@ enum JetBoxStyle: String, CaseIterable, Identifiable {
 
     /// Первый запуск (ключа нет) — «простое»; выбранное раньше «техно» остаётся.
     static func current(in defaults: UserDefaults) -> JetBoxStyle {
-        JetBoxStyle(rawValue: defaults.string(forKey: key) ?? "") ?? fallback
+        resolve(defaults.string(forKey: key))
+    }
+
+    /// Сохранённое значение → стиль сборки. В русской сборке всегда «техно»,
+    /// даже если в App Group осталось «simple» от прежней версии.
+    static func resolve(_ raw: String?) -> JetBoxStyle {
+        guard isSelectable else { return .techno }
+        return JetBoxStyle(rawValue: raw ?? "") ?? fallback
     }
 
     var title: String {
@@ -54,7 +73,7 @@ enum JetBoxStyle: String, CaseIterable, Identifiable {
         if let status = UserDefaults.standard.string(forKey: "JetBoxWidgetDemo") {
             defaults.set(status, forKey: "netbird.widget.vpnStatus")
         }
-        if let raw = UserDefaults.standard.string(forKey: "JetBoxStyle"),
+        if isSelectable, let raw = UserDefaults.standard.string(forKey: "JetBoxStyle"),
            let style = JetBoxStyle(rawValue: raw) {
             defaults.set(style.rawValue, forKey: key)
         }
