@@ -29,6 +29,8 @@ struct JetBoxSimpleSettingsView: View {
     var asksSignOut = false
     /// Демо для съёмки: сразу подтверждение «Delete account» (без удаления).
     var asksDelete = false
+    /// Демо для съёмки: отказ 409 last_owner с адресом поддержки.
+    var showsLastOwner = false
 
     @State private var unlockCounter = AdvancedUnlockCounter()
     @State private var toast: String?
@@ -38,6 +40,9 @@ struct JetBoxSimpleSettingsView: View {
     @State private var isSigningOut = false
     @State private var confirmsDelete = false
     @State private var deleteFailed = false
+    /// 409 last_owner (1.0 (32)): адрес поддержки для сообщения об отказе.
+    @State private var lastOwnerSupport: String?
+    @Environment(\.openURL) private var openURL
     @State private var isDeleting = false
 
     private var boxName: String? { demoBoxName ?? JetBoxStore.currentBox?.displayName }
@@ -117,8 +122,17 @@ struct JetBoxSimpleSettingsView: View {
                             } message: {
                                 Text(JBText.settingsDeleteBody)
                             }
-                            .alert(JBText.settingsDeleteFailed, isPresented: $deleteFailed) {
+                            .alert(lastOwnerSupport == nil ? JBText.settingsDeleteFailed : JBText.deleteLastOwnerTitle,
+                                   isPresented: $deleteFailed) {
+                                if let support = lastOwnerSupport {
+                                    Button(JBText.deleteEmailSupport) {
+                                        if let url = URL(string: "mailto:" + support) { openURL(url) }
+                                    }
+                                    Button(JBText.deleteCopyAddress) { UIPasteboard.general.string = support }
+                                }
                                 Button("OK", role: .cancel) {}
+                            } message: {
+                                Text(lastOwnerSupport.map(JBText.deleteLastOwnerBody) ?? "")
                             }
                         }
                         .padding(.top, 10)
@@ -180,6 +194,7 @@ struct JetBoxSimpleSettingsView: View {
             if opensAbout { showsAbout = true }
             if asksSignOut { confirmsSignOut = true }
             if asksDelete { confirmsDelete = true }
+            if showsLastOwner { lastOwnerSupport = JetBoxOnboarding.defaultSupportEmail; deleteFailed = true }
         }
     }
 
@@ -203,7 +218,16 @@ struct JetBoxSimpleSettingsView: View {
         Task {
             let result = await jetbox.deleteAccount(viewModel: viewModel)
             isDeleting = false
-            if result == .failed { deleteFailed = true } else { dismiss() }
+            switch result {
+            case .failed:
+                lastOwnerSupport = nil
+                deleteFailed = true
+            case .lastOwner(let support):
+                lastOwnerSupport = support
+                deleteFailed = true
+            case .deleted, .signInAgain:
+                dismiss()
+            }
         }
     }
 

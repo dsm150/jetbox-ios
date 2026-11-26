@@ -117,6 +117,9 @@ final class JetBoxOnboarding: ObservableObject {
         case selectingExit(JetBoxLinkPayload)
         /// Выход не определился сам — просим выбрать.
         case chooseExit(JetBoxLinkPayload, options: [String])
+        /// Сборка США (1.0 (32)): объяснение перед системным запросом iOS
+        /// «Add VPN Configurations» — когда профиля JetBox на iPhone ещё нет.
+        case explainVPN
         /// Готово. Экран «You are protected» — только русская сборка: в США
         /// сценарий сразу возвращает на главный экран.
         case protected(exitNode: String?)
@@ -175,6 +178,54 @@ final class JetBoxOnboarding: ObservableObject {
         return true
     }
 
+    // MARK: Объяснение перед запросом VPN (1.0 (32))
+
+    /// Показывать ли экран перед системным запросом iOS. Сборка США.
+    var explainsVPN: Bool = JetBoxOnboarding.editionAutoConnects
+    /// Есть ли на iPhone VPN-профиль JetBox. В тестах подменяется.
+    lazy var vpnProfileExists: () async -> Bool = { [weak self] in
+        guard let adapter = self?.viewModel?.networkExtensionAdapter else { return true }
+        return await adapter.hasOurProfile()
+    }
+    private var vpnExplainWaiter: CheckedContinuation<Bool, Never>?
+    private var stepBeforeVPNExplain: Step = .idle
+
+    /// Перед первым `connect()`: профиля нет — экран-объяснение и ждём
+    /// «Continue». false — экран закрыли или сценарий отменён.
+    func explainVPNIfNeeded() async -> Bool {
+        guard explainsVPN, !(await vpnProfileExists()) else { return true }
+        cancelVPNExplain()
+        stepBeforeVPNExplain = step
+        step = .explainVPN
+        AppLogger.shared.log("JetBox: no VPN profile yet — explaining before the iOS prompt")
+        let go = await withCheckedContinuation { (waiter: CheckedContinuation<Bool, Never>) in
+            vpnExplainWaiter = waiter
+        }
+        if step == .explainVPN { step = stepBeforeVPNExplain }
+        return go
+    }
+
+    /// Кнопка «Continue» на экране-объяснении.
+    func continueAfterVPNExplain() {
+        let waiter = vpnExplainWaiter
+        vpnExplainWaiter = nil
+        waiter?.resume(returning: true)
+    }
+
+    private func cancelVPNExplain() {
+        let waiter = vpnExplainWaiter
+        vpnExplainWaiter = nil
+        waiter?.resume(returning: false)
+    }
+
+    /// Подключение с главного экрана или из виджета: в сборке США — через
+    /// объяснение, если профиля ещё нет.
+    func connectTunnel(viewModel: ViewModel) {
+        Task { @MainActor in
+            if await explainVPNIfNeeded() { viewModel.connect() }
+        }
+    }
+
     func attach(_ viewModel: ViewModel) {
         self.viewModel = viewModel
         if autoConnects, case .ready(let payload) = step, flowTask == nil {
@@ -187,7 +238,7 @@ final class JetBoxOnboarding: ObservableObject {
     var isPresenting: Bool {
         guard autoConnects else { return step != .idle }
         switch step {
-        case .signingIn, .failed, .chooseExit: return true
+        case .signingIn, .failed, .chooseExit, .explainVPN: return true
         case .idle, .ready, .confirmSwitch, .registering, .connecting, .selectingExit, .protected: return false
         }
     }
@@ -368,6 +419,7 @@ final class JetBoxOnboarding: ObservableObject {
     }
 
     func dismiss() {
+        cancelVPNExplain()
         flowTask?.cancel()
         flowTask = nil
         registration = nil
@@ -407,8 +459,25 @@ final class JetBoxOnboarding: ObservableObject {
         case deleted
         /// Токена нет (профиль до 1.0 (14)) — вышли локально, просим войти заново.
         case signInAgain
+        /// 409 last_owner: удалить может только поддержка (1.0 (32)).
+        case lastOwner(support: String)
         /// 5xx, лимит, нет сети — ничего не стёрто.
         case failed
+    }
+
+    /// Адрес поддержки США, если Кабинет не прислал свой (политика, раздел контактов).
+    nonisolated static let defaultSupportEmail = "dev@ai-boss.us"
+
+    /// Когда отправлено удаление (1.0 (32)). Кабинет снимает доступ сразу, туннель
+    /// рвётся, ответ теряется; повтор приходит уже с 401 — это и есть успех.
+    static let deleteSentKey = "jetbox.accountDeleteSentAt"
+    var deleteDefaults: UserDefaults = JetBoxAdvancedAccess.defaults
+    /// Пауза перед автоматическим повтором после обрыва. В тестах — 0.
+    var deleteRetryDelay: UInt64 = 1_500_000_000
+
+    private var deleteWasSent: Bool {
+        guard let sent = deleteDefaults.object(forKey: Self.deleteSentKey) as? Date else { return false }
+        return Date().timeIntervalSince(sent) < 24 * 3600
     }
 
     var loadAppToken: () -> String? = { JetBoxAppToken.load() }
@@ -430,13 +499,39 @@ final class JetBoxOnboarding: ObservableObject {
             await signOut(stopTunnel: stopTunnel, files: files)
             return .signInAgain
         }
-        switch await loginAPI.deleteAccount(token: token) {
-        case .deleted, .unauthorized:
-            await signOut(stopTunnel: stopTunnel, files: files)
-            return .deleted
-        case .failed:
+        let alreadySent = deleteWasSent
+        if !alreadySent { deleteDefaults.set(Date(), forKey: Self.deleteSentKey) }
+        var outcome = await loginAPI.deleteAccount(token: token)
+        var retried = false
+        if outcome == .unreachable {
+            retried = true
+            // Удаление могло уже пройти: туннель рвётся, как только Кабинет
+            // отключил устройство. Повтор пойдёт мимо туннеля.
+            try? await Task.sleep(nanoseconds: deleteRetryDelay)
+            outcome = await loginAPI.deleteAccount(token: token)
+        }
+        switch outcome {
+        case .deleted:
+            return await finishDeletion(stopTunnel: stopTunnel, files: files, notice: JBText.deleteDone)
+        case .unauthorized:
+            // 401 сразу после отправленного удаления — успех, а не «токен погашен».
+            let sent = alreadySent || retried
+            return await finishDeletion(stopTunnel: stopTunnel, files: files,
+                                        notice: sent ? JBText.deleteDone : JBText.deleteSignInAgain)
+        case .lastOwner(let support):
+            deleteDefaults.removeObject(forKey: Self.deleteSentKey)
+            return .lastOwner(support: support.isEmpty ? Self.defaultSupportEmail : support)
+        case .unreachable, .failed:
             return .failed
         }
+    }
+
+    private func finishDeletion(stopTunnel: @MainActor () async -> Void,
+                                files: JetBoxSignOut.Files?, notice: String) async -> AccountDeletion {
+        deleteDefaults.removeObject(forKey: Self.deleteSentKey)
+        loginNotice = notice
+        await signOut(stopTunnel: stopTunnel, files: files)
+        return .deleted
     }
 
     func deleteAccount(viewModel: ViewModel) async -> AccountDeletion {
@@ -500,6 +595,7 @@ final class JetBoxOnboarding: ObservableObject {
     // MARK: - Сценарий целиком
 
     private func start(payload: JetBoxLinkPayload, viewModel: ViewModel) {
+        cancelVPNExplain()
         flowTask?.cancel()
         flowTask = Task { @MainActor in
             await run(payload: payload, viewModel: viewModel)
@@ -571,7 +667,9 @@ final class JetBoxOnboarding: ObservableObject {
         JetBoxBackup.excludeProfileFiles()
         AppLogger.shared.log("JetBox: device registered (\(clock.lap()) ms)")
 
-        // 3. Туннель.
+        // 3. Туннель. Профиля VPN ещё нет — сначала объяснение (сборка США, 1.0 (32)).
+        step = .connecting(payload)
+        guard await explainVPNIfNeeded(), !Task.isCancelled else { return }
         step = .connecting(payload)
         viewModel.connect()
 
@@ -757,7 +855,7 @@ final class JetBoxOnboarding: ObservableObject {
         case .ready(let p), .confirmSwitch(let p, _), .registering(let p),
              .connecting(let p), .selectingExit(let p), .chooseExit(let p, _):
             return p
-        case .idle, .signingIn, .protected, .failed:
+        case .idle, .signingIn, .protected, .failed, .explainVPN:
             return nil
         }
     }
@@ -767,7 +865,7 @@ final class JetBoxOnboarding: ObservableObject {
     private var isRestartable: Bool {
         switch step {
         case .ready, .confirmSwitch, .failed, .idle, .protected: return true
-        case .signingIn, .registering, .connecting, .selectingExit, .chooseExit: return false
+        case .signingIn, .registering, .connecting, .selectingExit, .chooseExit, .explainVPN: return false
         }
     }
 
@@ -819,6 +917,7 @@ extension JetBoxOnboarding {
         case "protected": step = .protected(exitNode: "Lakeview Home")
         case "failed": step = .failed(.offline)
         case "unsigned": step = .failed(.notFromJetBox)
+        case "vpn": step = .explainVPN
         case "unreachable": step = .failed(.managementUnreachable(nil))
         case "tunnel": step = .failed(.tunnelFailed)
         case "devices": step = .failed(.deviceLimit)

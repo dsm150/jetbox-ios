@@ -59,7 +59,12 @@ extension JetBoxLoginAPI {
         /// В обоих случаях дальше локальный выход.
         case deleted
         case unauthorized
-        /// 5xx, 429, нет сети — ничего не стираем, «попробуйте ещё раз».
+        /// 409 `last_owner` (1.0 (32)): единственный владелец — удаляет поддержка.
+        /// `support` — адрес из ответа, пусто — адрес по умолчанию.
+        case lastOwner(support: String)
+        /// Запрос не дошёл или ответ потерян (обрыв туннеля посреди удаления).
+        case unreachable
+        /// 5xx, 429 — ничего не стираем, «попробуйте ещё раз».
         case failed
     }
 
@@ -72,17 +77,22 @@ extension JetBoxLoginAPI {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.httpBody = Data("{}".utf8)
         do {
-            let (_, response) = try await transport(request)
+            let (data, response) = try await transport(request)
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
             log("JetBox: account deletion — server answered \(code)")
             switch code {
             case 200: return .deleted
             case 401: return .unauthorized
+            case 409:
+                let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+                guard json?["error"] as? String == "last_owner" else { return .failed }
+                let support = (json?["support"] as? String)?.trimmingCharacters(in: .whitespaces) ?? ""
+                return .lastOwner(support: support)
             default: return .failed
             }
         } catch {
             log("JetBox: account deletion — request failed")
-            return .failed
+            return .unreachable
         }
     }
 

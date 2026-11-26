@@ -334,7 +334,8 @@ struct NetBirdApp: App {
             viewModel.connect()
         case "connect":
             if viewModel.vpnDisplayState == .disconnected {
-                viewModel.connect()
+                // JetBox: без VPN-профиля — сначала объяснение (сборка США, 1.0 (32)).
+                jetbox.connectTunnel(viewModel: viewModel)
             }
         case "disconnect":
             if viewModel.vpnDisplayState == .connected {

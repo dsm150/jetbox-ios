@@ -151,6 +151,13 @@ public class NetworkExtensionAdapter: ObservableObject {
                               name: manager.localizedDescription)
     }
 
+    /// JetBox (1.0 (32)): есть ли на устройстве VPN-профиль этой сборки — перед
+    /// первым подключением приложение объясняет системный запрос iOS.
+    func hasOurProfile() async -> Bool {
+        guard let managers = try? await NETunnelProviderManager.loadAllFromPreferences() else { return false }
+        return managers.contains(where: { isOurProfile($0) })
+    }
+
     /// JetBox: переименование делается один раз за запуск приложения.
     private var didAttemptProfileRename = false
 

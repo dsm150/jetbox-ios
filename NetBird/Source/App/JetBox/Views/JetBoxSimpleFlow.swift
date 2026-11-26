@@ -58,6 +58,29 @@ struct JetBoxSimpleFlowView: View {
             progress(JBText.selectingExit)
                 .onAppear { jetbox.chooseExit(nil, viewModel: viewModel) }
 
+        case .explainVPN:
+            // Перед системным запросом iOS «Add VPN Configurations» (1.0 (32)).
+            VStack(spacing: 18) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 56, weight: .semibold))
+                    .foregroundColor(JBSimple.accent)
+                    .frame(width: 150, height: 150)
+                    .background(Circle().fill(JBSimple.accentTint))
+                    .padding(.top, 60)
+                    .accessibilityHidden(true)
+                Text(JBText.vpnExplainTitle)
+                    .font(JBSimple.font(30, .black))
+                    .foregroundColor(JBSimple.ink)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                Text(JBText.vpnExplainBody)
+                    .font(JBSimple.secondary)
+                    .foregroundColor(JBSimple.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
         case .ready, .confirmSwitch, .registering, .connecting, .selectingExit, .protected:
             // «Простое» есть только в сборке США, а там эти шаги идут без экрана
             // сценария: подтверждения, замены с вопросом и «готово» нет
@@ -99,6 +122,9 @@ struct JetBoxSimpleFlowView: View {
                 }
                 JBSimpleTextButton(JBText.close, color: JBSimple.muted) { jetbox.dismiss() }
             }
+
+        case .explainVPN:
+            JBSimplePrimaryButton(JBText.vpnExplainContinue) { jetbox.continueAfterVPNExplain() }
 
         case .idle, .signingIn, .ready, .confirmSwitch, .registering, .connecting, .selectingExit,
              .chooseExit, .protected:

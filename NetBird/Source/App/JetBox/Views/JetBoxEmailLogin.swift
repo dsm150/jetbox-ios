@@ -116,6 +116,13 @@ struct JetBoxEmailLoginView: View {
                     .foregroundColor(JBSimple.error)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)
+            } else if let notice = model.notice {
+                // «Account deleted» после удаления — не ошибка (1.0 (32)).
+                Text(notice)
+                    .font(JBSimple.font(19, .semibold))
+                    .foregroundColor(JBSimple.accent)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 10)
             }
 
             JBSimplePrimaryButton(model.isSending ? JBText.loginSending : JBText.loginSend, action: send)

@@ -172,7 +172,8 @@ struct JetBoxHomeView: View {
 
     private func perform(_ action: JetBoxPowerAction) {
         switch action {
-        case .connect: viewModel.connect()
+        // Сборка США: без VPN-профиля — сначала объяснение (1.0 (32)).
+        case .connect: jetbox.connectTunnel(viewModel: viewModel)
         case .disconnect: viewModel.close()
         case .none: break
         }
@@ -361,7 +362,8 @@ struct JetBoxShieldDemoView: View {
             if isSimple {
                 #if JETBOX_US
                 JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about",
-                                         asksSignOut: screen == "signout", asksDelete: screen == "delete")
+                                         asksSignOut: screen == "signout", asksDelete: screen == "delete",
+                                         showsLastOwner: screen == "lastowner")
                     .environmentObject(viewModel)
                     .environmentObject(jetbox)
                 #endif
@@ -384,7 +386,7 @@ struct JetBoxShieldDemoView: View {
             }
             if UserDefaults.standard.bool(forKey: "JetBoxShieldDemoDetails") { showsDetails = true }
             switch screen {
-            case "settings", "about", "signout", "delete": showsSettings = true
+            case "settings", "about", "signout", "delete", "lastowner": showsSettings = true
             case "details": if !isSimple { showsDetails = true }
             default: break
             }

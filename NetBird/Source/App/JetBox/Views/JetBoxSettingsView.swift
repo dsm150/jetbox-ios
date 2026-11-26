@@ -34,6 +34,9 @@ struct JetBoxSettingsView: View {
     @State private var isSigningOut = false
     @State private var confirmsDelete = false
     @State private var deleteFailed = false
+    /// 409 last_owner (1.0 (32)): адрес поддержки для сообщения об отказе.
+    @State private var lastOwnerSupport: String?
+    @Environment(\.openURL) private var openURL
     @State private var isDeleting = false
 
     private var box: JetBoxBox? { JetBoxStore.currentBox }
@@ -128,8 +131,17 @@ struct JetBoxSettingsView: View {
                         } message: {
                             Text(JBText.settingsDeleteBody)
                         }
-                        .alert(JBText.settingsDeleteFailed, isPresented: $deleteFailed) {
+                        .alert(lastOwnerSupport == nil ? JBText.settingsDeleteFailed : JBText.deleteLastOwnerTitle,
+                               isPresented: $deleteFailed) {
+                            if let support = lastOwnerSupport {
+                                Button(JBText.deleteEmailSupport) {
+                                    if let url = URL(string: "mailto:" + support) { openURL(url) }
+                                }
+                                Button(JBText.deleteCopyAddress) { UIPasteboard.general.string = support }
+                            }
                             Button("OK", role: .cancel) {}
+                        } message: {
+                            Text(lastOwnerSupport.map(JBText.deleteLastOwnerBody) ?? "")
                         }
                     }
                 }
@@ -192,7 +204,16 @@ struct JetBoxSettingsView: View {
         Task {
             let result = await jetbox.deleteAccount(viewModel: viewModel)
             isDeleting = false
-            if result == .failed { deleteFailed = true } else { dismiss() }
+            switch result {
+            case .failed:
+                lastOwnerSupport = nil
+                deleteFailed = true
+            case .lastOwner(let support):
+                lastOwnerSupport = support
+                deleteFailed = true
+            case .deleted, .signInAgain:
+                dismiss()
+            }
         }
     }
 

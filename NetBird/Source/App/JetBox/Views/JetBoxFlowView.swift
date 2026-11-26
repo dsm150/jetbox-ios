@@ -172,6 +172,25 @@ struct JetBoxFlowView: View {
 
         case .failed(let failure):
             JetBoxFailureView(failure: failure)
+
+        case .explainVPN:
+            // Перед системным запросом iOS «Add VPN Configurations» (1.0 (32)).
+            VStack(spacing: 18) {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 44))
+                    .foregroundColor(JBColor.accent)
+                    .accessibilityHidden(true)
+                Text(JBText.vpnExplainTitle)
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(JBColor.text)
+                    .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
+                Text(JBText.vpnExplainBody)
+                    .font(.subheadline)
+                    .foregroundColor(JBColor.muted)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -232,6 +251,9 @@ struct JetBoxFlowView: View {
             Button(JBText.cancel) { jetbox.dismiss() }
                 .font(.subheadline)
                 .foregroundColor(JBColor.muted)
+
+        case .explainVPN:
+            JBGlassButton(JBText.vpnExplainContinue) { jetbox.continueAfterVPNExplain() }
 
         case .idle, .signingIn, .registering, .connecting, .selectingExit, .chooseExit:
             EmptyView()

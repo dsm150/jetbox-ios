@@ -299,6 +299,9 @@ final class JetBoxLoginModel: ObservableObject {
     @Published private(set) var phase: Phase = .enter
     /// Текст под полем или под кнопкой: неверный адрес, лимит, нет сети.
     @Published private(set) var message: String?
+    /// Нейтральное сообщение на чистом экране входа: «Account deleted» и т. п.
+    /// (1.0 (32)). Ошибки — в `message`, красным.
+    @Published private(set) var notice: String?
     /// «Отправили ещё раз» на пару секунд после повторной отправки.
     @Published private(set) var resentNote = false
     @Published private(set) var lastSentAt: Date?
@@ -334,6 +337,7 @@ final class JetBoxLoginModel: ObservableObject {
         }
         email = address
         message = nil
+        notice = nil
         phase = .sending
         let outcome = await api.requestLink(email: address)
         apply(outcome, address: address, previous: .enter)
@@ -365,7 +369,7 @@ final class JetBoxLoginModel: ObservableObject {
     /// После «Sign out»: форма как у свежей установки.
     /// Сообщение на чистом экране входа (после «Delete account» без токена).
     func showNotice(_ text: String) {
-        message = text
+        notice = text
     }
 
     func reset() {
@@ -373,6 +377,7 @@ final class JetBoxLoginModel: ObservableObject {
         email = ""
         code = ""
         message = nil
+        notice = nil
         resentNote = false
         lastSentAt = nil
         isVerifying = false
@@ -462,6 +467,8 @@ extension JetBoxLoginModel {
 
     func applyDemoIfRequested() {
         switch UserDefaults.standard.string(forKey: "JetBoxLoginDemo") {
+        case "deleted":
+            notice = JBText.deleteDone
         case "filled":
             email = UserDefaults.standard.string(forKey: "JetBoxLoginDemoEmail") ?? "appreview@ai-boss.us"
         case "sent":

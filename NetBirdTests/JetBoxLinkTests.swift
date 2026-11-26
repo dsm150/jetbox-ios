@@ -602,6 +602,8 @@ final class JetBoxHomeOnlyGuardTests: XCTestCase {
 private final class JetBoxLoginStub: @unchecked Sendable {
     var replies: [String: (Int, String)] = [:]
     var error: Error?
+    /// Сколько первых запросов оборвать (ответ потерян: туннель упал посреди запроса).
+    var dropFirst = 0
     private(set) var requests: [URLRequest] = []
     private(set) var logs: [String] = []
 
@@ -610,6 +612,7 @@ private final class JetBoxLoginStub: @unchecked Sendable {
         api.transport = { [unowned self] request in
             self.requests.append(request)
             if let error = self.error { throw error }
+            if self.dropFirst > 0 { self.dropFirst -= 1; throw URLError(.networkConnectionLost) }
             let path = request.url?.lastPathComponent ?? ""
             let (code, body) = self.replies[path] ?? (500, "")
             let response = HTTPURLResponse(url: request.url!, statusCode: code, httpVersion: nil, headerFields: nil)!
@@ -1297,10 +1300,13 @@ final class JetBoxAccountDeleteTests: XCTestCase {
     private var token: String?
     private var tokenDeleted = 0
 
+    private let deleteDefaults = UserDefaults(suiteName: "jetbox-delete-tests")!
+
     override func setUp() async throws {
         savedBox = JetBoxStore.currentBox
         token = nil
         tokenDeleted = 0
+        deleteDefaults.removePersistentDomain(forName: "jetbox-delete-tests")
     }
 
     override func tearDown() async throws {
@@ -1313,6 +1319,8 @@ final class JetBoxAccountDeleteTests: XCTestCase {
         flow.loginAPI = stub.api()
         flow.loadAppToken = { [unowned self] in self.token }
         flow.deleteAppToken = { [unowned self] in self.token = nil; self.tokenDeleted += 1 }
+        flow.deleteDefaults = deleteDefaults
+        flow.deleteRetryDelay = 0
         JetBoxStore.currentBox = JetBoxBox(managementURL: "https://netbird.jet-net.net", exitNodeName: "home-ivanov",
                                            selectedExitNode: "home-ivanov", boxName: "Lakeview Home", registeredAt: Date())
         return flow
@@ -1334,7 +1342,7 @@ final class JetBoxAccountDeleteTests: XCTestCase {
         XCTAssertNil(JetBoxStore.currentBox, "дальше — экран email")
         XCTAssertEqual(flow.signOutCount, 1)
         XCTAssertNil(token, "токен стёрт вместе с профилем")
-        XCTAssertNil(flow.takeLoginNotice())
+        XCTAssertEqual(flow.takeLoginNotice(), JBText.deleteDone, "экран входа говорит «Account deleted»")
         XCTAssertFalse(stub.logs.joined().contains("app-token-123"), "токен в журнал не пишем")
     }
 
@@ -1346,6 +1354,67 @@ final class JetBoxAccountDeleteTests: XCTestCase {
         let result = await flow.deleteAccount(stopTunnel: {}, files: nil)
         XCTAssertEqual(result, .deleted)
         XCTAssertNil(JetBoxStore.currentBox)
+        XCTAssertEqual(flow.takeLoginNotice(), JBText.deleteSignInAgain,
+                       "401 без отправленного удаления — токен погашен раньше")
+    }
+
+    /// 1.0 (32): Кабинет снял доступ, туннель упал, ответ потерян — автоматический
+    /// повтор получает 401, и это успех, а не «токен погашен».
+    func testLostAnswerThenRetry401IsSuccess() async {
+        let stub = JetBoxLoginStub()
+        stub.dropFirst = 1
+        stub.replies["delete"] = (401, #"{"error":"unauthorized"}"#)
+        let flow = flow(stub)
+        token = "app-token"
+        let result = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .deleted)
+        XCTAssertEqual(stub.requests.count, 2, "один автоматический повтор")
+        XCTAssertNil(JetBoxStore.currentBox)
+        XCTAssertEqual(flow.takeLoginNotice(), JBText.deleteDone)
+    }
+
+    /// Повтор руками после неудачи с обрывом: 401 — тоже успех.
+    func testManualRetryAfterLostAnswerIsSuccess() async {
+        let stub = JetBoxLoginStub()
+        stub.dropFirst = 2
+        let flow = flow(stub)
+        token = "app-token"
+        let first = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        XCTAssertEqual(first, .failed, "оба запроса оборваны — «попробуйте ещё раз»")
+        XCTAssertNotNil(JetBoxStore.currentBox)
+        stub.replies["delete"] = (401, "")
+        let second = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        XCTAssertEqual(second, .deleted)
+        XCTAssertEqual(flow.takeLoginNotice(), JBText.deleteDone)
+    }
+
+    /// 1.0 (32): единственный владелец — 409 last_owner, ничего не стираем.
+    func testLastOwnerKeepsEverythingAndNamesSupport() async {
+        for (body, expected) in [(#"{"error":"last_owner","support":"help@example.com"}"#, "help@example.com"),
+                                 (#"{"error":"last_owner","support":""}"#, JetBoxOnboarding.defaultSupportEmail)] {
+            let stub = JetBoxLoginStub()
+            stub.replies["delete"] = (409, body)
+            let flow = flow(stub)
+            token = "app-token"
+            var stopped = false
+            let result = await flow.deleteAccount(stopTunnel: { stopped = true }, files: nil)
+            XCTAssertEqual(result, .lastOwner(support: expected))
+            XCTAssertFalse(stopped)
+            XCTAssertNotNil(JetBoxStore.currentBox)
+            XCTAssertEqual(token, "app-token")
+            XCTAssertEqual(flow.signOutCount, 0)
+        }
+        XCTAssertEqual(JetBoxOnboarding.defaultSupportEmail, "dev@ai-boss.us")
+    }
+
+    /// Другой 409 — общая ошибка.
+    func testOther409IsGenericFailure() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["delete"] = (409, #"{"error":"busy"}"#)
+        let flow = flow(stub)
+        token = "app-token"
+        let result = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .failed)
     }
 
     func testServerErrorKeepsEverything() async {
@@ -1433,7 +1502,8 @@ final class JetBoxAccountDeleteTests: XCTestCase {
         let model = JetBoxLoginModel()
         model.reset()
         model.showNotice(JBText.deleteSignInAgain)
-        XCTAssertEqual(model.message, "Log in again to finish deleting your account.")
+        XCTAssertEqual(model.notice, "Log in again to finish deleting your account.")
+        XCTAssertNil(model.message, "сообщение после удаления — не ошибка")
         XCTAssertEqual(model.phase, .enter)
     }
 }
@@ -1812,5 +1882,66 @@ final class JetBoxUSLegalLinksTests: XCTestCase {
 
     func testUSCopyrightLine() {
         XCTAssertEqual(JBText.aboutCopyrightUS("2026"), "© 2026 INSTASHOP Corporation")
+    }
+}
+
+
+/// Сборка 32: объяснение перед системным запросом iOS и правдивые тексты.
+@MainActor
+final class JetBoxVPNExplainTests: XCTestCase {
+    func testNoProfileShowsExplanationAndContinueGoesOn() async {
+        let flow = JetBoxOnboarding()
+        flow.explainsVPN = true
+        flow.vpnProfileExists = { false }
+        let task = Task { await flow.explainVPNIfNeeded() }
+        for _ in 0..<50 where flow.step != .explainVPN { try? await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertEqual(flow.step, .explainVPN)
+        XCTAssertTrue(flow.isPresenting, "экран поверх главного")
+        flow.continueAfterVPNExplain()
+        let go = await task.value
+        XCTAssertTrue(go)
+        XCTAssertEqual(flow.step, .idle, "после Continue — прежний шаг")
+    }
+
+    func testProfileExistsSkipsExplanation() async {
+        let flow = JetBoxOnboarding()
+        flow.explainsVPN = true
+        flow.vpnProfileExists = { true }
+        let go = await flow.explainVPNIfNeeded()
+        XCTAssertTrue(go)
+        XCTAssertEqual(flow.step, .idle)
+    }
+
+    func testDismissCancelsWaitingFlow() async {
+        let flow = JetBoxOnboarding()
+        flow.explainsVPN = true
+        flow.vpnProfileExists = { false }
+        let task = Task { await flow.explainVPNIfNeeded() }
+        for _ in 0..<50 where flow.step != .explainVPN { try? await Task.sleep(nanoseconds: 10_000_000) }
+        flow.dismiss()
+        let go = await task.value
+        XCTAssertFalse(go)
+    }
+
+    func testRussianEditionNeverExplains() async {
+        let flow = JetBoxOnboarding()
+        flow.explainsVPN = false
+        flow.vpnProfileExists = { XCTFail("без экрана профиль не спрашиваем"); return false }
+        let go = await flow.explainVPNIfNeeded()
+        XCTAssertTrue(go)
+    }
+
+    func testTexts() throws {
+        try XCTSkipUnless(JetBoxEdition.homeOnly, "английские тексты — сборка США")
+        XCTAssertEqual(JBText.vpnExplainTitle, "Allow the VPN configuration")
+        XCTAssertEqual(JBText.vpnExplainContinue, "Continue")
+        XCTAssertTrue(JBText.vpnExplainBody.hasPrefix("JetBox Home adds a VPN configuration to this iPhone."))
+        XCTAssertTrue(JBText.vpnExplainBody.hasSuffix("Next, iOS will ask for your permission."))
+        XCTAssertEqual(JBText.settingsDeleteTitle, "Delete account?")
+        XCTAssertTrue(JBText.settingsDeleteBody.contains("erased within 30 days"))
+        XCTAssertEqual(JBText.deleteDone, "Account deleted")
+        XCTAssertEqual(JBText.deleteLastOwnerBody("dev@ai-boss.us"),
+                       "You’re the only owner of this JetBox, so the account can’t be deleted in the app. Write to us at dev@ai-boss.us and we’ll take care of it.")
+        XCTAssertFalse(JBText.privacyNotice.contains("app version"))
     }
 }

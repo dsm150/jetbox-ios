@@ -200,8 +200,32 @@ enum JBText {
     static var settingsNoBox: String { t("jetbox.settings.no_box") }
     static var settingsSignOut: String { t("jetbox.settings.sign_out") }
     static var settingsDeleteAccount: String { t("jetbox.settings.delete_account") }
-    static var settingsDeleteTitle: String { t("jetbox.settings.delete_account.confirm_title") }
-    static var settingsDeleteBody: String { t("jetbox.settings.delete_account.confirm_body") }
+    /// Сборка США (1.0 (32)): «Delete account?» и текст про 30 дней.
+    static var settingsDeleteTitle: String {
+        #if JETBOX_US
+        return t("jetbox.settings.delete_account.confirm_title.us")
+        #else
+        return t("jetbox.settings.delete_account.confirm_title")
+        #endif
+    }
+    static var settingsDeleteBody: String {
+        #if JETBOX_US
+        return t("jetbox.settings.delete_account.confirm_body.us")
+        #else
+        return t("jetbox.settings.delete_account.confirm_body")
+        #endif
+    }
+    static var deleteDone: String { t("jetbox.settings.delete_account.done") }
+    static var deleteLastOwnerTitle: String { t("jetbox.settings.delete_account.last_owner.title") }
+    static func deleteLastOwnerBody(_ support: String) -> String { t("jetbox.settings.delete_account.last_owner.body", support) }
+    static var deleteEmailSupport: String { t("jetbox.settings.delete_account.last_owner.email") }
+    static var deleteCopyAddress: String { t("jetbox.settings.delete_account.last_owner.copy") }
+
+    // MARK: Объяснение перед запросом VPN (1.0 (32))
+
+    static var vpnExplainTitle: String { t("jetbox.vpn_explain.title") }
+    static var vpnExplainBody: String { t("jetbox.vpn_explain.body") }
+    static var vpnExplainContinue: String { t("jetbox.vpn_explain.continue") }
     static var settingsDeleteFailed: String { t("jetbox.settings.delete_account.failed") }
     static var deleteSignInAgain: String { t("jetbox.settings.delete_account.sign_in_again") }
     static var settingsSignOutTitle: String { t("jetbox.settings.sign_out.confirm_title") }

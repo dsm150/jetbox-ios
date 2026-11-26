@@ -44,6 +44,9 @@ final class JetBoxWordingTests: XCTestCase {
 
         for (key, value) in table where key.hasPrefix("jetbox.") {
             for word in words {
+                // 1.0 (32): экран перед системным запросом iOS «Add VPN Configurations»
+                // обязан назвать то, о чём спросит iOS (тексты согласованы 26.11.2026).
+                if word == "vpn", key.hasPrefix("jetbox.vpn_explain.") { continue }
                 XCTAssertFalse(value.lowercased().contains(word),
                                "«\(word)» в клиентской строке \(key): \(value)")
             }
