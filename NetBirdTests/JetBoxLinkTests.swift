@@ -1592,6 +1592,30 @@ final class JetBoxBackupTests: XCTestCase {
         XCTAssertFalse(JetBoxBackup.isOrphaned(box: box, configPath: nil, fileExists: { _ in false }))
         XCTAssertFalse(JetBoxBackup.isOrphaned(box: nil, configPath: "/x/netbird.cfg", fileExists: { _ in false }))
     }
+
+    // 1.0 (35): токен из Keychain пережил переустановку, записи JetBox нет.
+    func testTokenWithoutRecordIsRemoved() {
+        var deleted = 0
+        var lines: [String] = []
+        XCTAssertTrue(JetBoxBackup.dropLeftoverTokenIfNeeded(box: nil, hasToken: true,
+                                                             deleteToken: { deleted += 1 }, log: { lines.append($0) }))
+        XCTAssertEqual(deleted, 1)
+        XCTAssertEqual(lines.count, 1)
+    }
+
+    func testTokenWithRecordStays() {
+        var deleted = 0
+        XCTAssertFalse(JetBoxBackup.dropLeftoverTokenIfNeeded(box: box, hasToken: true,
+                                                              deleteToken: { deleted += 1 }, log: { _ in }))
+        XCTAssertEqual(deleted, 0)
+    }
+
+    func testNoTokenNothingToRemove() {
+        var deleted = 0
+        XCTAssertFalse(JetBoxBackup.dropLeftoverTokenIfNeeded(box: nil, hasToken: false,
+                                                              deleteToken: { deleted += 1 }, log: { _ in }))
+        XCTAssertEqual(deleted, 0)
+    }
 }
 
 extension JetBoxLinkRules {
@@ -2157,6 +2181,18 @@ final class JetBoxDNSCheckTests: XCTestCase {
         XCTAssertEqual(JetBoxDNSCheck.verdict(box: mark, system: .noAnswer), .noAnswer)
         XCTAssertEqual(JetBoxDNSCheck.verdict(box: .nxdomain, system: .nxdomain), .boxDoesNotKnow)
         XCTAssertEqual(JetBoxDNSCheck.verdict(box: .noAnswer, system: mark), .boxDoesNotKnow)
+    }
+
+    /// Публичный DNS отвечает на *.jetbox.ai-boss.us общей записью (28.11.2026:
+    /// 178.156.205.58). Любой ответ без метки — мимо JetBox.
+    func testPublicWildcardAnswerIsBypass() async {
+        let mark = JetBoxDNSAnswer.addresses(["192.0.2.53"])
+        let wildcard = JetBoxDNSAnswer.addresses(["178.156.205.58"])
+        XCTAssertEqual(JetBoxDNSCheck.verdict(box: mark, system: wildcard), .bypassed)
+        let verdict = await JetBoxDNSCheck.run(host: "100.64.0.1", resolvers: resolvers(Asked(), box: { _ in mark },
+                                                                                       system: { _ in wildcard }),
+                                               nonce: "abc123def456")
+        XCTAssertEqual(verdict, .bypassed)
     }
 
     /// Резолверы-подмены: ответ по имени, журнал вопросов.

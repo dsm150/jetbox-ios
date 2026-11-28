@@ -115,6 +115,7 @@ enum JetBoxStartup {
         #if os(iOS)
         // Новый телефон из бэкапа: запись без конфига — вход заново; ключи — не в бэкап.
         JetBoxBackup.dropOrphanedBoxIfNeeded()
+        JetBoxBackup.dropLeftoverTokenIfNeeded()
         JetBoxBackup.excludeProfileFiles()
         #endif
         // Выход своей коробки включён всегда (1.0 (16)).

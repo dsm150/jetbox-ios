@@ -53,6 +53,22 @@ enum JetBoxBackup {
         JetBoxAppToken.delete()
     }
 
+    /// Токен в Keychain переживает удаление приложения, а запись JetBox — нет.
+    /// Токен без записи — от прошлой установки или прерванного входа: новый
+    /// вход всё равно выдаст новый (1.0 (35)). Иначе Help уходил в Кабинет по
+    /// старому токену, а диагностика писала «App token: yes» без JetBox.
+    /// До первой разблокировки Keychain токен не отдаёт — живой не тронем.
+    @discardableResult
+    static func dropLeftoverTokenIfNeeded(box: JetBoxBox? = JetBoxStore.currentBox,
+                                          hasToken: Bool = JetBoxAppToken.load() != nil,
+                                          deleteToken: () -> Void = { JetBoxAppToken.delete() },
+                                          log: (String) -> Void = { AppLogger.shared.log($0) }) -> Bool {
+        guard box == nil, hasToken else { return false }
+        deleteToken()
+        log("JetBox: app token without JetBox record (left from earlier install?) — removed")
+        return true
+    }
+
     private static func exclude(_ url: URL) {
         var url = url
         var values = URLResourceValues()
