@@ -761,6 +761,7 @@ final class JetBoxLoginAPITests: XCTestCase {
         let cases: [(Int, String, JetBoxLoginAPI.VerifyOutcome)] = [
             (410, "", .expired),
             (409, #"{"error":"device_limit"}"#, .deviceLimit),
+            (409, #"{"error":"not_available"}"#, .notAvailable),
             (409, #"{"error":"other"}"#, .unavailable),
             (429, "", .rateLimited),
             (500, "", .unavailable),
@@ -938,6 +939,20 @@ final class JetBoxLoginOnboardingTests: XCTestCase {
         XCTAssertEqual(JetBoxFailure.deviceLimit.title, JBText.errDeviceLimitTitle)
     }
 
+    /// 1.0 (33): 409 not_available по ссылке из письма — свой отказ, ссылку можно повторить.
+    func testNotAvailableHasItsOwnTextAndRetries() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["verify"] = (409, #"{"error":"not_available"}"#)
+        let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
+        flow.loginAPI = stub.api()
+        flow.handle(link)
+        await settle(flow)
+        XCTAssertEqual(flow.step, .failed(.notAvailable))
+        XCTAssertEqual(JetBoxFailure.notAvailable.message, JBText.loginNotAvailable)
+        XCTAssertTrue(JetBoxFailure.notAvailable.isRetryable, "Кабинет ссылку не гасит — «Try again»")
+    }
+
     func testDamagedLoginLinkDoesNotGoToNetwork() {
         let stub = JetBoxLoginStub()
         let flow = JetBoxOnboarding()
@@ -1065,6 +1080,13 @@ final class JetBoxLoginCodeTests: XCTestCase {
         model.code = "333333"
         await model.submitCode()
         XCTAssertEqual(model.message, JBText.errDeviceLimitBody)
+
+        // 1.0 (33): у аккаунта нет живого JetBox — свой текст, а не «не отправили ссылку».
+        stub.replies["verify"] = (409, #"{"error":"not_available"}"#)
+        model.code = "444444"
+        await model.submitCode()
+        XCTAssertEqual(model.message, JBText.loginNotAvailable)
+        XCTAssertEqual(model.code, "444444", "код верный — стирать незачем")
     }
 
     func testNewCodeFromCodeScreenStaysOnCodeScreen() async {
@@ -1943,5 +1965,142 @@ final class JetBoxVPNExplainTests: XCTestCase {
         XCTAssertEqual(JBText.deleteLastOwnerBody("dev@ai-boss.us"),
                        "You’re the only owner of this JetBox, so the account can’t be deleted in the app. Write to us at dev@ai-boss.us and we’ll take care of it.")
         XCTAssertFalse(JBText.privacyNotice.contains("app version"))
+    }
+}
+
+// MARK: - «Sign out» с освобождением места (1.0 (33), паритет с Android)
+
+@MainActor
+final class JetBoxSignOutRevokeTests: XCTestCase {
+    private var savedBox: JetBoxBox?
+    private var token: String?
+
+    override func setUp() async throws {
+        savedBox = JetBoxStore.currentBox
+        token = nil
+    }
+
+    override func tearDown() async throws {
+        JetBoxStore.currentBox = savedBox
+    }
+
+    private func flow(_ stub: JetBoxLoginStub) -> JetBoxOnboarding {
+        let flow = JetBoxOnboarding()
+        flow.needsDataConsent = { false }
+        flow.loginAPI = stub.api()
+        flow.loadAppToken = { [unowned self] in self.token }
+        flow.deleteAppToken = { [unowned self] in self.token = nil }
+        flow.revokeRetryDelay = 0
+        JetBoxStore.currentBox = JetBoxBox(managementURL: "https://netbird.jet-net.net", exitNodeName: "home-ivanov",
+                                           selectedExitNode: "home-ivanov", boxName: "Lakeview Home", registeredAt: Date())
+        return flow
+    }
+
+    func testRevokeBeforeTunnelStopsThenSignsOut() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["revoke"] = (200, #"{"ok":true}"#)
+        let flow = flow(stub)
+        token = "app-token-123"
+        var stoppedAfterRequests: Int?
+        let result = await flow.signOutReleasingPlace(stopTunnel: { stoppedAfterRequests = stub.requests.count },
+                                                      files: nil)
+        XCTAssertEqual(result, .signedOut)
+        XCTAssertEqual(stub.requests.count, 1)
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "\(JBT.api)device/revoke")
+        XCTAssertEqual(stub.requests.first?.httpMethod, "POST")
+        XCTAssertEqual(stub.requests.first?.value(forHTTPHeaderField: "Authorization"), "Bearer app-token-123")
+        XCTAssertEqual(stub.requests.first?.timeoutInterval, 15)
+        XCTAssertEqual(stoppedAfterRequests, 1, "туннель выключается только после ответа Кабинета")
+        XCTAssertNil(JetBoxStore.currentBox)
+        XCTAssertNil(token)
+        XCTAssertEqual(flow.signOutCount, 1)
+        XCTAssertFalse(stub.logs.joined().contains("app-token-123"), "токен в журнал не пишем")
+    }
+
+    func testUnknownToken401SignsOut() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["revoke"] = (401, #"{"error":"bad_token"}"#)
+        let flow = flow(stub)
+        token = "old"
+        let result = await flow.signOutReleasingPlace(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .signedOut)
+        XCTAssertNil(JetBoxStore.currentBox)
+    }
+
+    func testNoTokenSignsOutOnThisPhoneWithoutRequest() async {
+        let stub = JetBoxLoginStub()
+        let flow = flow(stub)
+        let result = await flow.signOutReleasingPlace(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .signedOut)
+        XCTAssertTrue(stub.requests.isEmpty, "вход по ссылке — токена нет, освобождать нечем")
+        XCTAssertNil(JetBoxStore.currentBox)
+    }
+
+    /// 502 / 429 — ответ есть, устройство живо: ничего не тронуто, решает человек.
+    func testServerRefusalKeepsEverythingAndAsks() async {
+        for code in [502, 429] {
+            let stub = JetBoxLoginStub()
+            stub.replies["revoke"] = (code, #"{"error":"unavailable"}"#)
+            let flow = flow(stub)
+            token = "app-token"
+            var stopped = false
+            let result = await flow.signOutReleasingPlace(stopTunnel: { stopped = true }, files: nil)
+            XCTAssertEqual(result, .serverDidNotAnswer, "\(code)")
+            XCTAssertEqual(stub.requests.count, 1, "на отказ без автоповтора")
+            XCTAssertFalse(stopped, "\(code): туннель не трогаем")
+            XCTAssertNotNil(JetBoxStore.currentBox)
+            XCTAssertEqual(token, "app-token")
+            XCTAssertEqual(flow.signOutCount, 0)
+        }
+    }
+
+    /// Кабинет отозвал устройство, туннель упал, ответ потерян: туннель выключаем,
+    /// повтор идёт напрямую, погашенный токен отвечает 200 — это успех.
+    func testLostAnswerStopsTunnelAndRetriesDirectly() async {
+        let stub = JetBoxLoginStub()
+        stub.dropFirst = 1
+        stub.replies["revoke"] = (200, #"{"ok":true}"#)
+        let flow = flow(stub)
+        token = "app-token"
+        var stopsBeforeRetry: Int?
+        var stops = 0
+        let result = await flow.signOutReleasingPlace(stopTunnel: {
+            stops += 1
+            if stopsBeforeRetry == nil { stopsBeforeRetry = stub.requests.count }
+        }, files: nil)
+        XCTAssertEqual(result, .signedOut)
+        XCTAssertEqual(stub.requests.count, 2, "один автоматический повтор")
+        XCTAssertEqual(stopsBeforeRetry, 1, "туннель выключен между первым запросом и повтором")
+        XCTAssertNil(JetBoxStore.currentBox)
+    }
+
+    func testBothAttemptsLostAsksAndKeepsAccount() async {
+        let stub = JetBoxLoginStub()
+        stub.dropFirst = 2
+        let flow = flow(stub)
+        token = "app-token"
+        let result = await flow.signOutReleasingPlace(stopTunnel: {}, files: nil)
+        XCTAssertEqual(result, .serverDidNotAnswer)
+        XCTAssertNotNil(JetBoxStore.currentBox, "запись цела — «Try again» или «only on this iPhone»")
+        XCTAssertEqual(token, "app-token")
+
+        // «Sign out on this iPhone only» — локальный выход, место остаётся занятым.
+        await flow.signOut(stopTunnel: {}, files: nil)
+        XCTAssertNil(JetBoxStore.currentBox)
+        XCTAssertNil(token)
+        XCTAssertEqual(stub.requests.count, 2, "локальный выход в Кабинет не ходит")
+    }
+
+    func testApprovedTexts() {
+        XCTAssertEqual(JBText.signOutFailedTitle, "Couldn’t sign out")
+        XCTAssertEqual(JBText.signOutFailedBody,
+                       "JetBox didn’t answer, so this iPhone still counts toward your device limit. Try again, or sign out on this iPhone only — then remove it later in your account.")
+        XCTAssertEqual(JBText.signOutTryAgain, "Try again")
+        XCTAssertEqual(JBText.signOutThisPhoneOnly, "Sign out on this iPhone only")
+        XCTAssertEqual(JBText.loginNotAvailable, "Your JetBox isn’t online yet. Try again once it’s set up.")
+        #if JETBOX_US
+        XCTAssertEqual(JBText.errDeviceLimitBody,
+                       "You’ve reached the device limit for this account. Sign out on another device to free up a place.")
+        #endif
     }
 }

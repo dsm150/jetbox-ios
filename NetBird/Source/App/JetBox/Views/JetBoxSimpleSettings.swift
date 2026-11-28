@@ -31,6 +31,8 @@ struct JetBoxSimpleSettingsView: View {
     var asksDelete = false
     /// Демо для съёмки: отказ 409 last_owner с адресом поддержки.
     var showsLastOwner = false
+    /// Демо для съёмки: Кабинет не ответил на «Sign out» (1.0 (33)).
+    var showsSignOutFailed = false
 
     @State private var unlockCounter = AdvancedUnlockCounter()
     @State private var toast: String?
@@ -38,6 +40,8 @@ struct JetBoxSimpleSettingsView: View {
     @State private var showsAbout = false
     @State private var confirmsSignOut = false
     @State private var isSigningOut = false
+    /// device/revoke не прошёл (1.0 (33)): «Try again» / «Sign out on this iPhone only».
+    @State private var signOutFailed = false
     @State private var confirmsDelete = false
     @State private var deleteFailed = false
     /// 409 last_owner (1.0 (32)): адрес поддержки для сообщения об отказе.
@@ -107,6 +111,13 @@ struct JetBoxSimpleSettingsView: View {
                             }
                             .buttonStyle(.plain)
                             .disabled(isSigningOut || isDeleting)
+                            .alert(JBText.signOutFailedTitle, isPresented: $signOutFailed) {
+                                Button(JBText.signOutTryAgain) { signOut() }
+                                Button(JBText.signOutThisPhoneOnly, role: .destructive) { signOutLocally() }
+                                Button(JBText.cancel, role: .cancel) {}
+                            } message: {
+                                Text(JBText.signOutFailedBody)
+                            }
                             JBSimpleDivider()
                             // Apple 5.1.1(v): удаление аккаунта — под «Sign out».
                             Button { confirmsDelete = true } label: {
@@ -194,13 +205,30 @@ struct JetBoxSimpleSettingsView: View {
             if opensAbout { showsAbout = true }
             if asksSignOut { confirmsSignOut = true }
             if asksDelete { confirmsDelete = true }
+            if showsSignOutFailed { signOutFailed = true }
             if showsLastOwner { lastOwnerSupport = JetBoxOnboarding.defaultSupportEmail; deleteFailed = true }
         }
     }
 
-    /// Выход: туннель выключен, профиль стёрт, главный экран — как у свежей установки.
+    /// Выход: Кабинет освобождает место (device/revoke), туннель выключен,
+    /// профиль стёрт, главный экран — как у свежей установки. Кабинет не
+    /// ответил — ничего не стёрто, человек выбирает в окне.
     private func signOut() {
         // Демо для съёмки ничего не стирает.
+        guard demoBoxName == nil else { dismiss(); return }
+        isSigningOut = true
+        Task {
+            let result = await jetbox.signOutReleasingPlace(viewModel: viewModel)
+            isSigningOut = false
+            switch result {
+            case .signedOut: dismiss()
+            case .serverDidNotAnswer: signOutFailed = true
+            }
+        }
+    }
+
+    /// «Sign out on this iPhone only»: место в Кабинете остаётся занятым.
+    private func signOutLocally() {
         guard demoBoxName == nil else { dismiss(); return }
         isSigningOut = true
         Task {

@@ -96,6 +96,45 @@ extension JetBoxLoginAPI {
         }
     }
 
+    enum RevokeOutcome: Equatable {
+        /// 200 — устройство отозвано, место освобождено (повтор погашенным токеном — тоже 200).
+        case revoked
+        /// 401 `bad_token` — Кабинет такого токена не знает: освобождать нечего.
+        case unauthorized
+        /// Запрос не дошёл, ответ потерян или 15 с без ответа.
+        case unreachable
+        /// 502, 429 и прочее — устройство живо, «Try again».
+        case failed
+    }
+
+    /// Сколько ждём ответа на «Sign out» — как Android (15 с).
+    static let revokeTimeout: TimeInterval = 15
+
+    /// POST device/revoke с `Authorization: Bearer <app_token>` (1.0 (33), паритет
+    /// с Android; маршрут Кабинета `cabinet/app/main.py` `app_device_revoke`).
+    func revokeDevice(token: String) async -> RevokeOutcome {
+        var request = URLRequest(url: base.appendingPathComponent("device/revoke"))
+        request.httpMethod = "POST"
+        request.timeoutInterval = Self.revokeTimeout
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = Data("{}".utf8)
+        do {
+            let (_, response) = try await transport(request)
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            log("JetBox: sign out — server answered \(code) to revoke")
+            switch code {
+            case 200: return .revoked
+            case 401: return .unauthorized
+            default: return .failed
+            }
+        } catch {
+            log("JetBox: sign out — revoke request failed")
+            return .unreachable
+        }
+    }
+
     /// `app_token` из ответа verify (в connect_url его нет — спека).
     static func appToken(from data: Data) -> String? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

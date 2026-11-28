@@ -32,6 +32,8 @@ struct JetBoxSettingsView: View {
     @State private var toastToken = 0
     @State private var confirmsSignOut = false
     @State private var isSigningOut = false
+    /// device/revoke не прошёл (1.0 (33)): «Try again» / «Sign out on this iPhone only».
+    @State private var signOutFailed = false
     @State private var confirmsDelete = false
     @State private var deleteFailed = false
     /// 409 last_owner (1.0 (32)): адрес поддержки для сообщения об отказе.
@@ -113,6 +115,13 @@ struct JetBoxSettingsView: View {
                             }
                         }
                         .disabled(isSigningOut || isDeleting)
+                        .alert(JBText.signOutFailedTitle, isPresented: $signOutFailed) {
+                            Button(JBText.signOutTryAgain) { signOut() }
+                            Button(JBText.signOutThisPhoneOnly, role: .destructive) { signOutLocally() }
+                            Button(JBText.cancel, role: .cancel) {}
+                        } message: {
+                            Text(JBText.signOutFailedBody)
+                        }
                         // Apple 5.1.1(v): удаление аккаунта — под «Sign out».
                         Button(role: .destructive) { confirmsDelete = true } label: {
                             HStack {
@@ -187,8 +196,23 @@ struct JetBoxSettingsView: View {
         }
     }
 
-    /// Выход: туннель выключен, профиль стёрт, главный экран — как у свежей установки.
+    /// Выход: Кабинет освобождает место (device/revoke), туннель выключен,
+    /// профиль стёрт, главный экран — как у свежей установки. Кабинет не
+    /// ответил — ничего не стёрто, человек выбирает в окне.
     private func signOut() {
+        isSigningOut = true
+        Task {
+            let result = await jetbox.signOutReleasingPlace(viewModel: viewModel)
+            isSigningOut = false
+            switch result {
+            case .signedOut: dismiss()
+            case .serverDidNotAnswer: signOutFailed = true
+            }
+        }
+    }
+
+    /// «Sign out on this iPhone only»: место в Кабинете остаётся занятым.
+    private func signOutLocally() {
         isSigningOut = true
         Task {
             await jetbox.signOut(viewModel: viewModel)

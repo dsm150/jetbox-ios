@@ -33,6 +33,8 @@ enum JetBoxFailure: Equatable {
     case loginExpired
     /// У JetBox клиента уже предельное число устройств (409 device_limit).
     case deviceLimit
+    /// У аккаунта нет живого JetBox (409 not_available при входе по почте, 1.0 (33)).
+    case notAvailable
     /// Кабинет ограничил частоту подтверждений (429).
     case loginRateLimited
     case other(String)
@@ -48,6 +50,7 @@ enum JetBoxFailure: Equatable {
         case .tunnelFailed: return JBText.errTunnelTitle
         case .loginExpired: return JBText.errLoginExpiredTitle
         case .deviceLimit: return JBText.errDeviceLimitTitle
+        case .notAvailable: return JBText.errUnreachableTitle
         case .loginRateLimited: return JBText.errLoginRateTitle
         case .other: return JBText.errGenericTitle
         }
@@ -64,6 +67,7 @@ enum JetBoxFailure: Equatable {
         case .tunnelFailed: return JBText.errTunnelBody
         case .loginExpired: return JBText.errLoginExpiredBody
         case .deviceLimit: return JBText.errDeviceLimitBody
+        case .notAvailable: return JBText.loginNotAvailable
         case .loginRateLimited: return JBText.errLoginRateBody
         case .other: return JBText.errGenericBody
         }
@@ -76,7 +80,7 @@ enum JetBoxFailure: Equatable {
         case .managementUnreachable(let d), .keyRejected(let d): return d
         case .other(let d): return d
         case .brokenLink, .foreignServer, .notFromJetBox, .offline, .tunnelFailed,
-             .loginExpired, .deviceLimit, .loginRateLimited: return nil
+             .loginExpired, .deviceLimit, .notAvailable, .loginRateLimited: return nil
         }
     }
 
@@ -452,6 +456,51 @@ final class JetBoxOnboarding: ObservableObject {
         await signOut(stopTunnel: { await JetBoxSignOut.stopTunnel(viewModel) })
     }
 
+    // MARK: - Выход с освобождением места (1.0 (33), паритет с Android)
+
+    enum SignOutResult: Equatable {
+        /// Место освобождено (или токена нет — выход только на телефоне); вышли.
+        case signedOut
+        /// Кабинет не ответил или отказал: устройство занимает место. Решает
+        /// человек — «Try again» / «Sign out on this iPhone only» / «Cancel».
+        case serverDidNotAnswer
+    }
+
+    /// Пауза перед повтором revoke после обрыва. В тестах — 0.
+    var revokeRetryDelay: UInt64 = 1_500_000_000
+
+    /// «Sign out»: сначала `device/revoke` к Кабинету — при живом туннеле, как
+    /// Android, — потом локальный выход. Отозванное устройство теряет пир, туннель
+    /// (и ответ, если запрос шёл через дом) рвётся, поэтому при обрыве туннель
+    /// выключается и запрос повторяется напрямую: повтор погашенным токеном
+    /// Кабинет отвечает 200. Без токена (вход по ссылке) — только на телефоне.
+    func signOutReleasingPlace(stopTunnel: @MainActor () async -> Void,
+                               files: JetBoxSignOut.Files? = JetBoxSignOut.Files.active()) async -> SignOutResult {
+        guard let token = loadAppToken() else {
+            AppLogger.shared.log("JetBox: sign out — no app token, this iPhone only")
+            await signOut(stopTunnel: stopTunnel, files: files)
+            return .signedOut
+        }
+        var outcome = await loginAPI.revokeDevice(token: token)
+        if outcome == .unreachable {
+            await stopTunnel()
+            try? await Task.sleep(nanoseconds: revokeRetryDelay)
+            outcome = await loginAPI.revokeDevice(token: token)
+        }
+        switch outcome {
+        case .revoked, .unauthorized:
+            await signOut(stopTunnel: stopTunnel, files: files)
+            return .signedOut
+        case .unreachable, .failed:
+            AppLogger.shared.log("JetBox: sign out — place not released, asking")
+            return .serverDidNotAnswer
+        }
+    }
+
+    func signOutReleasingPlace(viewModel: ViewModel) async -> SignOutResult {
+        await signOutReleasingPlace(stopTunnel: { await JetBoxSignOut.stopTunnel(viewModel) })
+    }
+
     // MARK: - Удаление аккаунта (Apple 5.1.1(v), 1.0 (14))
 
     enum AccountDeletion: Equatable {
@@ -583,6 +632,9 @@ final class JetBoxOnboarding: ObservableObject {
         case .deviceLimit:
             lastLoginToken = nil
             step = .failed(.deviceLimit)
+        case .notAvailable:
+            // Ссылка не израсходована (Кабинет её не гасит): «Try again» повторит.
+            step = .failed(.notAvailable)
         case .rateLimited:
             step = .failed(.loginRateLimited)
         case .offline:
@@ -921,6 +973,7 @@ extension JetBoxOnboarding {
         case "unreachable": step = .failed(.managementUnreachable(nil))
         case "tunnel": step = .failed(.tunnelFailed)
         case "devices": step = .failed(.deviceLimit)
+        case "notavailable": step = .failed(.notAvailable)
         case "signing": step = .signingIn
         case "expired": step = .failed(.loginExpired)
         default: break

@@ -99,7 +99,16 @@ enum JBText {
     static var errLoginExpiredBody: String { t("jetbox.error.login_expired.body") }
     static var errLoginExpiredAction: String { t("jetbox.error.login_expired.action") }
     static var errDeviceLimitTitle: String { t("jetbox.error.device_limit.title") }
-    static var errDeviceLimitBody: String { t("jetbox.error.device_limit.body") }
+    /// Сборка США (1.0 (33)): лимит — на аккаунт, место освобождает «Sign out».
+    static var errDeviceLimitBody: String {
+        #if JETBOX_US
+        return t("jetbox.error.device_limit.body.us")
+        #else
+        return t("jetbox.error.device_limit.body")
+        #endif
+    }
+    /// 409 not_available при входе по почте (1.0 (33)): у аккаунта нет живого JetBox.
+    static var loginNotAvailable: String { t("jetbox.login.not_available") }
     static var errLoginRateTitle: String { t("jetbox.error.login_rate.title") }
     static var errLoginRateBody: String { t("jetbox.error.login_rate.body") }
 
@@ -226,6 +235,11 @@ enum JBText {
     static var vpnExplainTitle: String { t("jetbox.vpn_explain.title") }
     static var vpnExplainBody: String { t("jetbox.vpn_explain.body") }
     static var vpnExplainContinue: String { t("jetbox.vpn_explain.continue") }
+    /// Отказ device/revoke при «Sign out» (1.0 (33)).
+    static var signOutFailedTitle: String { t("jetbox.settings.sign_out.failed.title") }
+    static var signOutFailedBody: String { t("jetbox.settings.sign_out.failed.body") }
+    static var signOutTryAgain: String { t("jetbox.settings.sign_out.failed.retry") }
+    static var signOutThisPhoneOnly: String { t("jetbox.settings.sign_out.failed.local") }
     static var settingsDeleteFailed: String { t("jetbox.settings.delete_account.failed") }
     static var deleteSignInAgain: String { t("jetbox.settings.delete_account.sign_in_again") }
     static var settingsSignOutTitle: String { t("jetbox.settings.sign_out.confirm_title") }

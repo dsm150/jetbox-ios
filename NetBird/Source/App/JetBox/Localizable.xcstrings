@@ -3181,6 +3181,108 @@
           }
         }
       }
+    },
+    "jetbox.error.device_limit.body.us": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’ve reached the device limit for this account. Sign out on another device to free up a place."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В этом аккаунте уже максимум устройств. Выйдите на другом устройстве, чтобы освободить место."
+          }
+        }
+      }
+    },
+    "jetbox.login.not_available": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your JetBox isn’t online yet. Try again once it’s set up."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ваш JetBox ещё не в сети. Попробуйте снова, когда его установят."
+          }
+        }
+      }
+    },
+    "jetbox.settings.sign_out.failed.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox didn’t answer, so this iPhone still counts toward your device limit. Try again, or sign out on this iPhone only — then remove it later in your account."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JetBox не ответил, поэтому этот iPhone по-прежнему занимает место в лимите устройств. Попробуйте снова или выйдите только на этом iPhone — потом удалите его в своём аккаунте."
+          }
+        }
+      }
+    },
+    "jetbox.settings.sign_out.failed.local": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out on this iPhone only"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выйти только на этом iPhone"
+          }
+        }
+      }
+    },
+    "jetbox.settings.sign_out.failed.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повторить"
+          }
+        }
+      }
+    },
+    "jetbox.settings.sign_out.failed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t sign out"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось выйти"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

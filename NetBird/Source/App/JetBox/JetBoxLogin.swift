@@ -112,6 +112,8 @@ struct JetBoxLoginAPI {
         case badCode(attemptsLeft: Int?)
         case expired
         case deviceLimit
+        /// 409 not_available: у аккаунта нет живого JetBox (1.0 (33)).
+        case notAvailable
         case rateLimited
         case offline
         case unavailable
@@ -198,7 +200,11 @@ struct JetBoxLoginAPI {
         case .response(409, let data):
             let error = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
             log("JetBox: email login — refused 409 (\(error ?? "no code"))")
-            return error == "device_limit" ? .deviceLimit : .unavailable
+            switch error {
+            case "device_limit": return .deviceLimit
+            case "not_available": return .notAvailable
+            default: return .unavailable
+            }
         case .response(429, _):
             log("JetBox: email login — verify limit (429)")
             return .rateLimited
@@ -424,6 +430,8 @@ final class JetBoxLoginModel: ObservableObject {
             message = JBText.loginCodeExpired
         case .deviceLimit:
             message = JBText.errDeviceLimitBody
+        case .notAvailable:
+            message = JBText.loginNotAvailable
         case .rateLimited:
             message = JBText.loginRateLimited
         case .offline:
@@ -487,6 +495,12 @@ extension JetBoxLoginModel {
             lastSentAt = now().addingTimeInterval(-75)
             phase = .code(email: email)
             message = JBText.loginCodeWrongLeft(2)
+        case "notavailable", "devicelimit":
+            let limit = UserDefaults.standard.string(forKey: "JetBoxLoginDemo") == "devicelimit"
+            email = UserDefaults.standard.string(forKey: "JetBoxLoginDemoEmail") ?? "alex@example.com"
+            lastSentAt = now().addingTimeInterval(-75)
+            phase = .code(email: email)
+            message = limit ? JBText.errDeviceLimitBody : JBText.loginNotAvailable
         default:
             break
         }

@@ -363,7 +363,8 @@ struct JetBoxShieldDemoView: View {
                 #if JETBOX_US
                 JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about",
                                          asksSignOut: screen == "signout", asksDelete: screen == "delete",
-                                         showsLastOwner: screen == "lastowner")
+                                         showsLastOwner: screen == "lastowner",
+                                         showsSignOutFailed: screen == "signoutfailed")
                     .environmentObject(viewModel)
                     .environmentObject(jetbox)
                 #endif
@@ -386,7 +387,7 @@ struct JetBoxShieldDemoView: View {
             }
             if UserDefaults.standard.bool(forKey: "JetBoxShieldDemoDetails") { showsDetails = true }
             switch screen {
-            case "settings", "about", "signout", "delete", "lastowner": showsSettings = true
+            case "settings", "about", "signout", "delete", "lastowner", "signoutfailed": showsSettings = true
             case "details": if !isSimple { showsDetails = true }
             default: break
             }

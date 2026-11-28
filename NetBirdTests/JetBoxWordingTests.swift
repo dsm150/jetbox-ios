@@ -197,6 +197,81 @@ final class JetBoxWordingTests: XCTestCase {
         XCTAssertEqual(en["jetbox.home.disconnected"], "Not on your home network")
     }
 
+    // MARK: - Виджет, Пункт управления, Siri — задел под другие страны (1.0 (33))
+    //
+    // Строки виджета и интентов в коде — это ключи каталога
+    // NetBirdWidgetExtension/Localizable.xcstrings, фразы Siri — ключи
+    // <язык>.lproj/AppShortcuts.strings. Новый язык = столбец в каталоге и
+    // файл фраз; тесты не дают забыть ни одну строку.
+
+    private var widgetSourceDir: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("NetBirdWidgetExtension")
+    }
+
+    private func widgetSwiftSources() throws -> String {
+        let files = FileManager.default.enumerator(at: widgetSourceDir, includingPropertiesForKeys: nil)?
+            .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? []
+        XCTAssertFalse(files.isEmpty, "исходники виджета не найдены")
+        return try files.map { try String(contentsOf: $0, encoding: .utf8) }.joined(separator: "\n")
+    }
+
+    private func matches(_ pattern: String, in text: String) throws -> [String] {
+        let regex = try NSRegularExpression(pattern: pattern)
+        return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap {
+            Range($0.range(at: 1), in: text).map { String(text[$0]) }
+        }
+    }
+
+    /// Каждая видимая строка виджета и интентов есть в каталоге и переведена
+    /// на каждый язык каталога.
+    func testWidgetStringsAreCatalogKeysTranslatedToEveryLanguage() throws {
+        let url = widgetSourceDir.appendingPathComponent("Localizable.xcstrings")
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let catalog = try XCTUnwrap(json["strings"] as? [String: [String: Any]])
+        let languages = Set(catalog.values.flatMap { (($0["localizations"] as? [String: Any]) ?? [:]).keys })
+        XCTAssertTrue(languages.contains("en"))
+        for (key, entry) in catalog {
+            let loc = entry["localizations"] as? [String: Any] ?? [:]
+            for lang in languages {
+                let unit = (loc[lang] as? [String: Any])?["stringUnit"] as? [String: Any]
+                XCTAssertNotNil(unit?["value"] as? String, "виджет: «\(key)» без перевода на \(lang)")
+            }
+        }
+
+        let source = try widgetSwiftSources()
+        let visible = try [
+            #"LocalizedStringResource = "([^"]+)""#,
+            #"IntentDescription = "([^"]+)""#,
+            #"\.description\("([^"]+)"\)"#,
+            #"@Parameter\(title: "([^"]+)""#,
+            #"shortTitle: "([^"]+)""#,
+        ].flatMap { try matches($0, in: source) }
+        XCTAssertGreaterThan(visible.count, 10, "строки виджета не нашлись — сменился код?")
+        for text in visible {
+            XCTAssertNotNil(catalog[text], "виджет: «\(text)» не ключ каталога — не переведётся")
+        }
+    }
+
+    /// Каждая фраза Siri из кода есть в каждом <язык>.lproj/AppShortcuts.strings.
+    func testSiriPhrasesHaveEveryTranslation() throws {
+        let source = try String(contentsOf: widgetSourceDir.appendingPathComponent("Intents/NetBirdShortcuts.swift"),
+                                encoding: .utf8)
+        let phrases = try matches(#""([^"]*\\\(\.applicationName\)[^"]*)""#, in: source)
+            .map { $0.replacingOccurrences(of: #"\(.applicationName)"#, with: "${applicationName}") }
+        XCTAssertEqual(phrases.count, 9)
+        let lprojs = try FileManager.default.contentsOfDirectory(at: widgetSourceDir, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "lproj" }
+        for dir in lprojs {
+            let file = dir.appendingPathComponent("AppShortcuts.strings")
+            guard FileManager.default.fileExists(atPath: file.path) else { continue }
+            let table = try XCTUnwrap(NSDictionary(contentsOf: file) as? [String: String], file.path)
+            for phrase in phrases {
+                XCTAssertNotNil(table[phrase], "\(dir.lastPathComponent): нет фразы Siri «\(phrase)»")
+            }
+        }
+    }
+
     func testCopyrightHolderFollowsEdition() throws {
         // Решение Алексея 21.11.2026: в американской сборке правообладатель —
         // INSTASHOP Corporation, в русской — JetNet, как было.
