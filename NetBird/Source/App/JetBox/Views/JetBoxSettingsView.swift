@@ -87,6 +87,10 @@ struct JetBoxSettingsView: View {
                     }
                     .buttonStyle(.plain)
                     NavigationLink(JBText.aboutTitle) { JetBoxAboutView() }
+                    // «Help» (1.0 (34)): диагностика снимается в момент открытия.
+                    NavigationLink(JBText.helpRow) {
+                        JetBoxHelpView(model: JetBoxHelpModel(diagnostics: JetBoxDiagnostics.collect(viewModel: viewModel)))
+                    }
                 } header: {
                     Text(JBText.settingsSectionApp)
                 }

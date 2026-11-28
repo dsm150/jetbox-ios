@@ -446,6 +446,9 @@ final class JetBoxLoginModel: ObservableObject {
         case .sent:
             lastSentAt = now()
             phase = .sent(email: address)
+            // Для диагностики «Help» (1.0 (34)) — только маской.
+            JetBoxAdvancedAccess.defaults.set(JetBoxDiagnostics.maskEmail(address),
+                                              forKey: JetBoxDiagnostics.maskedEmailKey)
         case .rateLimited:
             message = JBText.loginRateLimited
             phase = previous

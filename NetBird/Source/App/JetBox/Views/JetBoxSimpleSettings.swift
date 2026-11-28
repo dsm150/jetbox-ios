@@ -25,6 +25,8 @@ struct JetBoxSimpleSettingsView: View {
     /// Демо для съёмки: имя дома приходит параметром, а не из хранилища.
     var demoBoxName: String?
     var opensAbout = false
+    /// Демо для съёмки: сразу экран «Help».
+    var opensHelp = false
     /// Демо для съёмки: сразу диалог «Sign out?».
     var asksSignOut = false
     /// Демо для съёмки: сразу подтверждение «Delete account» (без удаления).
@@ -38,6 +40,7 @@ struct JetBoxSimpleSettingsView: View {
     @State private var toast: String?
     @State private var toastToken = 0
     @State private var showsAbout = false
+    @State private var showsHelp = false
     @State private var confirmsSignOut = false
     @State private var isSigningOut = false
     /// device/revoke не прошёл (1.0 (33)): «Try again» / «Sign out on this iPhone only».
@@ -86,6 +89,15 @@ struct JetBoxSimpleSettingsView: View {
                             JetBoxSimpleAboutView()
                         } label: {
                             JBSimpleRow(title: JBText.aboutTitle, chevron: true)
+                        }
+                        .buttonStyle(.plain)
+                        JBSimpleDivider()
+                        // «Help» (1.0 (34)): диагностика снимается в момент открытия.
+                        NavigationLink(isActive: $showsHelp) {
+                            JetBoxSimpleHelpView(model: JetBoxHelpModel(
+                                diagnostics: JetBoxDiagnostics.collect(viewModel: viewModel)))
+                        } label: {
+                            JBSimpleRow(title: JBText.helpRow, chevron: true)
                         }
                         .buttonStyle(.plain)
                     }
@@ -203,6 +215,7 @@ struct JetBoxSimpleSettingsView: View {
         .environment(\.colorScheme, .light)
         .onAppear {
             if opensAbout { showsAbout = true }
+            if opensHelp { showsHelp = true }
             if asksSignOut { confirmsSignOut = true }
             if asksDelete { confirmsDelete = true }
             if showsSignOutFailed { signOutFailed = true }

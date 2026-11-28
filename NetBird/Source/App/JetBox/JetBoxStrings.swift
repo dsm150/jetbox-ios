@@ -235,6 +235,20 @@ enum JBText {
     static var vpnExplainTitle: String { t("jetbox.vpn_explain.title") }
     static var vpnExplainBody: String { t("jetbox.vpn_explain.body") }
     static var vpnExplainContinue: String { t("jetbox.vpn_explain.continue") }
+    /// Проба DNS канарейкой (1.0 (34)).
+    static var dnsBypassed: String { t("jetbox.dns.bypassed") }
+    static var dnsHowToFix: String { t("jetbox.dns.how_to_fix") }
+    static var dnsFixBody: String { t("jetbox.dns_fix.body") }
+    /// «Help» в настройках (1.0 (34)).
+    static var helpRow: String { t("jetbox.help.row") }
+    static var helpTitle: String { t("jetbox.help.title") }
+    static var helpPlaceholder: String { t("jetbox.help.placeholder") }
+    static var helpAttach: String { t("jetbox.help.attach") }
+    static var helpIncluded: String { t("jetbox.help.included") }
+    static var helpSend: String { t("jetbox.help.send") }
+    static var helpSentFallback: String { t("jetbox.help.sent_fallback") }
+    static var helpRateLimited: String { t("jetbox.help.rate_limited") }
+    static func helpMailFailed(_ address: String) -> String { t("jetbox.help.mail_failed", address) }
     /// Отказ device/revoke при «Sign out» (1.0 (33)).
     static var signOutFailedTitle: String { t("jetbox.settings.sign_out.failed.title") }
     static var signOutFailedBody: String { t("jetbox.settings.sign_out.failed.body") }

@@ -448,6 +448,7 @@ final class JetBoxOnboarding: ObservableObject {
         let removed = files.map { JetBoxSignOut.wipe($0) } ?? 0
         JetBoxStore.currentBox = nil
         deleteAppToken()
+        JetBoxAdvancedAccess.defaults.removeObject(forKey: JetBoxDiagnostics.maskedEmailKey)
         signOutCount += 1
         AppLogger.shared.log("JetBox: sign out — tunnel stopped, profile files removed: \(removed)")
     }
@@ -554,8 +555,10 @@ final class JetBoxOnboarding: ObservableObject {
         var retried = false
         if outcome == .unreachable {
             retried = true
-            // Удаление могло уже пройти: туннель рвётся, как только Кабинет
-            // отключил устройство. Повтор пойдёт мимо туннеля.
+            // Удаление могло уже пройти: Кабинет отключил устройство, пир пропал,
+            // ответ через дом не дошёл. Туннель выключаем, чтобы повтор пошёл
+            // напрямую, а не в мёртвый туннель (1.0 (34), как revoke в 33).
+            await stopTunnel()
             try? await Task.sleep(nanoseconds: deleteRetryDelay)
             outcome = await loginAPI.deleteAccount(token: token)
         }
@@ -569,6 +572,7 @@ final class JetBoxOnboarding: ObservableObject {
                                         notice: sent ? JBText.deleteDone : JBText.deleteSignInAgain)
         case .lastOwner(let support):
             deleteDefaults.removeObject(forKey: Self.deleteSentKey)
+            JetBoxSupportContact.remember(support)
             return .lastOwner(support: support.isEmpty ? Self.defaultSupportEmail : support)
         case .unreachable, .failed:
             return .failed

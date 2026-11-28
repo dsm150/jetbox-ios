@@ -22,10 +22,13 @@ struct JetBoxSimpleHomeLayout: View {
     let power: JetBoxPowerAction
     /// Демо для съёмки: сразу открыть лист подробностей.
     var startsWithDetails = false
+    /// Проба DNS (1.0 (34)): DNS идёт мимо JetBox — капсула под кругом.
+    var dnsBypassed = false
     let onPower: () -> Void
     let onSettings: () -> Void
 
     @State private var showsDetails = false
+    @State private var showsDNSFix = false
 
     var body: some View {
         ZStack {
@@ -141,6 +144,33 @@ struct JetBoxSimpleHomeLayout: View {
             .padding(22)
             .frame(maxWidth: .infinity)
             .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(JBSimple.card))
+        } else if dnsBypassed && phase == .on {
+            Button { showsDNSFix = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(JBSimple.error)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(JBText.dnsBypassed)
+                            .font(JBSimple.font(17, .bold))
+                            .foregroundColor(JBSimple.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(JBText.dnsHowToFix)
+                            .font(JBSimple.font(17, .heavy))
+                            .foregroundColor(JBSimple.accent)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(JBSimple.card))
+            }
+            .buttonStyle(JBSimplePressStyle())
+            .alert(JBText.dnsHowToFix, isPresented: $showsDNSFix) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(JBText.dnsFixBody)
+            }
         } else {
             // Под кругом ничего нет; место держим, чтобы круг стоял ровно.
             Color.clear.frame(height: 52)

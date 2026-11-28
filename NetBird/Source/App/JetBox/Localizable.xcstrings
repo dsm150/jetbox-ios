@@ -3283,6 +3283,210 @@
           }
         }
       }
+    },
+    "jetbox.dns.bypassed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DNS doesn’t go through JetBox — ads and trackers aren’t filtered"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DNS идёт мимо JetBox — реклама и трекеры не фильтруются"
+          }
+        }
+      }
+    },
+    "jetbox.dns.how_to_fix": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to fix"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как исправить"
+          }
+        }
+      }
+    },
+    "jetbox.dns_fix.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something on this iPhone sends DNS around JetBox. Check these:\n• iCloud Private Relay — Settings → your name → iCloud → Private Relay → off.\n• A DNS profile or DNS app — Settings → General → VPN & Device Management → DNS → Automatic.\nThen reconnect JetBox."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что-то на этом iPhone отправляет DNS мимо JetBox. Проверьте:\n• Частный узел iCloud — Настройки → ваше имя → iCloud → Частный узел → выкл.\n• DNS-профиль или DNS-приложение — Настройки → Основные → VPN и управление устройством → DNS → Автоматически.\nПотом переподключите JetBox."
+          }
+        }
+      }
+    },
+    "jetbox.help.row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Help"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Помощь"
+          }
+        }
+      }
+    },
+    "jetbox.help.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact us"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Напишите нам"
+          }
+        }
+      }
+    },
+    "jetbox.help.placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe what happened"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Опишите, что случилось"
+          }
+        }
+      }
+    },
+    "jetbox.help.attach": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attach diagnostics"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приложить диагностику"
+          }
+        }
+      }
+    },
+    "jetbox.help.included": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What’s included"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Что входит в диагностику"
+          }
+        }
+      }
+    },
+    "jetbox.help.send": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить"
+          }
+        }
+      }
+    },
+    "jetbox.help.sent_fallback": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sent. We’ll reply by email."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправлено. Ответим письмом."
+          }
+        }
+      }
+    },
+    "jetbox.help.rate_limited": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’ve already sent a message. Try again in a few minutes."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сообщение уже отправлено. Попробуйте снова через несколько минут."
+          }
+        }
+      }
+    },
+    "jetbox.help.mail_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t send from the app. Write to us at %@."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не получилось отправить из приложения. Напишите нам на %@."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -42,7 +42,10 @@ final class JetBoxWordingTests: XCTestCase {
         let table = try strings(language)
         XCTAssertGreaterThan(table.count, 30, "каталог \(language) подозрительно мал")
 
-        for (key, value) in table where key.hasPrefix("jetbox.") {
+        for (key, raw) in table where key.hasPrefix("jetbox.") {
+            // 1.0 (34): «How to fix» называет системное меню iOS «VPN & Device
+            // Management» — «VPN» разрешено только внутри этого названия (28.11.2026).
+            let value = key.hasPrefix("jetbox.dns_fix.") ? raw.replacingOccurrences(of: "VPN & Device Management", with: "") : raw
             for word in words {
                 // 1.0 (32): экран перед системным запросом iOS «Add VPN Configurations»
                 // обязан назвать то, о чём спросит iOS (тексты согласованы 26.11.2026).
@@ -158,6 +161,14 @@ final class JetBoxWordingTests: XCTestCase {
 
     func testEnglishStringsAvoidForbiddenWords() throws {
         try assertNoForbiddenWords("en", forbiddenEN)
+    }
+
+    /// Исключение для «How to fix» держит ровно название системного меню.
+    func testDNSFixNamesTheSystemMenuExactly() throws {
+        let body = try XCTUnwrap(strings("en")["jetbox.dns_fix.body"])
+        XCTAssertTrue(body.contains("Settings → General → VPN & Device Management → DNS → Automatic"), body)
+        XCTAssertTrue(body.contains("Settings → your name → iCloud → Private Relay"), body)
+        XCTAssertEqual(body.components(separatedBy: "VPN").count - 1, 1, "«VPN» — только в имени меню")
     }
 
     /// «Protected» в английском — только когда весь интернет идёт через свою

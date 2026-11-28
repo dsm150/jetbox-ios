@@ -12,6 +12,7 @@
 
 import Foundation
 import Combine
+import Network
 
 final class JetBoxLiveStats: ObservableObject {
     static let shared = JetBoxLiveStats()
@@ -49,6 +50,29 @@ final class JetBoxLiveStats: ObservableObject {
     /// меняется — главный экран перерисовывает «Protected» / предупреждение.
     @Published private(set) var defaultRouteInTunnel = false
 
+    /// Проба DNS канарейкой (1.0 (34)): nil — ещё не проверяли в этом подключении.
+    @Published private(set) var dnsVerdict: JetBoxDNSVerdict?
+    /// Когда проверяли; nil — проверить при первом удобном ответе расширения
+    /// (новое подключение, смена сети).
+    private var lastDNSCheck: Date?
+    private var dnsChecking = false
+    /// Подменяется в тестах; по умолчанию — настоящая проба.
+    var runDNSCheck: (String) async -> JetBoxDNSVerdict = { await JetBoxDNSCheck.run(host: $0) }
+    private let pathMonitor = NWPathMonitor()
+    private var pathSeen = false
+
+    init() {
+        // Смена сети (Wi-Fi ↔ сотовая, другой Wi-Fi) — проверить заново.
+        pathMonitor.pathUpdateHandler = { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if self.pathSeen { self.lastDNSCheck = nil }
+                self.pathSeen = true
+            }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: JetBoxIdentifiers.bundleID + ".path"))
+    }
+
     /// Последний замер «до дома» (JetBoxHomeProbe). Ядро меряет задержку
     /// только на прямом соединении — его цифра идёт лишь запасной.
     private var probedLatencyMs: Int?
@@ -60,8 +84,11 @@ final class JetBoxLiveStats: ObservableObject {
         let peer = Self.boxPeer(in: details.peerInfo)
         if let peer, peer.connStatus.lowercased() == "connected" {
             probe(host: JetBoxHomeProbe.bareIP(peer.ip))
+            checkDNSIfDue(host: JetBoxHomeProbe.bareIP(peer.ip))
         } else {
             probedLatencyMs = nil
+            // Новое подключение — новая проверка (spec §3: «при „Под защитой“»).
+            lastDNSCheck = nil
         }
         let snapshot = peer.map {
             Snapshot(latencyMs: probedLatencyMs ?? Self.latencyMs($0.latency), relayed: $0.relayed,
@@ -85,6 +112,22 @@ final class JetBoxLiveStats: ObservableObject {
                 current.latencyMs = ms
                 self.box = current
             }
+        }
+    }
+
+    /// Раз в 10 минут, после нового подключения и после смены сети.
+    func checkDNSIfDue(host: String, now: Date = Date()) {
+        guard !dnsChecking else { return }
+        if let last = lastDNSCheck, now.timeIntervalSince(last) < JetBoxDNSCheck.interval { return }
+        dnsChecking = true
+        lastDNSCheck = now
+        let run = runDNSCheck
+        Task { @MainActor [weak self] in
+            let verdict = await run(host)
+            guard let self else { return }
+            self.dnsChecking = false
+            AppLogger.shared.log("JetBox: DNS check — \(verdict.diagnostics)")
+            if verdict != self.dnsVerdict { self.dnsVerdict = verdict }
         }
     }
 

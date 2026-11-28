@@ -75,6 +75,7 @@ struct JetBoxHomeView: View {
                 stats: stats.box,
                 connectedSince: stats.connectedSince,
                 power: power,
+                dnsBypassed: stats.dnsVerdict == .bypassed,
                 onPower: { perform(power) },
                 onSettings: { showsSettings = true }
             )
@@ -87,6 +88,7 @@ struct JetBoxHomeView: View {
                 stats: stats.box,
                 connectedSince: stats.connectedSince,
                 power: power,
+                dnsBypassed: stats.dnsVerdict == .bypassed,
                 onPower: { perform(power) },
                 onSettings: { showsSettings = true },
                 onOpenDetails: { showsDetails = true }
@@ -199,9 +201,13 @@ struct JetBoxHomeLayout: View {
     let stats: JetBoxLiveStats.Snapshot?
     let connectedSince: Date?
     let power: JetBoxPowerAction
+    /// Проба DNS (1.0 (34)): DNS идёт мимо JetBox — капсула над панелью дома.
+    var dnsBypassed = false
     let onPower: () -> Void
     let onSettings: () -> Void
     let onOpenDetails: () -> Void
+
+    @State private var showsDNSFix = false
 
     var body: some View {
         ZStack {
@@ -226,6 +232,34 @@ struct JetBoxHomeLayout: View {
                     .animation(.easeInOut(duration: 0.3), value: phase)
 
                 Spacer(minLength: 24)
+
+                if dnsBypassed && phase == .on {
+                    Button { showsDNSFix = true } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(JBColor.warn)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(JBText.dnsBypassed)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundColor(JBColor.text)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(JBText.dnsHowToFix)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundColor(JBColor.accent)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(14)
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.ultraThinMaterial))
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 420)
+                    .padding(.bottom, 10)
+                    .alert(JBText.dnsHowToFix, isPresented: $showsDNSFix) {
+                        Button("OK", role: .cancel) {}
+                    } message: {
+                        Text(JBText.dnsFixBody)
+                    }
+                }
 
                 Group {
                     if let box {
@@ -320,6 +354,9 @@ struct JetBoxShieldDemoView: View {
 
     /// Примерные показатели — только для демо.
     /// `-JetBoxDemoRoute notDirect` — прямое соединение не вышло (сборка США без relay).
+    /// `-JetBoxDemoDNS bypassed` — капсула «DNS doesn't go through JetBox» (1.0 (34)).
+    private let demoDNSBypassed = UserDefaults.standard.string(forKey: "JetBoxDemoDNS") == "bypassed"
+
     private let sample = JetBoxLiveStats.Snapshot(
         latencyMs: 24, relayed: false, bytesRx: 48_200_000, bytesTx: 6_100_000,
         connected: UserDefaults.standard.string(forKey: "JetBoxDemoRoute") != "notDirect")
@@ -336,6 +373,7 @@ struct JetBoxShieldDemoView: View {
                 connectedSince: state == .connected ? since : nil,
                 power: power,
                 startsWithDetails: screen == "details",
+                dnsBypassed: demoDNSBypassed,
                 onPower: { run(power) },
                 onSettings: { showsSettings = true }
             )
@@ -348,6 +386,7 @@ struct JetBoxShieldDemoView: View {
                 stats: state == .connected ? sample : nil,
                 connectedSince: state == .connected ? since : nil,
                 power: power,
+                dnsBypassed: demoDNSBypassed,
                 onPower: { run(power) },
                 onSettings: { showsSettings = true },
                 onOpenDetails: { showsDetails = true }
@@ -362,6 +401,7 @@ struct JetBoxShieldDemoView: View {
             if isSimple {
                 #if JETBOX_US
                 JetBoxSimpleSettingsView(demoBoxName: box.displayName, opensAbout: screen == "about",
+                                         opensHelp: screen == "help",
                                          asksSignOut: screen == "signout", asksDelete: screen == "delete",
                                          showsLastOwner: screen == "lastowner",
                                          showsSignOutFailed: screen == "signoutfailed")
@@ -387,7 +427,7 @@ struct JetBoxShieldDemoView: View {
             }
             if UserDefaults.standard.bool(forKey: "JetBoxShieldDemoDetails") { showsDetails = true }
             switch screen {
-            case "settings", "about", "signout", "delete", "lastowner", "signoutfailed": showsSettings = true
+            case "settings", "about", "help", "signout", "delete", "lastowner", "signoutfailed": showsSettings = true
             case "details": if !isSimple { showsDetails = true }
             default: break
             }

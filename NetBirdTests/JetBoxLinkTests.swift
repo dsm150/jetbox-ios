@@ -1388,9 +1388,13 @@ final class JetBoxAccountDeleteTests: XCTestCase {
         stub.replies["delete"] = (401, #"{"error":"unauthorized"}"#)
         let flow = flow(stub)
         token = "app-token"
-        let result = await flow.deleteAccount(stopTunnel: {}, files: nil)
+        var requestsWhenStopped: Int?
+        let result = await flow.deleteAccount(stopTunnel: {
+            if requestsWhenStopped == nil { requestsWhenStopped = stub.requests.count }
+        }, files: nil)
         XCTAssertEqual(result, .deleted)
         XCTAssertEqual(stub.requests.count, 2, "один автоматический повтор")
+        XCTAssertEqual(requestsWhenStopped, 1, "1.0 (34): туннель выключен до повтора — повтор идёт напрямую")
         XCTAssertNil(JetBoxStore.currentBox)
         XCTAssertEqual(flow.takeLoginNotice(), JBText.deleteDone)
     }
@@ -2102,5 +2106,296 @@ final class JetBoxSignOutRevokeTests: XCTestCase {
         XCTAssertEqual(JBText.errDeviceLimitBody,
                        "You’ve reached the device limit for this account. Sign out on another device to free up a place.")
         #endif
+    }
+}
+
+// MARK: - Проба DNS канарейкой (1.0 (34))
+
+@MainActor
+final class JetBoxDNSCheckTests: XCTestCase {
+    /// Ответ DNS: заголовок, вопрос, ответы A (имя ответа — указатель на вопрос).
+    private func response(id: UInt16, rcode: UInt8 = 0, addresses: [[UInt8]] = []) -> Data {
+        var b: [UInt8] = [UInt8(id >> 8), UInt8(id & 0xFF), 0x81, 0x80 | rcode, 0, 1, 0, UInt8(addresses.count), 0, 0, 0, 0]
+        for label in JetBoxDNSCheck.canaryName.split(separator: ".") {
+            b.append(UInt8(label.utf8.count)); b.append(contentsOf: label.utf8)
+        }
+        b.append(contentsOf: [0, 0, 1, 0, 1])
+        for a in addresses {
+            b.append(contentsOf: [0xC0, 0x0C, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4])
+            b.append(contentsOf: a)
+        }
+        return Data(b)
+    }
+
+    func testParseMarkAnswer() {
+        XCTAssertEqual(JetBoxDNSCheck.parseA(response(id: 7, addresses: [[192, 0, 2, 53]]), id: 7),
+                       .addresses(["192.0.2.53"]))
+        XCTAssertTrue(JetBoxDNSCheck.parseA(response(id: 7, addresses: [[1, 2, 3, 4], [192, 0, 2, 53]]), id: 7).hasMark)
+    }
+
+    func testParseNXDOMAINServfailAndForeignID() {
+        XCTAssertEqual(JetBoxDNSCheck.parseA(response(id: 9, rcode: 3), id: 9), .nxdomain)
+        XCTAssertEqual(JetBoxDNSCheck.parseA(response(id: 9, rcode: 2), id: 9), .noAnswer)
+        XCTAssertEqual(JetBoxDNSCheck.parseA(response(id: 9, addresses: [[192, 0, 2, 53]]), id: 10), .noAnswer)
+        XCTAssertEqual(JetBoxDNSCheck.parseA(Data([1, 2, 3]), id: 1), .noAnswer)
+        XCTAssertEqual(JetBoxDNSCheck.parseA(response(id: 9), id: 9), .addresses([]))
+    }
+
+    func testCanaryNameIsMarketDomainOnly() {
+        #if JETBOX_US
+        XCTAssertEqual(JetBoxDNSCheck.canaryName, "dnscheck.jetbox.ai-boss.us")
+        #endif
+        XCTAssertEqual(JetBoxDNSCheck.nonceName("abc123"), "abc123.\(JetBoxDNSCheck.canaryName)")
+        XCTAssertEqual(JetBoxDNSCheck.randomNonce().count, 12)
+    }
+
+    func testVerdicts() {
+        let mark = JetBoxDNSAnswer.addresses(["192.0.2.53"])
+        XCTAssertEqual(JetBoxDNSCheck.verdict(box: mark, system: mark), .throughBox)
+        XCTAssertEqual(JetBoxDNSCheck.verdict(box: mark, system: .nxdomain), .bypassed)
+        XCTAssertEqual(JetBoxDNSCheck.verdict(box: mark, system: .addresses(["8.8.8.8"])), .bypassed)
+        XCTAssertEqual(JetBoxDNSCheck.verdict(box: mark, system: .noAnswer), .noAnswer)
+        XCTAssertEqual(JetBoxDNSCheck.verdict(box: .nxdomain, system: .nxdomain), .boxDoesNotKnow)
+        XCTAssertEqual(JetBoxDNSCheck.verdict(box: .noAnswer, system: mark), .boxDoesNotKnow)
+    }
+
+    /// Резолверы-подмены: ответ по имени, журнал вопросов.
+    private final class Asked: @unchecked Sendable { var box: [String] = []; var system: [String] = [] }
+
+    private func resolvers(_ asked: Asked, box: @escaping (String) -> JetBoxDNSAnswer,
+                           system: @escaping (String) -> JetBoxDNSAnswer) -> JetBoxDNSCheck.Resolvers {
+        JetBoxDNSCheck.Resolvers(box: { host, name in
+            XCTAssertEqual(host, "100.64.0.1")
+            asked.box.append(name); return box(name)
+        }, system: { name in asked.system.append(name); return system(name) })
+    }
+
+    func testNonceFirstThenExactName() async {
+        let asked = Asked()
+        let mark = JetBoxDNSAnswer.addresses(["192.0.2.53"])
+        // Коробка знает только точное имя (до поддоменов), система — тоже через коробку.
+        let verdict = await JetBoxDNSCheck.run(host: "100.64.0.1", resolvers: resolvers(asked,
+            box: { $0 == JetBoxDNSCheck.canaryName ? mark : .nxdomain },
+            system: { $0 == JetBoxDNSCheck.canaryName ? mark : .noAnswer }), nonce: "n1")
+        XCTAssertEqual(verdict, .throughBox)
+        XCTAssertEqual(asked.box, ["n1.\(JetBoxDNSCheck.canaryName)", JetBoxDNSCheck.canaryName])
+        XCTAssertEqual(asked.system, ["n1.\(JetBoxDNSCheck.canaryName)", JetBoxDNSCheck.canaryName])
+    }
+
+    func testMarkOnNonceSkipsExactName() async {
+        let asked = Asked()
+        let mark = JetBoxDNSAnswer.addresses(["192.0.2.53"])
+        let verdict = await JetBoxDNSCheck.run(host: "100.64.0.1", resolvers: resolvers(asked,
+            box: { _ in mark }, system: { _ in .nxdomain }), nonce: "n2")
+        XCTAssertEqual(verdict, .bypassed)
+        XCTAssertEqual(asked.box.count, 1)
+        XCTAssertEqual(asked.system.count, 2, "без метки на случайном — точное имя")
+    }
+
+    func testOldBoxIsSilentAndSystemNotAsked() async {
+        let asked = Asked()
+        let verdict = await JetBoxDNSCheck.run(host: "100.64.0.1", resolvers: resolvers(asked,
+            box: { _ in .nxdomain }, system: { _ in .nxdomain }), nonce: "n3")
+        XCTAssertEqual(verdict, .boxDoesNotKnow)
+        XCTAssertTrue(asked.system.isEmpty, "коробка канарейку не знает — проверки нет")
+    }
+
+    func testCombinePrefersMarkThenDefiniteAnswer() {
+        let mark = JetBoxDNSAnswer.addresses(["192.0.2.53"])
+        XCTAssertEqual(JetBoxDNSCheck.combine(nonce: .nxdomain, exact: mark), mark)
+        XCTAssertEqual(JetBoxDNSCheck.combine(nonce: .nxdomain, exact: .noAnswer), .nxdomain)
+        XCTAssertEqual(JetBoxDNSCheck.combine(nonce: .noAnswer, exact: .nxdomain), .nxdomain)
+    }
+
+    func testLiveStatsChecksOncePerIntervalAndAfterReconnect() async {
+        let stats = JetBoxLiveStats()
+        var runs = 0
+        stats.runDNSCheck = { _ in runs += 1; return .bypassed }
+        let start = Date()
+        stats.checkDNSIfDue(host: "100.64.0.1", now: start)
+        for _ in 0..<20 where stats.dnsVerdict == nil { try? await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertEqual(stats.dnsVerdict, .bypassed)
+        stats.checkDNSIfDue(host: "100.64.0.1", now: start.addingTimeInterval(60))
+        XCTAssertEqual(runs, 1, "раз в 10 минут")
+        stats.checkDNSIfDue(host: "100.64.0.1", now: start.addingTimeInterval(601))
+        for _ in 0..<20 where runs < 2 { try? await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertEqual(runs, 2)
+    }
+}
+
+// MARK: - «Help» (1.0 (34))
+
+@MainActor
+final class JetBoxHelpTests: XCTestCase {
+    private let defaults = UserDefaults(suiteName: "jetbox-help-tests")!
+
+    override func setUp() async throws {
+        defaults.removePersistentDomain(forName: "jetbox-help-tests")
+    }
+
+    func testSupportSendsContractAndRemembersEmail() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["support"] = (200, #"{"ok":true,"promise":"We reply within a day.","support_email":"help@ai-boss.us"}"#)
+        let saved = JetBoxAdvancedAccess.defaults.string(forKey: JetBoxSupportContact.key)
+        defer { JetBoxAdvancedAccess.defaults.set(saved, forKey: JetBoxSupportContact.key) }
+        let outcome = await stub.api().sendSupport(token: "tok-1", message: "Nothing happens", diagnostics: "App: x",
+                                                   version: "1.0 (34)", lang: "en")
+        XCTAssertEqual(outcome, .sent(promise: "We reply within a day."))
+        XCTAssertEqual(stub.requests.first?.url?.absoluteString, "\(JBT.api)support")
+        XCTAssertEqual(stub.requests.first?.value(forHTTPHeaderField: "Authorization"), "Bearer tok-1")
+        XCTAssertEqual(stub.body(0), ["message": "Nothing happens", "diagnostics": "App: x", "platform": "ios",
+                                      "version": "1.0 (34)", "lang": "en"])
+        XCTAssertEqual(JetBoxSupportContact.current(), "help@ai-boss.us")
+        XCTAssertFalse(stub.logs.joined().contains("tok-1"))
+    }
+
+    func testSupportOutcomes() async {
+        let stub = JetBoxLoginStub()
+        for (code, expected) in [(429, JetBoxLoginAPI.SupportOutcome.rateLimited), (401, .needsMail),
+                                 (413, .needsMail), (502, .needsMail)] {
+            stub.replies["support"] = (code, #"{"error":"x"}"#)
+            let outcome = await stub.api().sendSupport(token: "t", message: "m", diagnostics: "", version: "v", lang: "en")
+            XCTAssertEqual(outcome, expected, "\(code)")
+        }
+        stub.replies["support"] = (200, #"{"ok":true}"#)
+        let noPromise = await stub.api().sendSupport(token: "t", message: "m", diagnostics: "", version: "v", lang: "en")
+        XCTAssertEqual(noPromise, .sent(promise: nil))
+        stub.error = URLError(.notConnectedToInternet)
+        let offline = await stub.api().sendSupport(token: "t", message: "m", diagnostics: "", version: "v", lang: "en")
+        XCTAssertEqual(offline, .needsMail)
+    }
+
+    func testSupportCutsLongTexts() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["support"] = (200, "{}")
+        _ = await stub.api().sendSupport(token: "t", message: String(repeating: "a", count: 5000),
+                                         diagnostics: String(repeating: "d", count: 20000), version: "v", lang: "en")
+        XCTAssertEqual(stub.body(0)["message"]?.count, 4000)
+        XCTAssertEqual(stub.body(0)["diagnostics"]?.count, 16000)
+    }
+
+    func testContactKeepsOnlyEmailsAndFallsBack() {
+        XCTAssertEqual(JetBoxSupportContact.current(defaults: defaults), JetBoxOnboarding.defaultSupportEmail)
+        JetBoxSupportContact.remember("+7 495 000-00-00", defaults: defaults)
+        XCTAssertEqual(JetBoxSupportContact.current(defaults: defaults), "dev@ai-boss.us", "телефон — не адрес")
+        JetBoxSupportContact.remember(" team@ai-boss.us ", defaults: defaults)
+        XCTAssertEqual(JetBoxSupportContact.current(defaults: defaults), "team@ai-boss.us")
+    }
+
+    func testScrubRemovesSecrets() {
+        let line = "[2026-11-28T09:00:00.000Z] [JetBoxOnboarding.swift:10] JetBox: link jetbox://connect#k=11111111-2222-4333-8444-555555555555&m=https://net.jetbox.ai-boss.us&s=AbCdEf0123456789AbCdEf0123456789AbCdEf0123456789AbCdEf0123456789AbCd peer key 6bVg0eWfXmT3kZ2pQ9rS8tU7vW6xY5zA4bC3dE2fG1h= token Zq3vX9_kL2-mN8pR4tW6yA0bC5dE7fG1hJ email alex.smith@example.com ip 203.0.113.9 mesh 100.79.1.2 lan 192.168.1.5 mark 192.0.2.53 id 0A1B2C3D-4E5F-4A6B-8C7D-9E0F1A2B3C4D"
+        let clean = JetBoxDiagnostics.scrub(line)
+        for secret in ["11111111-2222", "net.jetbox.ai-boss.us", "AbCdEf0123456789", "6bVg0eWfXmT3kZ2pQ9rS8tU7vW6xY5zA4bC3dE2fG1h=",
+                       "Zq3vX9_kL2-mN8pR4tW6yA0bC5dE7fG1hJ", "alex.smith", "203.0.113.9", "0A1B2C3D-4E5F"] {
+            XCTAssertFalse(clean.contains(secret), "осталось «\(secret)»: \(clean)")
+        }
+        for kept in ["JetBox: link", "al***@example.com", "100.79.1.2", "192.168.1.5", "192.0.2.53", "JetBoxOnboarding.swift:10"] {
+            XCTAssertTrue(clean.contains(kept), "пропало «\(kept)»: \(clean)")
+        }
+    }
+
+    func testLastJetBoxLinesFiltersAndLimits() {
+        var log = (1...70).map { "[t] [F.swift:1] JetBox: line \($0)" }
+        log.insert("[t] [G.swift:2] engine: noise", at: 3)
+        let lines = JetBoxDiagnostics.lastJetBoxLines(log.joined(separator: "\n"))
+        XCTAssertEqual(lines.count, 50)
+        XCTAssertEqual(lines.last, "[t] [F.swift:1] JetBox: line 70")
+        XCTAssertFalse(lines.contains { $0.contains("engine") })
+    }
+
+    func testDiagnosticsTextHasNoSecretsByConstruction() {
+        let facts = JetBoxDiagnostics.Facts(appVersion: "1.0 (34)", osVersion: "26.1", language: "en-US", signIn: "email",
+                                            maskedEmail: JetBoxDiagnostics.maskEmail("alex@example.com"), hasToken: true,
+                                            tunnel: "connected", homeAnswers: true, latencyMs: 24, route: "direct",
+                                            uptime: "4:05", exit: nil, dns: JetBoxDNSVerdict.bypassed.diagnostics)
+        let text = JetBoxDiagnostics.text(facts, log: [])
+        XCTAssertTrue(text.contains("Sign-in: email, al***@example.com"))
+        XCTAssertTrue(text.contains("Home answers: yes, 24 ms"))
+        XCTAssertTrue(text.contains("DNS: bypasses JetBox"))
+        XCTAssertFalse(text.contains("alex@"))
+    }
+
+    func testMailURLCarriesSubjectAndDiagnostics() throws {
+        let url = try XCTUnwrap(JetBoxDiagnostics.mailURL(to: "dev@ai-boss.us", appVersion: "1.0 (34)",
+                                                         message: "No internet", diagnostics: "DNS: x"))
+        let parts = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(parts.scheme, "mailto")
+        XCTAssertEqual(parts.path, "dev@ai-boss.us")
+        XCTAssertEqual(parts.queryItems?.first { $0.name == "subject" }?.value, "JetBox: iOS 1.0 (34)")
+        XCTAssertEqual(parts.queryItems?.first { $0.name == "body" }?.value, "No internet\n\n--- Diagnostics ---\nDNS: x")
+    }
+
+    private func model(_ stub: JetBoxLoginStub, token: String?) -> JetBoxHelpModel {
+        let model = JetBoxHelpModel(diagnostics: "App: test", appVersion: "1.0 (34)")
+        model.api = stub.api()
+        model.loadToken = { token }
+        model.supportAddress = { "dev@ai-boss.us" }
+        model.message = "Help"
+        return model
+    }
+
+    func testNoTokenGoesStraightToMail() async {
+        let stub = JetBoxLoginStub()
+        let model = model(stub, token: nil)
+        var opened: URL?
+        await model.send { opened = $0; return true }
+        XCTAssertTrue(stub.requests.isEmpty)
+        XCTAssertEqual(opened?.scheme, "mailto")
+        XCTAssertEqual(model.phase, .editing)
+    }
+
+    func testMailThatDoesNotOpenShowsAddress() async {
+        let stub = JetBoxLoginStub()
+        let model = model(stub, token: nil)
+        await model.send { _ in false }
+        XCTAssertEqual(model.phase, .mailFailed("dev@ai-boss.us"))
+    }
+
+    func testTokenSentShowsPromiseOrFallback() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["support"] = (200, #"{"ok":true,"promise":"Within an hour."}"#)
+        let first = model(stub, token: "t")
+        await first.send { _ in XCTFail("письмо не нужно"); return true }
+        XCTAssertEqual(first.phase, .sent("Within an hour."))
+        stub.replies["support"] = (200, #"{"ok":true}"#)
+        let second = model(stub, token: "t")
+        await second.send { _ in true }
+        XCTAssertEqual(second.phase, .sent(JBText.helpSentFallback))
+    }
+
+    func testRateLimitStaysOnFormAndRefusalFallsBackToMail() async {
+        let stub = JetBoxLoginStub()
+        stub.replies["support"] = (429, #"{"error":"rate_limited","retry_after":120}"#)
+        let limited = model(stub, token: "t")
+        await limited.send { _ in XCTFail("на 429 письма нет"); return true }
+        XCTAssertEqual(limited.phase, .editing)
+        XCTAssertEqual(limited.notice, JBText.helpRateLimited)
+        stub.replies["support"] = (401, #"{"error":"bad_token"}"#)
+        let refused = model(stub, token: "t")
+        var mailed = false
+        await refused.send { _ in mailed = true; return true }
+        XCTAssertTrue(mailed)
+    }
+
+    func testEmptyMessageDoesNotSend() async {
+        let stub = JetBoxLoginStub()
+        let model = model(stub, token: "t")
+        model.message = "   "
+        XCTAssertFalse(model.canSend)
+        await model.send { _ in XCTFail(); return true }
+        XCTAssertTrue(stub.requests.isEmpty)
+    }
+
+    func testApprovedTexts() {
+        XCTAssertEqual(JBText.dnsBypassed, "DNS doesn’t go through JetBox — ads and trackers aren’t filtered")
+        XCTAssertEqual(JBText.dnsHowToFix, "How to fix")
+        XCTAssertEqual(JBText.helpRow, "Help")
+        XCTAssertEqual(JBText.helpTitle, "Contact us")
+        XCTAssertEqual(JBText.helpPlaceholder, "Describe what happened")
+        XCTAssertEqual(JBText.helpAttach, "Attach diagnostics")
+        XCTAssertEqual(JBText.helpSend, "Send")
+        XCTAssertEqual(JBText.helpSentFallback, "Sent. We’ll reply by email.")
+        XCTAssertEqual(JBText.helpRateLimited, "You’ve already sent a message. Try again in a few minutes.")
+        XCTAssertEqual(JBText.helpMailFailed("dev@ai-boss.us"), "Couldn’t send from the app. Write to us at dev@ai-boss.us.")
     }
 }
